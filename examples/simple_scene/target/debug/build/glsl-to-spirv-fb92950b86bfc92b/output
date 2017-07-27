@@ -1,0 +1,152 @@
+cargo:rerun-if-changed=build/glslangValidator.exe
+running: "cmake" "/home/siebencorgie/Scripts/Rust/engine/ori_engine/lib/vulkano/glsl-to-spirv/glslang" "-DCMAKE_INSTALL_PREFIX=/home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out" "-DCMAKE_C_FLAGS= -ffunction-sections -fdata-sections -fPIC -m64" "-DCMAKE_C_COMPILER=/usr/bin/cc" "-DCMAKE_CXX_FLAGS= -ffunction-sections -fdata-sections -fPIC -m64" "-DCMAKE_CXX_COMPILER=/usr/bin/c++" "-DCMAKE_BUILD_TYPE=Debug"
+-- The C compiler identification is GNU 7.1.1
+-- The CXX compiler identification is GNU 7.1.1
+-- Check for working C compiler: /usr/bin/cc
+-- Check for working C compiler: /usr/bin/cc -- works
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Check for working CXX compiler: /usr/bin/c++
+-- Check for working CXX compiler: /usr/bin/c++ -- works
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Google Mock was not found - tests based on that will not build
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/build
+running: "cmake" "--build" "." "--target" "install" "--config" "Debug" "--" "-j8"
+Scanning dependencies of target glslang-default-resource-limits
+Scanning dependencies of target OGLCompiler
+Scanning dependencies of target HLSL
+Scanning dependencies of target OSDependent
+[  1%] Building CXX object StandAlone/CMakeFiles/glslang-default-resource-limits.dir/ResourceLimits.cpp.o
+Scanning dependencies of target SPVRemapper
+[  3%] Building CXX object OGLCompilersDLL/CMakeFiles/OGLCompiler.dir/InitializeDll.cpp.o
+[  5%] Building CXX object glslang/OSDependent/Unix/CMakeFiles/OSDependent.dir/ossource.cpp.o
+[  7%] Building CXX object SPIRV/CMakeFiles/SPVRemapper.dir/SPVRemapper.cpp.o
+[  8%] Building CXX object hlsl/CMakeFiles/HLSL.dir/hlslAttributes.cpp.o
+[ 10%] Building CXX object SPIRV/CMakeFiles/SPVRemapper.dir/doc.cpp.o
+[ 12%] Building CXX object hlsl/CMakeFiles/HLSL.dir/hlslParseHelper.cpp.o
+[ 14%] Building CXX object hlsl/CMakeFiles/HLSL.dir/hlslScanContext.cpp.o
+[ 15%] Linking CXX static library libOSDependent.a
+[ 15%] Built target OSDependent
+[ 17%] Building CXX object hlsl/CMakeFiles/HLSL.dir/hlslOpMap.cpp.o
+[ 19%] Linking CXX static library libOGLCompiler.a
+[ 19%] Built target OGLCompiler
+[ 21%] Building CXX object hlsl/CMakeFiles/HLSL.dir/hlslTokenStream.cpp.o
+[ 22%] Linking CXX static library libglslang-default-resource-limits.a
+[ 22%] Built target glslang-default-resource-limits
+[ 24%] Building CXX object hlsl/CMakeFiles/HLSL.dir/hlslGrammar.cpp.o
+[ 26%] Building CXX object hlsl/CMakeFiles/HLSL.dir/hlslParseables.cpp.o
+[ 28%] Linking CXX static library libSPVRemapper.a
+[ 28%] Built target SPVRemapper
+[ 29%] Linking CXX static library libHLSL.a
+[ 29%] Built target HLSL
+Scanning dependencies of target glslang
+[ 33%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/glslang_tab.cpp.o
+[ 33%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/iomapper.cpp.o
+[ 35%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/Initialize.cpp.o
+[ 36%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/InfoSink.cpp.o
+[ 38%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/IntermTraverse.cpp.o
+[ 40%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/Constant.cpp.o
+[ 42%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/Intermediate.cpp.o
+[ 43%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/ParseContextBase.cpp.o
+[ 45%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/ParseHelper.cpp.o
+[ 47%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/PoolAlloc.cpp.o
+[ 49%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/RemoveTree.cpp.o
+[ 50%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/Scan.cpp.o
+[ 52%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/ShaderLang.cpp.o
+[ 54%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/Versions.cpp.o
+[ 56%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/SymbolTable.cpp.o
+[ 57%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/intermOut.cpp.o
+[ 59%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/limits.cpp.o
+[ 61%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/linkValidate.cpp.o
+[ 63%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/parseConst.cpp.o
+[ 64%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/reflection.cpp.o
+[ 66%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/preprocessor/Pp.cpp.o
+[ 68%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/preprocessor/PpAtom.cpp.o
+[ 70%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/preprocessor/PpContext.cpp.o
+[ 71%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/preprocessor/PpScanner.cpp.o
+[ 73%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/preprocessor/PpTokens.cpp.o
+[ 75%] Building CXX object glslang/CMakeFiles/glslang.dir/MachineIndependent/propagateNoContraction.cpp.o
+[ 77%] Building CXX object glslang/CMakeFiles/glslang.dir/GenericCodeGen/CodeGen.cpp.o
+[ 78%] Building CXX object glslang/CMakeFiles/glslang.dir/GenericCodeGen/Link.cpp.o
+[ 80%] Linking CXX static library libglslang.a
+[ 80%] Built target glslang
+Scanning dependencies of target SPIRV
+[ 82%] Building CXX object SPIRV/CMakeFiles/SPIRV.dir/InReadableOrder.cpp.o
+[ 84%] Building CXX object SPIRV/CMakeFiles/SPIRV.dir/GlslangToSpv.cpp.o
+[ 85%] Building CXX object SPIRV/CMakeFiles/SPIRV.dir/Logger.cpp.o
+[ 87%] Building CXX object SPIRV/CMakeFiles/SPIRV.dir/SpvBuilder.cpp.o
+[ 89%] Building CXX object SPIRV/CMakeFiles/SPIRV.dir/doc.cpp.o
+[ 91%] Building CXX object SPIRV/CMakeFiles/SPIRV.dir/disassemble.cpp.o
+[ 92%] Linking CXX static library libSPIRV.a
+[ 92%] Built target SPIRV
+Scanning dependencies of target spirv-remap
+Scanning dependencies of target glslangValidator
+[ 94%] Building CXX object StandAlone/CMakeFiles/spirv-remap.dir/spirv-remap.cpp.o
+[ 96%] Building CXX object StandAlone/CMakeFiles/glslangValidator.dir/StandAlone.cpp.o
+[ 98%] Linking CXX executable spirv-remap
+[ 98%] Built target spirv-remap
+[100%] Linking CXX executable glslangValidator
+[100%] Built target glslangValidator
+Install the project...
+-- Install configuration: "Debug"
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/lib/libglslang.a
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Public/ShaderLang.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/arrays.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/BaseTypes.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/Common.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/ConstantUnion.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/InfoSink.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/InitializeGlobals.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/intermediate.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/PoolAlloc.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/ResourceLimits.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/revision.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/ShHandle.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/Include/Types.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/glslang_tab.cpp.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/gl_types.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/Initialize.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/iomapper.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/LiveTraverser.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/localintermediate.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/ParseHelper.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/reflection.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/RemoveTree.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/Scan.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/ScanContext.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/SymbolTable.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/Versions.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/parseVersions.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/propagateNoContraction.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/preprocessor/PpContext.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/glslang/MachineIndependent/preprocessor/PpTokens.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/lib/libOSDependent.a
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/lib/libOGLCompiler.a
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/bin/glslangValidator
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/bin/spirv-remap
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/lib/libSPIRV.a
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/lib/libSPVRemapper.a
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/bitutils.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/spirv.hpp
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/GLSL.std.450.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/GLSL.ext.KHR.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/GlslangToSpv.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/hex_float.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/Logger.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/SpvBuilder.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/spvIR.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/doc.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/disassemble.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/GLSL.ext.AMD.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/GLSL.ext.NV.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/SPVRemapper.h
+-- Up-to-date: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/include/SPIRV/doc.h
+-- Installing: /home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out/lib/libHLSL.a
+cargo:root=/home/siebencorgie/Scripts/Rust/engine/ori_engine/examples/simple_scene/target/debug/build/glsl-to-spirv-fb92950b86bfc92b/out

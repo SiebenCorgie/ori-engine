@@ -1,0 +1,2 @@
+error: Could not create LLVM TargetMachine for triple: le32-unknown-nacl: No available targets are compatible with this triple.
+

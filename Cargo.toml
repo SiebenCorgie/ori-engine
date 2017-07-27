@@ -1,0 +1,19 @@
+[package]
+name = "ori-engine"
+version = "0.1.0"
+authors = ["Siebencorgie <siebencorgie@googlemail.com>"]
+
+[dependencies]
+winit = "0.7.1"
+vulkano = "0.5.6"
+vulkano-shader-derive = "0.5.6"
+vulkano-win = "0.5.6"
+
+nalgebra = "0.12.3"
+ncollide = "0.12.0"
+assimp = "0.2"
+time = "0.1.37"
+
+[[example]]
+name = "simple"
+path = "examples/simple_scene/src/main.rs"

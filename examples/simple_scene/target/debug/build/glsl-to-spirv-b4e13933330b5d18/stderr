@@ -1,8 +1,0 @@
-fatal: Not a git repository (or any parent up to mount point /)
-Stopping at filesystem boundary (GIT_DISCOVERY_ACROSS_FILESYSTEM not set).
-/home/siebencorgie/.cargo/registry/src/github.com-1ecc6299db9ec823/glsl-to-spirv-0.1.3/glslang/StandAlone/StandAlone.cpp: In member function ‘void TPreamble::addDef(std::__cxx11::string)’:
-/home/siebencorgie/.cargo/registry/src/github.com-1ecc6299db9ec823/glsl-to-spirv-0.1.3/glslang/StandAlone/StandAlone.cpp:177:19: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-         if (equal != def.npos)
-/home/siebencorgie/.cargo/registry/src/github.com-1ecc6299db9ec823/glsl-to-spirv-0.1.3/glslang/StandAlone/StandAlone.cpp: In member function ‘void TPreamble::fixLine(std::__cxx11::string&)’:
-/home/siebencorgie/.cargo/registry/src/github.com-1ecc6299db9ec823/glsl-to-spirv-0.1.3/glslang/StandAlone/StandAlone.cpp:198:17: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-         if (end != line.npos)

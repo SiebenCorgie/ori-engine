@@ -16,7 +16,7 @@ aspects of the engine and its systems.
  3. physics
  4. input
 
-in addition the system will spawn thread for workloads like config-loading
+In addition the system will spawn thread for workloads like config-loading
 or mesh importing.
 
 
@@ -88,7 +88,7 @@ cargo run --examples simple
 ```
 to run an example application.
 
-*Node: You'll need vulkan installed*
+*Note: You'll need vulkan installed*
 
 ## License
 

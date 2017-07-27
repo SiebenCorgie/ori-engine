@@ -1,6 +1,5 @@
-/target/
+**/target/
 **/*.rs.bk
+**/Cargo.lock
 Cargo.lock
 lib/*
-/examples/simple_scene/target/
-/examples/simple_scene/cargo.lock

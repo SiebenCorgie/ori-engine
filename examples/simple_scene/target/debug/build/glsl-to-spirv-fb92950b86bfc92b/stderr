@@ -1,7 +1,0 @@
-make: warning: -jN forced in submake: disabling jobserver mode.
-/home/siebencorgie/Scripts/Rust/engine/ori_engine/lib/vulkano/glsl-to-spirv/glslang/StandAlone/StandAlone.cpp: In member function ‘void TPreamble::addDef(std::__cxx11::string)’:
-/home/siebencorgie/Scripts/Rust/engine/ori_engine/lib/vulkano/glsl-to-spirv/glslang/StandAlone/StandAlone.cpp:177:19: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-         if (equal != def.npos)
-/home/siebencorgie/Scripts/Rust/engine/ori_engine/lib/vulkano/glsl-to-spirv/glslang/StandAlone/StandAlone.cpp: In member function ‘void TPreamble::fixLine(std::__cxx11::string&)’:
-/home/siebencorgie/Scripts/Rust/engine/ori_engine/lib/vulkano/glsl-to-spirv/glslang/StandAlone/StandAlone.cpp:198:17: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
-         if (end != line.npos)

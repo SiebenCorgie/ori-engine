@@ -1,16 +1,27 @@
 extern crate vulkano;
 extern crate ori_engine;
-use ori-engine::*;
+use ori_engine::*;
 use std::sync::{Arc, Mutex};
+use std::thread;
+use std::time::Duration;
 
 fn main() {
 
-    //Start a renderer
-    let mut render = Arc::new(Mutex::new(render::renderer::Renderer::new()));
+    //Start
+    //Input
+    let mut input_handler = input::Input::new();
+    //Create a renderer with the input system
+    let mut render = Arc::new(Mutex::new(render::renderer::Renderer::new(input_handler.get_events_loop())));
+    //Create a asset manager for the renderer
     let mut asset_manager = core::asset_manager::AssetManager::new(render.clone());
 
+    ///Start the input thread
+    input_handler.start();
+
+    //Import the ape
     asset_manager.import_scene("Ape", "Apes.fbx");
-    asset_manager.add_scene_to_main_scene("Ape");
+    asset_manager.import_scene("Ape_02", "Apes.fbx");
+    asset_manager.import_scene("Ape_03", "Apes.fbx");
 
     let mut adding_status = false;
 
@@ -22,12 +33,22 @@ fn main() {
             adding_status = true;
         }
 
+        //Render the scene, this will be offloaded to a render thread later
         let render_instance = render.clone();
         (*render).lock().expect("Failed to lock renderer for rendering").render(&mut asset_manager);
+
+        ///Check if loop should close
+        let input_inst = input_handler.key_map.clone();
+        let input_lck = input_inst.lock().expect("Failed to lock keymap while reading");
+
+        if input_lck.closed{
+            println!("Ending loop", );
+            input_handler.end();
+            break;
+        }
+
     }
 
-    //TODO why no mesh?
-
-
-    println!("Hello, world!");
+    thread::sleep(Duration::from_millis(1000));
+    println!("Hello, world! Ending the program");
 }

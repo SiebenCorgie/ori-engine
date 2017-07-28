@@ -46,6 +46,7 @@ impl MeshManager {
 
         let thread = thread::spawn(move ||{
 
+            println!("Spawned thread with id: {:?}", thread::current().id());
 
             let mut importer = assimp_importer::AssimpImporter::new();
             let new_meshes = importer.import(&path_instance, &name_instance, device_instance.clone(), queue_instance.clone());
@@ -86,7 +87,6 @@ impl MeshManager {
 
             println!("Finshed importing {}", name_instance.clone());
         });
-
 
     }
 }

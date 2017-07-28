@@ -26,8 +26,7 @@ pub struct Renderer  {
     //Vulkano data
     extensions: vulkano::instance::InstanceExtensions,
     instance: Arc<vulkano::instance::Instance>,
-    //physical: Arc<vulkano::instance::PhysicalDevice>,
-    events_loop: winit::EventsLoop,
+    //events_loop: winit::EventsLoop,
     window: vulkano_win::Window,
     device: Arc<vulkano::device::Device>,
     queues: vulkano::device::QueuesIter,
@@ -47,7 +46,7 @@ pub struct Renderer  {
 
 impl Renderer {
     ///Creates a new renderer with all subsystems
-    pub fn new() -> Self{
+    pub fn new(events_loop: Arc<Mutex<winit::EventsLoop>>) -> Self{
         //Init Vulkan
 
         //Check for needed extensions
@@ -58,14 +57,15 @@ impl Renderer {
         let physical = vulkano::instance::PhysicalDevice::enumerate(&instance)
                                 .next().expect("no device available");
         println!("Using device: {} (type: {:?})", physical.name(), physical.ty());
-        //Create an events loop
-        let mut events_loop = winit::EventsLoop::new();
+        //copy the events loop for the window creation
+        let events_loop_instance = events_loop.clone();
+        let events_loop_unlck = (*events_loop_instance).lock().expect("Failed to hold lock on events loop");
         //and create a window for it TODO bring this in the systen:: module
         let window = winit::WindowBuilder::new()
         .with_dimensions(800, 600)
         .with_title("Thingy!")
         .with_decorations(true)
-        .build_vk_surface(&events_loop, instance.clone()).expect("failed to !");
+        .build_vk_surface(&events_loop_unlck, instance.clone()).expect("failed to !");
 
         //Create a queue
         let queue = physical.queue_families().find(|&q| q.supports_graphics() &&
@@ -158,8 +158,6 @@ impl Renderer {
             //Vulkano data
             extensions: extensions,
             instance: instance.clone(),
-            //physical: physical,
-            events_loop: events_loop,
             window: window,
             device: device,
             queues: queues,
@@ -175,7 +173,7 @@ impl Renderer {
     }
 
     ///Renders the scene with the parameters supplied by the asset_manager
-    pub fn render(&mut self, asset_manager: &mut asset_manager::AssetManager) -> bool{
+    pub fn render(&mut self, asset_manager: &mut asset_manager::AssetManager){
         //DEBUG
         let start_time = Instant::now();
 
@@ -251,29 +249,15 @@ impl Renderer {
                       .then_swapchain_present(self.queue.clone(), self.swapchain.clone(), image_num)
                       .then_signal_fence_and_flush().expect("failed to flush");
         self.previous_frame = Some(Box::new(future) as Box<_>);
-        /*
-        self.previous_frame = Box::new({
-                self.previous_frame.join(acquire_future)
-                .then_execute(self.queue.clone(), command_buffer).expect("failed to !")
-                .then_swapchain_present(self.queue.clone(), self.swapchain.clone(), image_num)
-                .then_signal_fence_and_flush().expect("failed to flush")
 
-        });
+        /*
+
         */
-        let mut done = false;
-        self.events_loop.poll_events(|ev| {
-            match ev {
-                winit::Event::WindowEvent { event: winit::WindowEvent::Closed, .. } => done = true,
-                _ => ()
-            }
-        });
-        if done { return true; }
 
         //DEBUG
         let fps_time = start_time.elapsed().subsec_nanos();
         println!("FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
 
-        false
     }
 
     ///Returns the pipeline manager of this renderer

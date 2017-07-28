@@ -25,6 +25,10 @@ pub mod render;
 ///A collection of helpfull tools for integration of data with the engine
 pub mod tools;
 
+///A small thread who will run and administrate the winit window, as well as its input
+///processing
+pub mod input;
+
 
 #[cfg(test)]
 mod tests {

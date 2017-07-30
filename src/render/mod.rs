@@ -7,3 +7,5 @@ pub mod pipeline_manager;
 pub mod pipeline;
 ///Defines several types a pipeline can implement and pass to a shader
 pub mod pipeline_infos;
+///Handles a window which was created for the renderer
+pub mod window;

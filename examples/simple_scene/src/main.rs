@@ -8,12 +8,18 @@ use std::time::Duration;
 fn main() {
 
     //Start
+
+    //Settings
+    let settings = Arc::new(Mutex::new(core::engine_settings::EngineSettings::new()
+    .with_dimensions(800, 600)
+    .with_name("Teddy the bear")));
+
     //Input
     let mut input_handler = input::Input::new();
     //Create a renderer with the input system
-    let mut render = Arc::new(Mutex::new(render::renderer::Renderer::new(input_handler.get_events_loop())));
+    let mut render = Arc::new(Mutex::new(render::renderer::Renderer::new(input_handler.get_events_loop(), settings.clone())));
     //Create a asset manager for the renderer
-    let mut asset_manager = core::asset_manager::AssetManager::new(render.clone());
+    let mut asset_manager = core::asset_manager::AssetManager::new(render.clone(), settings.clone());
 
     ///Start the input thread
     input_handler.start();
@@ -48,7 +54,4 @@ fn main() {
         }
 
     }
-
-    thread::sleep(Duration::from_millis(1000));
-    println!("Hello, world! Ending the program");
 }

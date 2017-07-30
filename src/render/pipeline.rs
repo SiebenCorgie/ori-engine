@@ -46,6 +46,7 @@ impl Pipeline{
         -> Self
     {
 
+        //Currently using a static shader from /data/test.vs/fs
         let vs = vs::Shader::load(device.clone()).expect("failed to create shader module");
         let fs = fs::Shader::load(device.clone()).expect("failed to create shader module");
 
@@ -134,28 +135,7 @@ impl Pipeline{
 mod vs {
     #[derive(VulkanoShader)]
     #[ty = "vertex"]
-    #[src = "
-#version 450
-//Vertex definition
-layout(location = 0) in vec3 position;
-layout(location = 1) in vec2 tex_coord;
-layout(location = 2) in vec3 normal;
-layout(location = 3) in vec3 tangent;
-layout(location = 4) in vec3 color;
-
-layout(location = 0) out vec3 v_normal;
-layout(set = 0, binding = 0) uniform Data {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-} uniforms;
-
-void main() {
-    mat4 modelview = uniforms.view * uniforms.model;
-    v_normal = transpose(inverse(mat3(modelview))) * normal;
-    gl_Position = uniforms.proj * modelview * vec4(position, 1.0);
-}
-"]
+    #[path = "data/test.vs"]
     struct Dummy;
 }
 
@@ -165,17 +145,6 @@ mod fs {
 
     #[derive(VulkanoShader)]
     #[ty = "fragment"]
-    #[src = "
-    #version 450
-    layout(location = 0) in vec3 v_normal;
-    layout(location = 0) out vec4 f_color;
-    const vec3 LIGHT = vec3(0.0, -1.0, 1.0);
-    void main() {
-        float brightness = dot(normalize(v_normal), normalize(LIGHT));
-        vec3 dark_color = vec3(0.6, 0.0, 0.0);
-        vec3 regular_color = vec3(1.0, 0.0, 0.0);
-        f_color = vec4(mix(dark_color, regular_color, brightness), 1.0);
-    }
-    "]
+    #[path = "data/test.fs"]
     struct Dummy;
 }

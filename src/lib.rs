@@ -38,6 +38,6 @@ mod tests {
 }
 
 /*TODO
-Create a asynchron input handler who reads current input stores it and when fully written, writes it
-to a shared buffer (simmilar to the object loaders etc.)
+Create a texture manager and move the set generator to the materials for a per frame
+set generation for texture set in a material
 */

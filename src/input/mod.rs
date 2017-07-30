@@ -1,4 +1,6 @@
 use std::sync::{Mutex, Arc};
+use std::thread;
+use std::time::Duration;
 
 use vulkano_win;
 use vulkano_win::VkSurfaceBuild;
@@ -58,6 +60,9 @@ impl Input{
     pub fn end(&mut self){
 
         self.input_handler.end();
+
+        //Wait some mil seconds so the thread has time to end
+        thread::sleep(Duration::from_millis(1000));
     }
 
     ///Returns the Events loop, used for renderer creation

@@ -11,6 +11,7 @@ use tools::Importer;
 use core::scene_manager;
 use core::camera::Camera;
 use core::camera::DefaultCamera;
+use core::engine_settings;
 
 use render::renderer;
 
@@ -34,15 +35,15 @@ pub struct AssetManager {
     ///A Debug camera, will be removed in favor of a camera_managemant system
     camera: DefaultCamera,
 
-
+    settings: Arc<Mutex<engine_settings::EngineSettings>>,
 
 }
 
 impl  AssetManager {
     ///Creates a new idependend scene manager
-    pub fn new(renderer: Arc<Mutex<renderer::Renderer>>)->Self{
+    pub fn new(renderer: Arc<Mutex<renderer::Renderer>>, settings: Arc<Mutex<engine_settings::EngineSettings>>)->Self{
 
-        let camera = DefaultCamera::new();
+        let camera = DefaultCamera::new(settings.clone());
 
         //Make a nice copy so we can retrive the pipeline manager
         let renderer_instance = renderer.clone();
@@ -55,6 +56,8 @@ impl  AssetManager {
             scene_manager: scene_manager::SceneManager::new(),
             renderer: renderer_instance,
             camera: camera,
+
+            settings: settings,
         }
     }
 

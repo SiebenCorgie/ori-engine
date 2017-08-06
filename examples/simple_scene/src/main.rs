@@ -26,23 +26,22 @@ fn main() {
 
     //Import the ape
     asset_manager.import_scene("Ape", "Apes.fbx");
-    asset_manager.import_scene("Ape_02", "Apes.fbx");
-    asset_manager.import_scene("Ape_03", "Apes.fbx");
+    //asset_manager.import_scene("Ape_02", "Apes.fbx");
+    //asset_manager.import_scene("Ape_03", "Apes.fbx");
 
     let mut adding_status = false;
 
     loop {
-
         //Add the ape scene if finished loading. This will be managed by a defined loader later
         if adding_status == false && asset_manager.has_scene("Ape"){
             asset_manager.add_scene_to_main_scene("Ape");
             adding_status = true;
         }
-
+        //Update the content of the render_manager
+        asset_manager.update();
         //Render the scene, this will be offloaded to a render thread later
         let render_instance = render.clone();
         (*render).lock().expect("Failed to lock renderer for rendering").render(&mut asset_manager);
-
         ///Check if loop should close
         let input_inst = input_handler.key_map.clone();
         let input_lck = input_inst.lock().expect("Failed to lock keymap while reading");
@@ -52,6 +51,5 @@ fn main() {
             input_handler.end();
             break;
         }
-
     }
 }

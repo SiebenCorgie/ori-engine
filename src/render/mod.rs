@@ -9,3 +9,5 @@ pub mod pipeline;
 pub mod pipeline_infos;
 ///Handles a window which was created for the renderer
 pub mod window;
+///manages all universal accesible uniforms, like lights and world info
+pub mod uniform_manager;

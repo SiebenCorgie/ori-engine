@@ -200,6 +200,7 @@ impl Mesh {
         queue: Arc<vulkano::device::Queue>) ->
         Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[u32]>>
     {
+
         vulkano::buffer::cpu_access::CpuAccessibleBuffer
             ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()), self.indices.iter().cloned())
             .expect("failed to create index buffer 02")

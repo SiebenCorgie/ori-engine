@@ -23,12 +23,11 @@ impl PipelineManager{
         device: Arc<vulkano::device::Device>, queue: Arc<vulkano::device::Queue>,
         renderpass: Arc<vulkano::framebuffer::RenderPassAbstract + Send + Sync>,
         images: Vec<Arc<SwapchainImage>>,
-        uniform_buffer_01: pipeline_infos::Main
     ) -> Self
     {
         let mut hashmap = HashMap::new();
         //Creates a default pipeline from a default shader
-        let default_pipeline = pipeline::Pipeline::new(device, queue, renderpass, images, uniform_buffer_01, "src/defaults/shader/DefShader.vs", "src/defaults/shader/DefShader.fs");
+        let default_pipeline = pipeline::Pipeline::new(device, queue, renderpass, images, "src/defaults/shader/DefShader.vs", "src/defaults/shader/DefShader.fs");
         hashmap.insert(String::from("DefaultPipeline"), default_pipeline);
 
         PipelineManager{
@@ -50,7 +49,7 @@ impl PipelineManager{
             Some(ref mut pipe) => return pipe.get_pipeline_ref(),
             None => println!("Could not find default pipe this should not happen", ),
         }
-        panic!("Crash!")
+        panic!("Crash could not get default pipeline!")
     }
 
     ///Returns a pipeline by name, if not existend, returns the default pipeline
@@ -62,7 +61,7 @@ impl PipelineManager{
         self.get_default_pipeline()
     }
 
-
+/*
     ///Retruns the default set 01 of the default pipeline
     pub fn get_default_set_01(&mut self)->
     Arc<PersistentDescriptorSet<Arc<GraphicsPipelineAbstract + Send + Sync>,
@@ -93,7 +92,7 @@ impl PipelineManager{
 
         self.get_default_set_01()
     }
-
+*/
     ///Adds a pipeline made for the specified shader
     pub fn add_pipeline_from_shader(&mut self, name: &str,device: Arc<vulkano::device::Device>,
         queue: Arc<vulkano::device::Queue>,
@@ -103,15 +102,15 @@ impl PipelineManager{
         vertex_shader: &str,
         fragment_shader: &str)
     {
-        let tmp_pipeline = pipeline::Pipeline::new(device, queue, renderpass, images, uniform_buffer, vertex_shader, fragment_shader);
+        let tmp_pipeline = pipeline::Pipeline::new(device, queue, renderpass, images, vertex_shader, fragment_shader);
         self.pipelines.insert(String::from(name), tmp_pipeline);
     }
-
+/*
     ///Updates all `uniform_buffer_01` of this manager with a new uniform of
     pub fn update_all_uniform_buffer_01(&mut self, new_uniform: pipeline_infos::Main){
         for (k, v) in self.pipelines.iter_mut(){
             v.update_uniform_buffer_01(new_uniform.clone());
         }
     }
-
+*/
 }

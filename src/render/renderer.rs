@@ -1,5 +1,6 @@
 use render::pipeline_manager;
 use render::pipeline_infos;
+use render::uniform_manager;
 use core::asset_manager;
 use core::camera::Camera;
 use render::window;
@@ -50,6 +51,7 @@ pub struct Renderer  {
     recreate_swapchain: bool,
 
     engine_settings: Arc<Mutex<engine_settings::EngineSettings>>,
+    uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
 
 
 
@@ -110,12 +112,9 @@ impl Renderer {
             device.clone(), images[0].dimensions(), vulkano::format::D16Unorm)
             .expect("failed to create depth buffer!");
 
-        ///Create a uniform buffer with just [[f32; 4]; 4], the buffer will be updated bevore the first loop
-        let world = pipeline_infos::Main {
-            model : <na::Matrix4<f32>>::identity().into(),
-            view : <na::Matrix4<f32>>::identity().into(),
-            proj : <na::Matrix4<f32>>::identity().into(),
-        };
+
+
+        let mut uniform_manager_tmp = uniform_manager::UniformManager::new(device.clone(), queue.clone());
 
 
         //TODO, create custom renderpass with different stages (light computing, final shading (how to loop?),
@@ -162,7 +161,9 @@ impl Renderer {
         let previous_frame = Some(Box::new(vulkano::sync::now(device.clone())) as Box<GpuFuture>);
 
         //Creates the renderers pipeline manager
-        let pipeline_manager = Arc::new(Mutex::new(pipeline_manager::PipelineManager::new(device.clone(), queue.clone(), renderpass.clone(), images.clone(), world)));
+        let pipeline_manager = Arc::new(Mutex::new(pipeline_manager::PipelineManager::new(device.clone(), queue.clone(), renderpass.clone(), images.clone())));
+
+        //Pas everthing to the struct
         Renderer{
             pipeline_manager: pipeline_manager,
 
@@ -184,8 +185,11 @@ impl Renderer {
             recreate_swapchain: false,
 
             engine_settings: engine_settings.clone(),
+            uniform_manager: Arc::new(Mutex::new(uniform_manager_tmp)),
         }
     }
+
+
 
     ///Recreates swapchain for the window size in `engine_settings`
     ///Returns true if successfully recreated chain
@@ -292,40 +296,8 @@ impl Renderer {
         };
 
 
-        //If everything went right, continue with the setup
-        /*
-        //Try to aqquire new image
-        //TODO Make usable
-        let (image_num, acquire_future) =
-        match vulkano::swapchain::acquire_next_image(self.swapchain.clone(), None) {
-            Ok(r) => r,
-            Err(vulkano::swapchain::AcquireError::OutOfDate) => {
-                self.recreate_swapchain = true;
-            },
-            Err(err) => panic!("{:?}", err)
-        };
-
-        */
-        //Debug stuff which will be handled by the application later
-        let rotation = na::Rotation3::from_axis_angle(&na::Vector3::y_axis(), time::precise_time_ns() as f32 * 0.000000001);
-        let mat_4: na::Matrix4<f32> = na::convert(rotation);
-        let uniform_data = pipeline_infos::Main {
-            model: mat_4.into(),
-            view: asset_manager.get_camera().get_view_matrix().into(),
-            proj: asset_manager.get_camera().get_perspective().into(),
-        };
-
-
-        //Lock the pipeline manager and update all uniforms
-        let local_pipe_man = self.pipeline_manager.clone();
-        {
-            (*local_pipe_man).lock().expect("Failed to lock local pipeline manager").update_all_uniform_buffer_01(uniform_data);
-        }
-
-
         //TODO have to find a nicer way of doing this... later
         let command_buffer = {
-
             let engine_settings_inst = self.engine_settings.clone();
             let mut engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
 
@@ -351,18 +323,34 @@ impl Renderer {
                 //get all meshes, later in view frustum based on camera
 
 
+
+
             let mut index = 0;
             for i in asset_manager.get_all_meshes().iter(){
-                let cb = tmp_cmd_buffer.take().expect("Failed to recive command buffer in loop!");
-                let material = asset_manager.get_material_manager().get_material(&i.lock().expect("Could not lock mesh for material").get_material_name());
-                let unlocked_material = (*material).lock().expect("Failed to lock material");
 
-                let unlocked_mesh = i.lock().expect("Could not lock mesh for rendering :(");
-                let mut unlocked_pipeline_manager = (*local_pipe_man).lock().expect("Failed to lock the pipeline manager while rendering");
+                let mesh_lck = i.lock().expect("could not lock mesh for building command buffer");
+
+                let cb = tmp_cmd_buffer.take().expect("Failed to recive command buffer in loop!");
+
+                let material = asset_manager.get_material_manager().get_material(&(*mesh_lck).get_material_name());
+                let unlocked_material = material.lock().expect("Failed to lock material");
+
+                //We have to create all the types in advance to prevent a lock
+                let pipeline_copy = {
+                    let local_pipe_man = self.pipeline_manager.clone();
+                    let mut unlocked_pipeline_manager = (*local_pipe_man).lock().expect("Failed to lock the pipeline manager while rendering");
+                    //Returning pipeline
+                    unlocked_pipeline_manager.get_pipeline_by_name(&(*unlocked_material).get_pipeline_name().to_string())
+                };
+
+                let set_01 = {
+                    (*unlocked_material).get_set_01()
+                };
 
                 tmp_cmd_buffer = Some(cb
                     .draw_indexed(
-                        unlocked_pipeline_manager.get_pipeline_by_name(&unlocked_material.get_pipeline_name().to_string()),
+                        pipeline_copy,
+
                         vulkano::command_buffer::DynamicState{
                             line_width: None,
                             viewports: Some(vec![vulkano::pipeline::viewport::Viewport {
@@ -372,9 +360,9 @@ impl Renderer {
                             }]),
                             scissors: None,
                         },
-                        (*unlocked_mesh).get_vertex_buffer(),
-                        (*unlocked_mesh).get_index_buffer(self.device.clone(), self.queue.clone()).clone(),
-                        unlocked_pipeline_manager.get_set_01(&unlocked_material.get_pipeline_name().to_string()),
+                        (*mesh_lck).get_vertex_buffer(),
+                        (*mesh_lck).get_index_buffer(self.device.clone(), self.queue.clone()).clone(),
+                        set_01,
                         ()
                     ).expect("Failed to draw in command buffer!")
                 );
@@ -382,6 +370,7 @@ impl Renderer {
             //End renderpass
             tmp_cmd_buffer.take().expect("failed to return command buffer to main buffer")
         }
+
         .end_render_pass().expect("failed to end")
         .build().expect("failed to end");;
 
@@ -396,6 +385,11 @@ impl Renderer {
         let fps_time = start_time.elapsed().subsec_nanos();
         println!("FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
 
+    }
+
+    ///Returns the uniform manager
+    pub fn get_uniform_manager(&self) -> Arc<Mutex<uniform_manager::UniformManager>>{
+        self.uniform_manager.clone()
     }
 
     ///Returns the pipeline manager of this renderer
@@ -417,6 +411,23 @@ impl Renderer {
     pub fn get_queue(&self) -> Arc<vulkano::device::Queue>{
         self.queue.clone()
     }
+
+    ///A helper function whicht will creat a tubel of
+    ///(`pipeline_manager`, `uniform_manager`, `device`)
+    ///This is needed for the material creation
+    pub fn get_material_instances(&self) -> (
+        Arc<Mutex<pipeline_manager::PipelineManager>>,
+        Arc<Mutex<uniform_manager::UniformManager>>,
+        Arc<vulkano::device::Device>
+    ){
+        let pipe_man = self.pipeline_manager.clone();
+        let uni_man = self.uniform_manager.clone();
+        let device = self.device.clone();
+
+        (pipe_man, uni_man, device)
+    }
+
+
 }
 
 /*TODO:

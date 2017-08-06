@@ -13,6 +13,8 @@ extern crate vulkano_shader_derive;
 extern crate vulkano_win;
 #[macro_use]
 extern crate time;
+#[macro_use]
+extern crate image;
 
 ///The engine core defines most functions and
 ///traits needed to feed the renderer and communicate with the physics.
@@ -38,6 +40,10 @@ mod tests {
 }
 
 /*TODO
+- Create a uniformbuffer manager which stores the public buffers (everything except textures and materials)
+
+- Todo FIX ALL THE ERROROS
+
 Create a texture manager and move the set generator to the materials for a per frame
 set generation for texture set in a material
 */

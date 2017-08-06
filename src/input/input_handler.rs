@@ -34,7 +34,6 @@ impl InputHandler{
 
         //Start the continues input polling
         let thread = thread::spawn(move ||{
-            println!("Iterate input thread", );
             //Polling all events TODO make a variable input cap for polling
 
             //Create a tmp keymap which will overwrite the global keymap in `input`
@@ -142,7 +141,6 @@ impl InputHandler{
                     (*key_map_unlck) = current_keys;
                 }
             }
-            println!("Ending input thread now", );
         });
     }
 

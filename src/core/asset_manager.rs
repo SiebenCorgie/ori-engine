@@ -1,5 +1,6 @@
 use std::sync::{Mutex, Arc};
 use std::thread;
+use time;
 
 use core::simple_scene_system::node;
 use core::material_manager;
@@ -13,8 +14,13 @@ use core::camera::Camera;
 use core::camera::DefaultCamera;
 use core::engine_settings;
 
-use render::renderer;
 
+use render::renderer;
+use render::pipeline;
+use render::pipeline_manager;
+use render::pipeline_infos;
+
+use na;
 use vulkano;
 
 ///The main struct for the scene manager
@@ -49,9 +55,10 @@ impl  AssetManager {
         let renderer_instance = renderer.clone();
         let pipeline_instance = (*renderer_instance).lock().expect("Failed to hold the lock while getting the pipeline instance").get_pipeline_manager().clone();
 
+
         AssetManager{
             active_main_scene: node::GenericNode::new_empty("Empty"),
-            material_manager: material_manager::MaterialManager::new(pipeline_instance),
+            material_manager: material_manager::MaterialManager::new(renderer.clone()),
             mesh_manager: mesh_manager::MeshManager::new(),
             scene_manager: scene_manager::SceneManager::new(),
             renderer: renderer_instance,
@@ -59,6 +66,26 @@ impl  AssetManager {
 
             settings: settings,
         }
+    }
+
+    ///Updates all child components
+    pub fn update(&mut self){
+        let render_int = self.renderer.clone();
+        let render_lck = render_int.lock().expect("failed to lock renderer");
+
+        //Debug stuff which will be handled by the application later
+        let rotation = na::Rotation3::from_axis_angle(&na::Vector3::y_axis(), time::precise_time_ns() as f32 * 0.000000001);
+        let mat_4: na::Matrix4<f32> = na::convert(rotation);
+
+        let uniform_data = pipeline_infos::Main {
+            model: mat_4.into(),
+            view: self.get_camera().get_view_matrix().into(),
+            proj: self.get_camera().get_perspective().into(),
+        };
+
+        let uniform_manager = (*render_lck).get_uniform_manager();
+        let mut uniform_manager_lck = uniform_manager.lock().expect("failed to lock uniform_man.");
+        (*uniform_manager_lck).update(uniform_data);
     }
 
     ///Returns the camera in use TODO this will be managed by a independent camera manager in the future

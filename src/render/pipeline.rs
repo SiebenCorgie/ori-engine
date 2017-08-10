@@ -30,7 +30,8 @@ impl Pipeline{
         images: Vec<Arc<SwapchainImage>>,
         //uniform_buffer: pipeline_infos::Main,
         vertex_shader_path: &str,
-        fragment_shader_path: &str)
+        fragment_shader_path: &str
+    )
         -> Self
     {
 
@@ -38,12 +39,6 @@ impl Pipeline{
         let vs = vs::Shader::load(device.clone()).expect("failed to create shader module");
         let fs = fs::Shader::load(device.clone()).expect("failed to create shader module");
 
-        //Create the uniform buffers
-        //01
-        /*
-        let tmp_uniform_buffer_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<pipeline_infos::Main>
-                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
-                                   */
         //Create a pipeline
         let vertex_buffer_definition = vulkano::pipeline::vertex::SingleBufferDefinition::<mesh::Vertex>::new();
 
@@ -52,28 +47,12 @@ impl Pipeline{
             .vertex_shader(vs.main_entry_point(), ())
             .triangle_list()
             .viewports_dynamic_scissors_irrelevant(1)
-            /*
-            .viewports(std::iter::once(vulkano::pipeline::viewport::Viewport {
-                origin: [0.0, 0.0],
-                depth_range: 0.0 .. 1.0,
-                dimensions: [images[0].dimensions()[0] as f32, images[0].dimensions()[1] as f32],
-            }))
-            */
             .fragment_shader(fs.main_entry_point(), ())
             .depth_stencil_simple_depth()
             .render_pass(vulkano::framebuffer::Subpass::from(renderpass.clone(), 0).expect("failed to set render pass at pipe 01!"))
             .build(device.clone())
             .expect("failed to make pipe 01!"));
 
-        /* this will be moved into the uniform_buffer_manager and the materials
-        let tmp_uniform_data = tmp_uniform_buffer_pool.next(uniform_buffer);
-
-        //Create Set at frame time from buffer if needed
-        let set = Arc::new(PersistentDescriptorSet::start(tmp_pipeline.clone(), 0)
-            .add_buffer(tmp_uniform_data).expect("Failed to create descriptor set")
-            .build().expect("failed to build descriptor")
-        );
-        */
 
         //Create the Struct
         Pipeline{
@@ -89,37 +68,6 @@ impl Pipeline{
     {
         self.pipeline.clone()
     }
-
-/*
-    ///Returns the first uniform set
-    pub fn get_set_01(&self) ->
-    Arc<PersistentDescriptorSet<Arc<pipeline::GraphicsPipelineAbstract + Send + Sync>,
-    (
-        (), PersistentDescriptorSetBuf<vulkano::buffer::cpu_pool::CpuBufferPoolSubbuffer
-        <pipeline_infos::Main, Arc<vulkano::memory::pool::StdMemoryPool>>>
-    )>>
-    {
-        self.uniform_set_01.clone()
-    }
-
-    ///Recreate the local buffer as well as its set
-    pub fn update_uniform_buffer_01(&mut self, new_buffer: pipeline_infos::Main){
-
-        let uniform_buffer_subbuffer = self.uniform_buffer_pool_01.next(new_buffer);
-        self.recreate_set_01(uniform_buffer_subbuffer);
-    }
-*/
-/*
-    ///Recreates the set_01 with the new uniform_buffer, you can use `update_uniform_buffer_01` if you already have
-    ///a uniform buffer, or `update_all_uniform_buffer_01` if you are using a pipeline manager
-    fn recreate_set_01(&mut self, uniform_subbuffer: vulkano::buffer::cpu_pool::CpuBufferPoolSubbuffer<pipeline_infos::Main, Arc<vulkano::memory::pool::StdMemoryPool>>){
-        let new_set = Arc::new(PersistentDescriptorSet::start(self.pipeline.clone(), 0)
-            .add_buffer(uniform_subbuffer).expect("Failed to create descriptor set")
-            .build().expect("failed to build descriptor")
-        );
-        self.uniform_set_01 = new_set;
-    }
-*/
 }
 
 
@@ -130,8 +78,6 @@ mod vs {
     #[path = "data/test.vs"]
     struct Dummy;
 }
-
-
 
 mod fs {
 

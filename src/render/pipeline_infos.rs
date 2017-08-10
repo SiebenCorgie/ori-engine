@@ -14,5 +14,5 @@ pub struct Main {
 ///The definition of the "material textures"
 #[derive(Clone)]
 pub struct MaterialTextures {
-    pub albedo : f32,
+    pub albedo : i32,
 }

@@ -25,7 +25,7 @@ impl UniformManager{
     pub fn new(device: Arc<vulkano::device::Device>,
             queue: Arc<vulkano::device::Queue>) -> Self{
 
-        ///Create a uniform buffer with just [[f32; 4]; 4], the buffer will be updated bevore the first loop
+        //Create a uniform buffer with just [[f32; 4]; 4], the buffer will be updated bevore the first loop
         let world = pipeline_infos::Main {
             model : <na::Matrix4<f32>>::identity().into(),
             view : <na::Matrix4<f32>>::identity().into(),

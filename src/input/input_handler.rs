@@ -4,6 +4,7 @@ use std::thread;
 use input::KeyMap;
 use winit;
 
+
 #[derive(PartialEq, Eq)]
 pub enum InputHandlerStates {
     ShouldEnd,
@@ -47,7 +48,7 @@ impl InputHandler{
                 {
                     let mut state_lck = state_instance.lock().expect("failed to lock thread state");
                     if *state_lck == InputHandlerStates::ShouldEnd{
-                        println!("Break loop", );
+                        println!("STATUS: INPUT HANDLER: ending input thread", );
                         break;
                     }
                 }
@@ -66,11 +67,12 @@ impl InputHandler{
 
                                 },
                                 Moved(width, height) =>{
-                                    println!("Moved to {}/{}", width, height);
+                                    println!("STATUS: INPUT HANDLER: moved: {} / {}", width, height );
+
                                 },
                                 Closed => {
                                     current_keys.closed = true;
-                                    println!("Should close now", );
+                                    println!("STATUS: INPUT HANDLER: closing", );
                                 },
                                 DroppedFile(file_path) =>{
 

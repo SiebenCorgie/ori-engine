@@ -17,7 +17,7 @@ fn main() {
     ));
 
     //Input
-    let mut input_handler = input::Input::new();
+    let mut input_handler = input::Input::new(settings.clone());
     //Create a renderer with the input system
     let mut render = Arc::new(Mutex::new(render::renderer::Renderer::new(input_handler.get_events_loop(), settings.clone())));
     //Create a asset manager for the renderer

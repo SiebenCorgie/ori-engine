@@ -86,7 +86,7 @@ impl  AssetManager {
             view: self.get_camera().get_view_matrix().into(),
             proj: self.get_camera().get_perspective().into(),
         };
-        //in scope to prevent dead lock while udating material manager
+        //in scope to prevent dead lock while updating material manager
         {
             let uniform_manager = (*render_lck).get_uniform_manager();
             let mut uniform_manager_lck = uniform_manager.lock().expect("failed to lock uniform_man.");
@@ -116,8 +116,10 @@ impl  AssetManager {
     }
 
     ///Starts the asset thread, responsible for managing all assets
+    ///Might be removed because not neccessary
     pub fn start_asset_thread(&mut self){
-
+        /// NOTE has to be implemented
+        return
     }
 
     ///Returns a reference to the material manager
@@ -130,6 +132,7 @@ impl  AssetManager {
         self.active_main_scene.get_all_meshes()
     }
 
+    ///Returns all meshes in the view frustum of the currently active camera
     pub fn get_meshes_in_frustum(&mut self) -> Vec<Arc<Mutex<mesh::Mesh>>>{
         self.active_main_scene.get_meshes_in_frustum(&self.camera)
     }
@@ -138,12 +141,16 @@ impl  AssetManager {
     ///The meshes are stored as Arc<Mutex<T>>'s in the mesh manager the scene Is stored in the scene manager
     pub fn import_scene(&mut self, name: &str, path: &str){
 
-        //lock the renderer
         let render_inst = self.renderer.clone();
-
+        ///Lock in scope to prevent dead lock while importing
         let scene_ref_inst = self.scene_manager.get_scenes_reference();
-        let device_inst = {(*render_inst).lock().expect("failed to hold renderer lock").get_device().clone()};
-        let queue_inst = {(*render_inst).lock().expect("failed to hold renderer lock").get_queue().clone()};
+        
+        let device_inst = {
+            (*render_inst).lock().expect("failed to hold renderer lock").get_device().clone()
+        };
+        let queue_inst = {
+            (*render_inst).lock().expect("failed to hold renderer lock").get_queue().clone()
+        };
 
 
         //Pass the import params an a scene manager instance to the mesh manager

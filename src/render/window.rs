@@ -26,7 +26,10 @@ impl Window{
         let engine_settings_lck = engine_settings_inst.lock().expect("Failed to lock engine settings");
 
         let window = winit::WindowBuilder::new()
-        .with_dimensions(engine_settings_lck.window_width, engine_settings_lck.window_height)
+        .with_dimensions(
+            engine_settings_lck.get_dimensions()[0],
+            engine_settings_lck.get_dimensions()[1]
+        )
         .with_title("Thingy!")
         .with_decorations(true)
         .build_vk_surface(events_loop, instance.clone()).expect("failed to create window!");

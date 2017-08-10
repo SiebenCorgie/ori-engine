@@ -198,11 +198,7 @@ impl Material {
             .build().expect("failed to build set_02")
         );
 
-        //now drop the future to wait for gpu
-        //println!("STATUS: MATERIAL: Waiting for texture on gpu", );
-        //tex_future_albedo.cleanup_finished();
-        //println!("STATUS: MATERIAL: Finished waiting for all textures", );
-
+        //Additionaly lock the uniformanager to get the first global information
         let uniform_manager_isnt = uniform_manager.clone();
         let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
 
@@ -245,6 +241,7 @@ impl Material {
     }
 
     //TODO Setup changes of the materials, maybe make possible to only insert colors for albedo etc
+    ///Returns the name of the currently used pipeline
     pub fn get_pipeline_name(&self) -> String{
         self.pipeline.clone()
     }
@@ -282,59 +279,13 @@ impl Material {
     /// `pipeline_manager` of the used `renderer`
     pub fn get_set_01(&self) -> Arc<DescriptorSet + Send + Sync>
     {
-
-        /*
-        let pipe_man_in = self.pipeline_manager.clone();
-        let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
-
-        let uniform_manager_isnt = self.uniform_manager.clone();
-        let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
-
-        //TODO add set 02 for material information
-        let new_set = Arc::new(PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&self.pipeline.clone().to_string()), 0)
-            .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
-            .build().expect("failed to build descriptor")
-        );
-
-        //println!("Returned set 01", );
-        //return the new set
-        new_set
-        */
-        //println!("STATUS: MATERIAL: Returning saved set_01", );
         self.set_01.clone()
     }
 
     ///Returns the second set which holds the material textures
     pub fn get_set_02(&self) -> Arc<DescriptorSet + Send + Sync>
     {
-
-        /*
-        //lock the pipe
-        let pipe_man_in = self.pipeline_manager.clone();
-        let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
-
-
-        let set = Arc::new(
-            PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&self.pipeline.clone().to_string()), 1)
-            .add_sampled_image(self.t_albedo.clone(), self.sampler_albedo.clone())
-            .expect("failed to add sampled albedo")
-            .build().expect("failed to build set_02")
-        );
-
-        //println!("Return set 02", );
-        //return the set
-        set
-        */
-        //println!("STATUS: MATERIAL: Returning saved set_02", );
-
         self.set_02.clone()
-
-    }
-
-    ///Cleans the future objects of the textures
-    pub fn clean(&self){
 
     }
 

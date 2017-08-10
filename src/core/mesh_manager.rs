@@ -21,6 +21,7 @@ impl MeshManager {
         }
     }
 
+    ///Adds a mesh to the manager
     pub fn add_mesh(&mut self, mesh: mesh::Mesh){
 
         let meshes_instance = self.meshes.clone();
@@ -31,6 +32,15 @@ impl MeshManager {
 
     }
 
+    ///Imports a mesh in a seperate thread.
+    ///This will do two things:
+    ///
+    /// 1st. Import all sub meshes of this file in seperate `Arc<Mutex<Mesh>>` objects
+    ///
+    /// 2nd. Create a scene with all meshes stack as children below the root node
+    ///
+    /// By doing this the sub.meshes can be reused to create new scene and a complex scene with
+    /// different objects stays in one sub-scene
     pub fn import_mesh(&mut self, name: &str, path: &str, device: Arc<vulkano::device::Device>,
         queue: Arc<vulkano::device::Queue>,
         scene_manager_scenes: Arc<Mutex<Vec<node::GenericNode>>>

@@ -48,7 +48,7 @@ impl InputHandler{
                 {
                     let mut state_lck = state_instance.lock().expect("failed to lock thread state");
                     if *state_lck == InputHandlerStates::ShouldEnd{
-                        println!("STATUS: INPUT HANDLER: ending input thread", );
+                        //println!("STATUS: INPUT HANDLER: ending input thread", );
                         break;
                     }
                 }
@@ -67,12 +67,12 @@ impl InputHandler{
 
                                 },
                                 Moved(width, height) =>{
-                                    println!("STATUS: INPUT HANDLER: moved: {} / {}", width, height );
+                                    //println!("STATUS: INPUT HANDLER: moved: {} / {}", width, height );
 
                                 },
                                 Closed => {
                                     current_keys.closed = true;
-                                    println!("STATUS: INPUT HANDLER: closing", );
+                                    //println!("STATUS: INPUT HANDLER: closing", );
                                 },
                                 DroppedFile(file_path) =>{
 

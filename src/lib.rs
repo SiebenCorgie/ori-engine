@@ -32,6 +32,13 @@ pub mod tools;
 pub mod input;
 
 
+//Some Helper functions
+///Returns an runtime error
+pub fn rt_error(location: &str, content: &str){
+    println!("ERROR AT: {} FOR: {}", location, content);
+}
+
+
 #[cfg(test)]
 mod tests {
     #[test]

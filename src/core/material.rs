@@ -131,10 +131,10 @@ impl Material {
                     Some(queue.family()),
                     queue.clone()).expect("failed to create immutable image")
             };
-            println!("STATUS: MATERIAL: droping future", );
+            //println!("STATUS: MATERIAL: droping future", );
             texture_albedo_tmp
         };
-        println!("STATUS: MATERIAL: Now with fully loaded albedo", );
+        //println!("STATUS: MATERIAL: Now with fully loaded albedo", );
 
 
         //Now load a default texture
@@ -154,7 +154,7 @@ impl Material {
                     queue.clone()).expect("failed to create immutable image")
             };
 
-            println!("STATUS: MATERIAL: Returning Normal", );
+            //println!("STATUS: MATERIAL: Returning Normal", );
             texture_nrm_tmp
         };
 
@@ -174,7 +174,7 @@ impl Material {
                     Some(queue.family()),
                     queue.clone()).expect("failed to create immutable image")
             };
-            println!("STATUS: MATERIAL: Returning physical", );
+            //println!("STATUS: MATERIAL: Returning physical", );
             texture_physical_tmp
         };
 
@@ -185,7 +185,7 @@ impl Material {
         let pipe_man_in = pipeline_manager.clone();
         let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
 
-        println!("STATUS: MATERIAL: Creating set 02 for the first time", );
+        //println!("STATUS: MATERIAL: Creating set 02 for the first time", );
         let set_02 = Arc::new(
             PersistentDescriptorSet::start(
             (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 1)
@@ -199,22 +199,22 @@ impl Material {
         );
 
         //now drop the future to wait for gpu
-        println!("STATUS: MATERIAL: Waiting for texture on gpu", );
+        //println!("STATUS: MATERIAL: Waiting for texture on gpu", );
         //tex_future_albedo.cleanup_finished();
-        println!("STATUS: MATERIAL: Finished waiting for all textures", );
+        //println!("STATUS: MATERIAL: Finished waiting for all textures", );
 
         let uniform_manager_isnt = uniform_manager.clone();
         let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
 
         //TODO add set 02 for material information
-        println!("STATUS: MATERIAL: Creating set 01 for the first time", );
+        //println!("STATUS: MATERIAL: Creating set 01 for the first time", );
         let set_01 = Arc::new(PersistentDescriptorSet::start(
             (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 0)
             .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
             .build().expect("failed to build descriptor")
         );
 
-        println!("STATUS: MATERIAL: Created material!", );
+        //println!("STATUS: MATERIAL: Created material!", );
 
         Material{
             name: String::from(name),
@@ -251,29 +251,29 @@ impl Material {
 
     ///Updates all sets tied to this material
     pub fn update(&mut self){
-        println!("STATUS: MATERIAL: In material, updating now", );
+        //println!("STATUS: MATERIAL: In material, updating now", );
         self.recreate_set_01();
-        println!("STATUS: MATERIAL: Finished updating", );
+        //println!("STATUS: MATERIAL: Finished updating", );
         //self.recreate_textures_and_samplers();
     }
 
     ///Recreates set_01 based on the current unfiorm_manager information
     pub fn recreate_set_01(&mut self){
-        println!("STATUS: MATERIAL: Trying to lock pipeline", );
+        //println!("STATUS: MATERIAL: Trying to lock pipeline", );
         let pipe_man_in = self.pipeline_manager.clone();
         let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
 
-        println!("STATUS: MATERIAL: Trying to locj uniform manager", );
+        //println!("STATUS: MATERIAL: Trying to locj uniform manager", );
         let uniform_manager_isnt = self.uniform_manager.clone();
         let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
-        println!("STATUS: MATERIAL: Generation new set_01", );
+        //println!("STATUS: MATERIAL: Generation new set_01", );
         //TODO add set 02 for material information
         let new_set = Arc::new(PersistentDescriptorSet::start(
             (*pipe_lck).get_pipeline_by_name(&self.pipeline.clone().to_string()), 0)
             .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
             .build().expect("failed to build descriptor")
         );
-        println!("STATUS: MATERIAL: Returning new set to self", );
+        //println!("STATUS: MATERIAL: Returning new set to self", );
         //return the new set
         self.set_01 = new_set;
     }
@@ -297,11 +297,11 @@ impl Material {
             .build().expect("failed to build descriptor")
         );
 
-        println!("Returned set 01", );
+        //println!("Returned set 01", );
         //return the new set
         new_set
         */
-        println!("STATUS: MATERIAL: Returning saved set_01", );
+        //println!("STATUS: MATERIAL: Returning saved set_01", );
         self.set_01.clone()
     }
 
@@ -323,11 +323,11 @@ impl Material {
             .build().expect("failed to build set_02")
         );
 
-        println!("Return set 02", );
+        //println!("Return set 02", );
         //return the set
         set
         */
-        println!("STATUS: MATERIAL: Returning saved set_02", );
+        //println!("STATUS: MATERIAL: Returning saved set_02", );
 
         self.set_02.clone()
 

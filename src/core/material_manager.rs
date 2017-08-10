@@ -27,14 +27,14 @@ impl MaterialManager {
                     .expect("Failed to lock pipeline manager in material manager creation")
                     .has_pipeline("DefaultPipeline")
                 {
-                    println!("STATUS: MATERIAL_MANAGER: Oups, this programm has no default pipeline, PANIC!", );
+                    //println!("STATUS: MATERIAL_MANAGER: Oups, this programm has no default pipeline, PANIC!", );
                     panic!();
                 }
             }
         }
 
 
-        println!("STATUS: MATERIAL_MANAGER: Checked pipeline for default pipeline in material manager creation", );
+        //println!("STATUS: MATERIAL_MANAGER: Checked pipeline for default pipeline in material manager creation", );
         //Creates a fallback material to which the programm can fallback in case of a "materal not found"
 
         let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
@@ -60,11 +60,11 @@ impl MaterialManager {
 
     ///Updates all materials
     pub fn update(&mut self){
-        println!("STATUS: MATERIAL_MANAGER: In material manager", );
+        //println!("STATUS: MATERIAL_MANAGER: In material manager", );
         for (k,i) in self.material_vault.iter_mut(){
             let i_inst = i.clone();
             let mut i_lck = i_inst.lock().expect("failed to lock material for updating");
-            println!("STATUS: MATERIAL_MANAGER: Updating: {}", k);
+            //println!("STATUS: MATERIAL_MANAGER: Updating: {}", k);
             (*i_lck).update();
         }
     }
@@ -82,7 +82,7 @@ impl MaterialManager {
         match getter{
             Some(material) => return Some(material.clone()),
             None => {
-                println!("STATUS: MATERIAL_MANAGER: Could not find material: {}", name.clone());
+                //println!("STATUS: MATERIAL_MANAGER: Could not find material: {}", name.clone());
                 return None
             }
         }

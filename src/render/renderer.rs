@@ -6,6 +6,8 @@ use core::camera::Camera;
 use render::window;
 use core::engine_settings;
 
+use rt_error;
+
 use na;
 
 use vulkano;
@@ -72,10 +74,10 @@ impl Renderer {
         extensions.ext_debug_report = true;
 
         //Add debuging layer
-        println!("STATUS: RENDER CORE: List of Vulkan debugging layers available to use: ", );
+        //println!("STATUS: RENDER CORE: List of Vulkan debugging layers available to use: ", );
         let mut layers = vulkano::instance::layers_list().expect("failed to get layer list");
         while let Some(l) = layers.next() {
-            println!("STATUS: RENDER: \t{}", l.name());
+            //println!("STATUS: RENDER: \t{}", l.name());
         }
 
         // NOTE: To simplify the example code we won't verify these layer(s) are actually in the layers list:
@@ -93,7 +95,7 @@ impl Renderer {
             .expect("failed to lock engine settings");
 
             (*engine_settings_lck).clone()
-        }
+        };
 
         //Register debuging messages
         let mut all = MessageTypes {
@@ -129,13 +131,13 @@ impl Renderer {
             } else {
                 panic!("no-impl");
             };
-            println!("STATUS: RENDER: {} {}: {}", msg.layer_prefix, ty, msg.description);
+            //println!("STATUS: RENDER: {} {}: {}", msg.layer_prefix, ty, msg.description);
         }).ok();
 
         //Get us a graphics card
         let physical = vulkano::instance::PhysicalDevice::enumerate(&instance)
                                 .next().expect("no device available");
-        println!("STATUS: RENDER: Using device: {} (type: {:?})", physical.name(), physical.ty());
+        //println!("STATUS: RENDER: Using device: {} (type: {:?})", physical.name(), physical.ty());
         //copy the events loop for the window creation
         let events_loop_instance = events_loop.clone();
         let events_loop_unlck = events_loop_instance
@@ -367,7 +369,7 @@ impl Renderer {
     ///Renders the scene with the parameters supplied by the asset_manager
     pub fn render(&mut self, asset_manager: &mut asset_manager::AssetManager){
 
-        println!("STATUS: RENDER CORE: Starting render ", );
+        //println!("STATUS: RENDER CORE: Starting render ", );
         //DEBUG
         let start_time = Instant::now();
 
@@ -470,7 +472,7 @@ impl Renderer {
                     (*unlocked_material).get_set_02().clone()
                 };
 
-                println!("STATUS: RENDER CORE: Adding to tmp cmd buffer", );
+                //println!("STATUS: RENDER CORE: Adding to tmp cmd buffer", );
 
                 tmp_cmd_buffer = Some(cb
                     .draw_indexed(
@@ -508,7 +510,7 @@ impl Renderer {
         .end_render_pass().expect("failed to end")
         .build().expect("failed to end");;
 
-        println!("STATUS: RENDER CORE: Trying flush", );
+        //println!("STATUS: RENDER CORE: Trying flush", );
 
         //TODO find a better methode then Option<Box<GpuFuture>>
         let future = self.previous_frame
@@ -529,8 +531,6 @@ impl Renderer {
         //DEBUG
         let fps_time = start_time.elapsed().subsec_nanos();
         println!("STATUS: RENDER: FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
-
-
     }
 
     ///Returns the uniform manager

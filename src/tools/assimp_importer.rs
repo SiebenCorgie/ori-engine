@@ -49,7 +49,7 @@ impl Importer for AssimpImporter {
                     //Create a dummy mesh to be stored
                     let tmp_name = String::from(name.clone()) + "_" + &mesh_append.to_string();
                     let mut tmp_mesh = mesh::Mesh::new(&tmp_name.clone(), device.clone(), queue.clone());
-                    println!("Adding {} to tmp_root", tmp_name);
+                    //println!("Adding {} to tmp_root", tmp_name);
                     mesh_append += 1;
                     //Create empty create_info for the mesh
                     let mut tmp_vertices: Vec<Vertex> = Vec::new();
@@ -86,7 +86,7 @@ impl Importer for AssimpImporter {
                                     tex = [vec3[0], vec3[1]];
                                 },
                             None =>{
-                                println!("Failed to find uv_coords on index: {} of mesh: {}", index.clone(), tmp_name);
+                                //println!("Failed to find uv_coords on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
                                 tex = na::Vector2::new(1.0, 1.0).into();
                             }
@@ -96,7 +96,7 @@ impl Importer for AssimpImporter {
                         match mesh.get_normal(index){
                             Some(normal) => norm = normal.into(),
                             None => {
-                                println!("Failed to find normals on index: {} of mesh: {}", index.clone(), tmp_name);
+                                //println!("Failed to find normals on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
                                 norm = na::Vector3::new(1.0, 1.0, 1.0).into();
                             },
@@ -105,7 +105,7 @@ impl Importer for AssimpImporter {
                         match mesh.get_tangent(index){
                             Some(tangent) => tang = tangent.into(),
                             None => {
-                                println!("Failed to find tangent on index: {} of mesh: {}", index.clone(), tmp_name);
+                                //println!("Failed to find tangent on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
                                 tang = na::Vector3::new(1.0, 1.0, 1.0).into();
                             },
@@ -115,7 +115,7 @@ impl Importer for AssimpImporter {
                         col = [0.0; 3];
                         /* THERE IS CURRENTLY NO VERTEX COLOR SUPPORT
                         if mesh.has_vertex_colors(index as usize){
-                            //println!("has color");
+                            ////println!("has color");
                             col = mesh.get_tangent(index).unwrap().into();
                         }
                         */

@@ -180,7 +180,7 @@ impl GenericNode{
     pub fn add_node_at_sub_node(&mut self, node_name: &str,  node_to_add: GenericNode){
         let node = self.get_node(node_name);
         match node{
-            None => println!("ERROR: couldn't find node in: 'add_node at sub node' for name {}",node_to_add.name.clone() ),
+            None => println!("ERROR: NODE: couldn't find node for name {}",node_to_add.name.clone() ),
             Some(nd)=> nd.add_node(node_to_add),
         }
 

@@ -14,6 +14,7 @@ use core::camera::Camera;
 use core::camera::DefaultCamera;
 use core::engine_settings;
 
+use rt_error;
 
 use render::renderer;
 use render::pipeline;
@@ -71,7 +72,7 @@ impl  AssetManager {
     ///Updates all child components
     pub fn update(&mut self){
 
-        println!("STATUS: ASSET_MANAGER: Trying to update", );
+        //println!("STATUS: ASSET_MANAGER: Trying to update", );
         //Update uniform manager
         let render_int = self.renderer.clone();
         let render_lck = render_int.lock().expect("failed to lock renderer");
@@ -93,10 +94,10 @@ impl  AssetManager {
         }
 
 
-        println!("STATUS: ASSET_MANAGER: Now I'll update the materials", );
+        //println!("STATUS: ASSET_MANAGER: Now I'll update the materials", );
         //Update materials
         self.material_manager.update();
-        println!("STATUS: ASSET_MANAGER: Finished materials", );
+        //println!("STATUS: ASSET_MANAGER: Finished materials", );
     }
 
     ///Returns the camera in use TODO this will be managed by a independent camera manager in the future
@@ -164,7 +165,7 @@ impl  AssetManager {
                 //TODO make this to an Arc<GenericNode>
                 self.active_main_scene.add_node(sc.clone());
             },
-            None => println!("STATUS: ASSET_MANAGER: Could not find scene with name: {}", name.clone()),
+            None => rt_error("ASSET_MANAGER", &("Could not find scene with name".to_string() + name.clone()).to_string()),
         }
     }
 

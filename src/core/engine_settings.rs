@@ -1,5 +1,6 @@
 
 ///The struc with the information
+#[derive(Clone)]
 pub struct EngineSettings {
     pub app_name: String,
 

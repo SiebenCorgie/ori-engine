@@ -12,7 +12,9 @@ fn main() {
     //Settings
     let settings = Arc::new(Mutex::new(core::engine_settings::EngineSettings::new()
     .with_dimensions(800, 600)
-    .with_name("Teddy the bear")));
+    .with_name("Teddy the bear")
+    .set_vulkan_silent()
+    ));
 
     //Input
     let mut input_handler = input::Input::new();
@@ -36,21 +38,21 @@ fn main() {
         if adding_status == false && asset_manager.has_scene("Ape"){
             asset_manager.add_scene_to_main_scene("Ape");
             adding_status = true;
-            println!("STATUS: GAME: added all apes", );
+            //println!("STATUS: GAME: added all apes", );
         }
-        println!("STATUS: GAME: Starting loop in game", );
+        //println!("STATUS: GAME: Starting loop in game", );
         //Update the content of the render_manager
         asset_manager.update();
-        println!("STATUS: GAME: Updated all assets", );
+        //println!("STATUS: GAME: Updated all assets", );
         let render_instance = render.clone();
         (*render).lock().expect("Failed to lock renderer for rendering").render(&mut asset_manager);
         ///Check if loop should close
-        println!("STATUS: GAME: Rendered!", );
+        //println!("STATUS: GAME: Rendered!", );
         let input_inst = input_handler.key_map.clone();
         let input_lck = input_inst.lock().expect("Failed to lock keymap while reading");
-        println!("STATUS: GAME: Processed Input", );
+        //println!("STATUS: GAME: Processed Input", );
         if input_lck.closed{
-            println!("STATUS: GAME: Shuting down", );
+            //println!("STATUS: GAME: Shuting down", );
             input_handler.end();
             break;
         }

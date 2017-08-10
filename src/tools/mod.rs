@@ -8,10 +8,6 @@ use core::mesh;
 
 /// an importer via the assimp library
 pub mod assimp_importer;
-/// an small modeule to handle debug, error and warning messages
-pub mod message_handler;
-/// an small collection of debug settings, should, and can not be changed after copying
-pub mod debug_settings;
 
 
 ///A trait every importer should implement

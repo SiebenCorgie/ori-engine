@@ -54,10 +54,10 @@ impl PipelineManager{
 
     ///Returns a pipeline by name, if not existend, returns the default pipeline
     pub fn get_pipeline_by_name(&mut self, name: &str) -> Arc<GraphicsPipelineAbstract + Send + Sync>{
-        println!("SEARCHING FOR PIPELINE: {}", name.clone() );
+        //println!("SEARCHING FOR PIPELINE: {}", name.clone() );
         match self.pipelines.get_mut(&String::from(name)){
             Some(ref mut pipe) => return pipe.get_pipeline_ref(),
-            None => println!("Could not find pipe {}", name.clone()),
+            None => println!("STATUS: PIPELINE MANAGER: Could not find pipe {}", name.clone()),
         }
         self.get_default_pipeline()
     }

@@ -22,15 +22,14 @@ pub struct Vertex {
     color: [f32; 3],
 }
 
-unsafe impl Send for Vertex {}
-unsafe impl Sync for Vertex {}
+//unsafe impl Send for Vertex {}
+//unsafe impl Sync for Vertex {}
 
 //Implements the vulkano::vertex trait on Vertex
 impl_vertex!(Vertex, position, tex_coord, normal, tangent, color);
 
 //TODO
 //Every mesh needs its own indice and vertex buffer plus its pipeline to be drawn
-
 impl Vertex{
     ///Creates a new Vertex
     pub fn new(

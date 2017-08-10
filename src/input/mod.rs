@@ -6,6 +6,8 @@ use vulkano_win;
 use vulkano_win::VkSurfaceBuild;
 use winit;
 
+use core::engine_settings;
+
 ///a sub mod who will read the input since the last loop
 ///and store the key values in a struct
 pub mod input_handler;
@@ -15,6 +17,10 @@ pub mod input_handler;
 ///The struct stores the current pressed keys
 #[derive(Debug, Copy, Clone)]
 pub struct KeyMap {
+
+    ///Window info (usually not needed recreation is handled by renderer)
+    window_dimensions: [u32; 2],
+
     ///Global States
     pub closed: bool
 
@@ -23,6 +29,9 @@ pub struct KeyMap {
 impl KeyMap{
     pub fn new() -> Self{
         KeyMap{
+            //window info
+            window_dimensions: [100, 100],
+            //state
             closed: false,
 
         }
@@ -34,19 +43,23 @@ impl KeyMap{
 pub struct Input {
     input_handler: input_handler::InputHandler,
     events_loop: Arc<Mutex<winit::EventsLoop>>,
+    settings: Arc<Mutex<engine_settings::EngineSettings>>,
     pub key_map: Arc<Mutex<KeyMap>>,
 }
 
 
 impl Input{
     ///Creates a new Input instance
-    pub fn new() -> Self{
+    pub fn new(settings: Arc<Mutex<engine_settings::EngineSettings>>) -> Self{
 
         let key_map_inst = Arc::new(Mutex::new(KeyMap::new()));
+
         let events_loop = Arc::new(Mutex::new(winit::EventsLoop::new()));
+
         Input{
-            input_handler: input_handler::InputHandler::new(key_map_inst.clone(), events_loop.clone()),
+            input_handler: input_handler::InputHandler::new(key_map_inst.clone(), events_loop.clone(), settings.clone()),
             events_loop: events_loop,
+            settings: settings,
             key_map: key_map_inst.clone(),
         }
     }

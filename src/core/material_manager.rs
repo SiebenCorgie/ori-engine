@@ -109,13 +109,4 @@ impl MaterialManager {
         self.material_vault.contains_key(&String::from(name))
     }
 
-    ///Cleans all unused resources
-    pub fn clean(&mut self){
-        for (k,i) in self.material_vault.iter_mut(){
-            let i_inst = i.clone();
-            let i_lck = i_inst.lock().expect("failed to lock material for cleaning");
-            (*i_lck).clean();
-        }
-    }
-
 }

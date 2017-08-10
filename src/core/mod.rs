@@ -58,6 +58,7 @@ share one material ==> Using a String value for now. //NOTE DONE
     //Uniform buffer and set corresbonding set
     //TODO Might change the Sets to a Vec<Set> and the Unfiorm_pools as well (maybe a fixed [sets; n] vec)
 //TODO NOW (2017_07_19) Add material Parameters to make different colors to test material system
+//NOTE moved the set Generation to the materials, this way we reuse most sets where possible
 2nd Outsource Renderer from the example to the renderer mod DONE
 3rd Render on main thread, manage materials on event on different thread,
 manage objects on secondary thread, manage loading on n-threads (per object?)

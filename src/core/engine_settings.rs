@@ -1,9 +1,14 @@
+
 ///The struc with the information
 pub struct EngineSettings {
     pub app_name: String,
 
     pub window_width: u32,
     pub window_height: u32,
+
+    //Debug settings:
+    silent_vulkan: bool,
+
 }
 
 impl EngineSettings{
@@ -12,7 +17,18 @@ impl EngineSettings{
             app_name: String::from("Ori-Engine"),
             window_width: 800,
             window_height: 600,
+
+            silent_vulkan: false,
         }
+    }
+
+    pub fn set_vulkan_silent(mut self) -> Self{
+        self.silent_vulkan = true;
+        self
+    }
+
+    pub fn vulkan_silence(&self) -> bool{
+        self.silent_vulkan.clone()
     }
 
     pub fn with_dimensions(mut self, width: u32, height: u32) -> Self{

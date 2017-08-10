@@ -19,6 +19,8 @@ use vulkano::framebuffer;
 use vulkano::sync::GpuFuture;
 use vulkano_win;
 use vulkano_win::VkSurfaceBuild;
+use vulkano::instance::debug::{DebugCallback, MessageTypes};
+
 use winit;
 
 use std::sync::{Arc,Mutex};
@@ -34,6 +36,7 @@ pub struct Renderer  {
     //Vulkano data
     extensions: vulkano::instance::InstanceExtensions,
     instance: Arc<vulkano::instance::Instance>,
+    debug_callback: Option<DebugCallback>,
     //window: vulkano_win::Window,
     window: window::Window,
     device: Arc<vulkano::device::Device>,
@@ -53,9 +56,6 @@ pub struct Renderer  {
     engine_settings: Arc<Mutex<engine_settings::EngineSettings>>,
     uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
 
-
-
-
 }
 
 impl Renderer {
@@ -67,14 +67,75 @@ impl Renderer {
         //Init Vulkan
 
         //Check for needed extensions
-        let extensions = vulkano_win::required_extensions();
+        let mut extensions = vulkano_win::required_extensions();
+        //Add the debug extension
+        extensions.ext_debug_report = true;
+
+        //Add debuging layer
+        println!("STATUS: RENDER CORE: List of Vulkan debugging layers available to use: ", );
+        let mut layers = vulkano::instance::layers_list().expect("failed to get layer list");
+        while let Some(l) = layers.next() {
+            println!("STATUS: RENDER: \t{}", l.name());
+        }
+
+        // NOTE: To simplify the example code we won't verify these layer(s) are actually in the layers list:
+        let layer = "VK_LAYER_LUNARG_standard_validation";
+        let layers = vec![&layer];
+
         //Create a vulkan instance from these extensions
-        let instance = vulkano::instance::Instance::new(None, &extensions, None)
+        let instance = vulkano::instance::Instance::new(None, &extensions, layers)
         .expect("failed to create instance");
+
+        let engine_settings_wrk = {
+            let engine_settings_isnt = engine_settings.clone();
+            let engine_settings_lck = engine_settings_isnt
+            .lock()
+            .expect("failed to lock engine settings");
+
+            (*engine_settings_lck).clone()
+        }
+
+        //Register debuging messages
+        let mut all = MessageTypes {
+            error: true,
+            warning: true,
+            performance_warning: true,
+            information: true,
+            debug: true,
+        };
+
+        //if vulkan is set silent, show no messages
+        if engine_settings_wrk.vulkan_silence(){
+            all = MessageTypes {
+                error: false,
+                warning: false,
+                performance_warning: false,
+                information: false,
+                debug: false,
+            };
+        }
+
+        let _debug_callback = DebugCallback::new(&instance, all, |msg| {
+            let ty = if msg.ty.error {
+                "error"
+            } else if msg.ty.warning {
+                "warning"
+            } else if msg.ty.performance_warning {
+                "performance_warning"
+            } else if msg.ty.information {
+                "information"
+            } else if msg.ty.debug {
+                "debug"
+            } else {
+                panic!("no-impl");
+            };
+            println!("STATUS: RENDER: {} {}: {}", msg.layer_prefix, ty, msg.description);
+        }).ok();
+
         //Get us a graphics card
         let physical = vulkano::instance::PhysicalDevice::enumerate(&instance)
                                 .next().expect("no device available");
-        println!("Using device: {} (type: {:?})", physical.name(), physical.ty());
+        println!("STATUS: RENDER: Using device: {} (type: {:?})", physical.name(), physical.ty());
         //copy the events loop for the window creation
         let events_loop_instance = events_loop.clone();
         let events_loop_unlck = events_loop_instance
@@ -194,7 +255,7 @@ impl Renderer {
         let pipeline_manager = Arc::new(
             Mutex::new(
                 pipeline_manager::PipelineManager::new(
-                    device.clone(), queue.clone(), renderpass.clone(), images.clone()
+                    device.clone(), queue.clone(), renderpass.clone(), images.clone(),
                 )
             )
         );
@@ -206,6 +267,7 @@ impl Renderer {
             //Vulkano data
             extensions: extensions,
             instance: instance.clone(),
+            debug_callback: _debug_callback,
             window: window,
             device: device,
             queues: queues,
@@ -304,11 +366,13 @@ impl Renderer {
 
     ///Renders the scene with the parameters supplied by the asset_manager
     pub fn render(&mut self, asset_manager: &mut asset_manager::AssetManager){
+
+        println!("STATUS: RENDER CORE: Starting render ", );
         //DEBUG
         let start_time = Instant::now();
 
         //Clean the last frame for starting a new one
-        self.previous_frame.as_mut().unwrap().cleanup_finished();
+        self.previous_frame.as_mut().expect("failed to clean previous frame").cleanup_finished();
 
 
         //If found out in last frame that images are out of sync, generate new ones
@@ -363,10 +427,6 @@ impl Renderer {
 
             //Draw
                 //get all meshes, later in view frustum based on camera
-
-
-
-
             let mut index = 0;
             for i in asset_manager.get_all_meshes().iter(){
 
@@ -402,8 +462,15 @@ impl Renderer {
                 };
 
                 let set_01 = {
-                    (*unlocked_material).get_set_01()
+                    (*unlocked_material).get_set_01().clone()
                 };
+
+
+                let set_02 = {
+                    (*unlocked_material).get_set_02().clone()
+                };
+
+                println!("STATUS: RENDER CORE: Adding to tmp cmd buffer", );
 
                 tmp_cmd_buffer = Some(cb
                     .draw_indexed(
@@ -426,7 +493,7 @@ impl Renderer {
                             self.device.clone(), self.queue.clone()
                         ).clone(),
 
-                        set_01,
+                        (set_01.clone(), set_02.clone()),
 
                         ()
                     ).expect("Failed to draw in command buffer!")
@@ -441,21 +508,28 @@ impl Renderer {
         .end_render_pass().expect("failed to end")
         .build().expect("failed to end");;
 
+        println!("STATUS: RENDER CORE: Trying flush", );
+
         //TODO find a better methode then Option<Box<GpuFuture>>
-        let future = self.previous_frame.take().unwrap().join(acquire_future)
-                      .then_execute(
-                          self.queue.clone(), command_buffer
-                      ).expect("failed to execute buffer!")
-                      .then_swapchain_present(
-                          self.queue.clone(), self.swapchain.clone(), image_num
-                      )
-                      .then_signal_fence_and_flush().expect("failed to flush");
+        let future = self.previous_frame
+        .take()
+        .expect("failed to take previous frame")
+        .join(acquire_future)
+        .then_execute(
+            self.queue.clone(), command_buffer
+        )
+        .expect("failed to execute buffer!")
+        .then_swapchain_present(
+            self.queue.clone(), self.swapchain.clone(), image_num
+        )
+        .then_signal_fence_and_flush().expect("failed to flush");
 
         self.previous_frame = Some(Box::new(future) as Box<_>);
 
         //DEBUG
         let fps_time = start_time.elapsed().subsec_nanos();
-        println!("FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+        println!("STATUS: RENDER: FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+
 
     }
 
@@ -490,13 +564,16 @@ impl Renderer {
     pub fn get_material_instances(&self) -> (
         Arc<Mutex<pipeline_manager::PipelineManager>>,
         Arc<Mutex<uniform_manager::UniformManager>>,
-        Arc<vulkano::device::Device>
-    ){
+        Arc<vulkano::device::Device>,
+        Arc<vulkano::device::Queue>,
+        )
+    {
         let pipe_man = self.pipeline_manager.clone();
         let uni_man = self.uniform_manager.clone();
         let device = self.device.clone();
+        let queue = self.queue.clone();
 
-        (pipe_man, uni_man, device)
+        (pipe_man, uni_man, device, queue)
     }
 
 

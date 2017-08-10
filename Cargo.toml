@@ -5,9 +5,9 @@ authors = ["Siebencorgie <siebencorgie@googlemail.com>"]
 
 [dependencies]
 winit = "0.7.1"
-vulkano = "0.5.6"
-vulkano-shader-derive = "0.5.6"
-vulkano-win = "0.5.6"
+vulkano = { path = "lib/vulkano/vulkano" }
+vulkano-shader-derive = { path = "lib/vulkano/vulkano-shader-derive" }
+vulkano-win = { path = "lib/vulkano/vulkano-win" }
 
 image = "0.15.0"
 nalgebra = "0.12.3"

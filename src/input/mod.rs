@@ -11,10 +11,10 @@ use winit;
 pub mod input_handler;
 
 
+
 ///The struct stores the current pressed keys
 #[derive(Debug, Copy, Clone)]
 pub struct KeyMap {
-
     ///Global States
     pub closed: bool
 

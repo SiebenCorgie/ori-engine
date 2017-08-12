@@ -9,14 +9,14 @@ A small engine written in rust + Vulkan.
 The target of this engine is, to have a safe and fast, but still visually
 beautiful engine which works on most modern systems.
 The speed should be supplied by the parallel nature of the engine.
-The engine will have at leas 4 different loops which will manage different
+The engine will have at least 4 different loops which will manage different
 aspects of the engine and its systems.
  1. rendering loop
  2. asset management
  3. physics
  4. input
 
-In addition the system will spawn thread for workloads like config-loading
+In addition the system will spawn threads for workloads like config-loading
 or mesh importing.
 
 
@@ -29,8 +29,7 @@ The engine should be safe because of two major points.
 
 ### Graphical target
 
-I use Open-Gl a bit before, however the graphical target is defined by these key
-points:
+The graphical target is defined by these keyn points:
 
  - PBR shading
  - normal mapping
@@ -49,9 +48,9 @@ material system with different Shader components.
 ### Asset management
 
 All of the assets will be grouped in different managers as `Arc<Mutex<T>>`
-components. For instance all meshes.
-There is a scene manager who safes different hierarchical "scenes" of those
-assets. For instance a light which is parent to a mesh and a camera which is
+components, for instance all meshes.
+There is a scene manager who saves different hierarchical "scenes" of those
+assets. For example a light which is parent to a mesh and a camera which is
 saved as a scene "wall_lamp".
 This has the advantage of being able to modify one of the meshes in the mesh
 manager and simultaneously changing all of its references as well.

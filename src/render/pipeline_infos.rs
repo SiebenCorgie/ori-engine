@@ -1,4 +1,7 @@
-///The definition of the "model info"
+use vulkano;
+
+///The definition of the "model info" responsible for handeling the
+/// model, view and projection matrix
 #[derive(Clone)]
 pub struct Main {
     pub model : [[f32;4];4],

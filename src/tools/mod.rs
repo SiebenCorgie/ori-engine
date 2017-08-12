@@ -9,6 +9,7 @@ use core::mesh;
 /// an importer via the assimp library
 pub mod assimp_importer;
 
+
 ///A trait every importer should implement
 pub trait Importer {
     ///Returns an importer object

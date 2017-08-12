@@ -2,4 +2,6 @@
 **/*.rs.bk
 **/Cargo.lock
 Cargo.lock
-lib/*
+**/lib/
+examples/simple_scene/target/
+examples/simple_scene/Cargo.lock

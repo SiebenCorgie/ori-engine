@@ -21,6 +21,7 @@ impl MeshManager {
         }
     }
 
+    ///Adds a mesh to the manager
     pub fn add_mesh(&mut self, mesh: mesh::Mesh){
 
         let meshes_instance = self.meshes.clone();
@@ -31,6 +32,15 @@ impl MeshManager {
 
     }
 
+    ///Imports a mesh in a seperate thread.
+    ///This will do two things:
+    ///
+    /// 1st. Import all sub meshes of this file in seperate `Arc<Mutex<Mesh>>` objects
+    ///
+    /// 2nd. Create a scene with all meshes stack as children below the root node
+    ///
+    /// By doing this the sub.meshes can be reused to create new scene and a complex scene with
+    /// different objects stays in one sub-scene
     pub fn import_mesh(&mut self, name: &str, path: &str, device: Arc<vulkano::device::Device>,
         queue: Arc<vulkano::device::Queue>,
         scene_manager_scenes: Arc<Mutex<Vec<node::GenericNode>>>
@@ -46,6 +56,7 @@ impl MeshManager {
 
         let thread = thread::spawn(move ||{
 
+            println!("STATUS: MESH_MANAGER: Spawned thread with id: {:?}", thread::current().id());
 
             let mut importer = assimp_importer::AssimpImporter::new();
             let new_meshes = importer.import(&path_instance, &name_instance, device_instance.clone(), queue_instance.clone());
@@ -69,7 +80,7 @@ impl MeshManager {
             }
 
             //now lock the scene Vec and add a scene with an empty root with the name of this mesh
-            println!("Adding scene with name: {}", &name_instance.clone());
+            println!("STATUS: MESH_MANAGER: Adding scene with name: {}", &name_instance.clone());
             let mut root_node = node::GenericNode::new_empty(&name_instance.clone());
             for i in arc_meshes.iter(){
                 let mesh_node = node::ContentTypes::StaticMesh(i.clone());
@@ -84,9 +95,8 @@ impl MeshManager {
             }
 
 
-            println!("Finshed importing {}", name_instance.clone());
+            println!("STATUS: MESH_MANAGER: Finshed importing {}", name_instance.clone());
         });
-
 
     }
 }

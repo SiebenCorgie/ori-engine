@@ -3,13 +3,17 @@ use na::*;
 use nc;
 use nc::bounding_volume::HasBoundingVolume;
 use std::f64::consts;
+use std::sync::{Arc, Mutex};
+
+use core::engine_settings;
+use input::KeyMap;
+
+use std::time::{Duration, Instant};
 
 ///Camera trait, use this to implement any type of camera
 pub trait Camera {
     ///Creates a default camera
-    fn new() -> Self;
-    ///Updates the height and width information
-    fn update_window_size(&mut self, new_width: i32, new_height: i32);
+    fn new(settings: Arc<Mutex<engine_settings::EngineSettings>>, key_map: Arc<Mutex<KeyMap>>) -> Self;
     ///Calculates / Update the view
     fn update_view(&mut self);
     ///Returns the view matrix if needed
@@ -47,13 +51,18 @@ pub struct DefaultCamera {
     near_plane: f32,
     far_plane: f32,
 
-    window_width: i32,
-    window_height: i32,
+    settings: Arc<Mutex<engine_settings::EngineSettings>>,
+    key_map: Arc<Mutex<KeyMap>>,
+
+    last_time: Instant,
 }
 
 
 impl Camera for DefaultCamera{
-    fn new() -> Self {
+    fn new(
+        settings: Arc<Mutex<engine_settings::EngineSettings>>,
+        key_map: Arc<Mutex<KeyMap>>
+    ) -> Self {
         //camera General
         let cameraPos = Vector3::new(0.0, 0.0, 0.0);
         let cameraFront = Vector3::new(0.0, 0.0, -1.0);
@@ -76,25 +85,34 @@ impl Camera for DefaultCamera{
             near_plane: near_plane,
             far_plane: far_plane,
 
-            window_width: 800,
-            window_height: 600,
-        }
-    }
+            settings: settings,
 
-    ///Updates the window sizes of self.window_*
-    fn update_window_size(&mut self, new_width: i32, new_height: i32){
-        self.window_width = new_width;
-        self.window_height = new_height;
+            key_map: key_map,
+
+            last_time: Instant::now(),
+        }
     }
 
     ///Updates the camera view information
     fn update_view(&mut self){
 
-        //let delta_time: f32 = time_handler.delta_time();
+        let delta_time: f32 = (self.last_time.elapsed().subsec_nanos()) as f32;
 
 
         //Corrected Camera Speed
-        //let camera_speed = 50.0 * delta_time;
+        let camera_speed = 50.0 * delta_time;
+
+        //copy us a easy key map
+        let key_map_inst = {
+            let glob_key_map_inst = self.key_map.clone();
+            let glob_key_map_lck = glob_key_map_inst
+            .lock()
+            .expect("failed to lock global key map");
+
+            let return_key_map = (*glob_key_map_lck).clone();
+            return_key_map
+        };
+
         /*
         //Input processing
         {
@@ -119,14 +137,14 @@ impl Camera for DefaultCamera{
 
 
         }
-
+        */
         let sensitivity = 10.0;
 
         //Fixed camera gittering by slowing down so one integer delta = movement of
         // delta * sensitvity * time_delta * slowdown (virtual speed up)
         let virtual_speedup = 0.25;
-        let x_offset: f32 = input_handler.keys.Delta_x as f32 * sensitivity * time_handler.delta_time() * virtual_speedup;
-        let y_offset: f32 = input_handler.keys.Delta_y as f32 * sensitivity * time_handler.delta_time() * virtual_speedup;
+        let x_offset: f32 = 0.0; //input_handler.keys.Delta_x as f32 * sensitivity * delta_time * virtual_speedup;
+        let y_offset: f32 = 0.0; //input_handler.keys.Delta_y as f32 * sensitivity * delta_time * virtual_speedup;
 
         self.yaw += x_offset;
         self.pitch += y_offset;
@@ -143,7 +161,7 @@ impl Camera for DefaultCamera{
         front.y = to_radians(self.pitch).sin();
         front.z =  to_radians(self.yaw).sin() * to_radians(self.pitch).cos();
         self.cameraFront = front.normalize();
-        */
+
     }
 
     //Return view matrix as [[f32; 4]; 4]
@@ -192,9 +210,18 @@ impl Camera for DefaultCamera{
     //Calculates the perspective based on the engine and camera settings
     fn get_perspective(&self) -> Matrix4<f32>{
         //TODO update the perspective to use current engine settings
-        //Doc:             aspect ratio              fov in radiant
+        let (mut width, mut height) = (800, 600);
+        {
+            let engine_settings_inst = self.settings.clone();
+            let mut engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
+
+            width = engine_settings_lck.get_dimensions()[0];
+            height = engine_settings_lck.get_dimensions()[1];
+        }
+
+
         Perspective3::new(
-            (800 as f32 / 600 as f32), //Aspect
+            (width as f32 / height as f32), //Aspect
             to_radians(self.fov),   //fov
             self.near_plane,
             self.far_plane
@@ -204,6 +231,16 @@ impl Camera for DefaultCamera{
     ///Returns the frustum bound of this camera as a AABB
     fn get_frustum_bound(&self) -> nc::bounding_volume::AABB<Point3<f32>>{
 
+        let (mut width, mut height) = (800, 600);
+        {
+            let engine_settings_inst = self.settings.clone();
+            let mut engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
+
+            width = engine_settings_lck.get_dimensions()[0];
+            height = engine_settings_lck.get_dimensions()[1];
+        }
+
+
         //Reference: http://www.lighthouse3d.com/tutorials/view-frustum-culling/geometric-approach-extracting-the-planes/
         //NOTE see commend for computing width/height of far/near
 
@@ -211,11 +248,11 @@ impl Camera for DefaultCamera{
         //follows: Wnear/2 = tan(fov/2)*nd; // tan – is sin/cos
         let width_near = ((to_radians(self.fov/2.0)).tan() * self.near_plane) * 2.0;
         //follows Wfar/2 = tan((ALPHA / aspect ratio)/2)*nd; // tan – is sin/cos
-        let height_near = ((to_radians(((self.fov/(self.window_width as f32/self.window_height as f32))/2.0))).tan() * self.near_plane) * 2.0;
+        let height_near = ((to_radians(((self.fov/(width as f32/height as f32))/2.0))).tan() * self.near_plane) * 2.0;
         //follows: Wnear/2 = tan(fov/2)*nd; // tan – is sin/cos
         let width_far = ((to_radians(self.fov/2.0)).tan() * self.far_plane) * 2.0;
         //follows Wfar/2 = tan((ALPHA / aspect ratio)/2)*nd; // tan – is sin/cos
-        let height_far = ((to_radians(((self.fov/(self.window_width as f32/self.window_height as f32))/2.0))).tan() * self.far_plane) * 2.0;
+        let height_far = ((to_radians(((self.fov/(width as f32/height as f32))/2.0))).tan() * self.far_plane) * 2.0;
 
         let p = self.cameraPos.clone();
         let d = self.cameraFront.clone();

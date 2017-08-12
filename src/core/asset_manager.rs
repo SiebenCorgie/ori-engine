@@ -21,6 +21,8 @@ use render::pipeline;
 use render::pipeline_manager;
 use render::pipeline_infos;
 
+use input::KeyMap;
+
 use na;
 use vulkano;
 
@@ -44,13 +46,21 @@ pub struct AssetManager {
 
     settings: Arc<Mutex<engine_settings::EngineSettings>>,
 
+    /// a copy of the keymap to be used for passing to everything gameplay related
+    key_map: Arc<Mutex<KeyMap>>,
+
 }
 
 impl  AssetManager {
     ///Creates a new idependend scene manager
-    pub fn new(renderer: Arc<Mutex<renderer::Renderer>>, settings: Arc<Mutex<engine_settings::EngineSettings>>)->Self{
+    pub fn new(
+        renderer: Arc<Mutex<renderer::Renderer>>,
+        settings: Arc<Mutex<engine_settings::EngineSettings>>,
+        key_map: Arc<Mutex<KeyMap>>,
+    )->Self{
 
-        let camera = DefaultCamera::new(settings.clone());
+        //The camera will be moved to a camera manager
+        let camera = DefaultCamera::new(settings.clone(), key_map.clone());
 
         //Make a nice copy so we can retrive the pipeline manager
         let renderer_instance = renderer.clone();
@@ -66,13 +76,15 @@ impl  AssetManager {
             camera: camera,
 
             settings: settings,
+
+            key_map: key_map.clone(),
         }
     }
 
     ///Updates all child components
     pub fn update(&mut self){
 
-        //println!("STATUS: ASSET_MANAGER: Trying to update", );
+        println!("STATUS: ASSET_MANAGER: Trying to update", );
         //Update uniform manager
         let render_int = self.renderer.clone();
         let render_lck = render_int.lock().expect("failed to lock renderer");
@@ -94,10 +106,10 @@ impl  AssetManager {
         }
 
 
-        //println!("STATUS: ASSET_MANAGER: Now I'll update the materials", );
+        println!("STATUS: ASSET_MANAGER: Now I'll update the materials", );
         //Update materials
         self.material_manager.update();
-        //println!("STATUS: ASSET_MANAGER: Finished materials", );
+        println!("STATUS: ASSET_MANAGER: Finished materials", );
     }
 
     ///Returns the camera in use TODO this will be managed by a independent camera manager in the future
@@ -144,7 +156,7 @@ impl  AssetManager {
         let render_inst = self.renderer.clone();
         ///Lock in scope to prevent dead lock while importing
         let scene_ref_inst = self.scene_manager.get_scenes_reference();
-        
+
         let device_inst = {
             (*render_inst).lock().expect("failed to hold renderer lock").get_device().clone()
         };

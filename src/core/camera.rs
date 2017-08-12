@@ -6,11 +6,14 @@ use std::f64::consts;
 use std::sync::{Arc, Mutex};
 
 use core::engine_settings;
+use input::KeyMap;
+
+use std::time::{Duration, Instant};
 
 ///Camera trait, use this to implement any type of camera
 pub trait Camera {
     ///Creates a default camera
-    fn new(settings: Arc<Mutex<engine_settings::EngineSettings>>) -> Self;
+    fn new(settings: Arc<Mutex<engine_settings::EngineSettings>>, key_map: Arc<Mutex<KeyMap>>) -> Self;
     ///Calculates / Update the view
     fn update_view(&mut self);
     ///Returns the view matrix if needed
@@ -49,11 +52,17 @@ pub struct DefaultCamera {
     far_plane: f32,
 
     settings: Arc<Mutex<engine_settings::EngineSettings>>,
+    key_map: Arc<Mutex<KeyMap>>,
+
+    last_time: Instant,
 }
 
 
 impl Camera for DefaultCamera{
-    fn new(settings: Arc<Mutex<engine_settings::EngineSettings>>) -> Self {
+    fn new(
+        settings: Arc<Mutex<engine_settings::EngineSettings>>,
+        key_map: Arc<Mutex<KeyMap>>
+    ) -> Self {
         //camera General
         let cameraPos = Vector3::new(0.0, 0.0, 0.0);
         let cameraFront = Vector3::new(0.0, 0.0, -1.0);
@@ -77,17 +86,33 @@ impl Camera for DefaultCamera{
             far_plane: far_plane,
 
             settings: settings,
+
+            key_map: key_map,
+
+            last_time: Instant::now(),
         }
     }
 
     ///Updates the camera view information
     fn update_view(&mut self){
 
-        //let delta_time: f32 = time_handler.delta_time();
+        let delta_time: f32 = (self.last_time.elapsed().subsec_nanos()) as f32;
 
 
         //Corrected Camera Speed
-        //let camera_speed = 50.0 * delta_time;
+        let camera_speed = 50.0 * delta_time;
+
+        //copy us a easy key map
+        let key_map_inst = {
+            let glob_key_map_inst = self.key_map.clone();
+            let glob_key_map_lck = glob_key_map_inst
+            .lock()
+            .expect("failed to lock global key map");
+
+            let return_key_map = (*glob_key_map_lck).clone();
+            return_key_map
+        };
+
         /*
         //Input processing
         {
@@ -112,14 +137,14 @@ impl Camera for DefaultCamera{
 
 
         }
-
+        */
         let sensitivity = 10.0;
 
         //Fixed camera gittering by slowing down so one integer delta = movement of
         // delta * sensitvity * time_delta * slowdown (virtual speed up)
         let virtual_speedup = 0.25;
-        let x_offset: f32 = input_handler.keys.Delta_x as f32 * sensitivity * time_handler.delta_time() * virtual_speedup;
-        let y_offset: f32 = input_handler.keys.Delta_y as f32 * sensitivity * time_handler.delta_time() * virtual_speedup;
+        let x_offset: f32 = 0.0; //input_handler.keys.Delta_x as f32 * sensitivity * delta_time * virtual_speedup;
+        let y_offset: f32 = 0.0; //input_handler.keys.Delta_y as f32 * sensitivity * delta_time * virtual_speedup;
 
         self.yaw += x_offset;
         self.pitch += y_offset;
@@ -136,7 +161,7 @@ impl Camera for DefaultCamera{
         front.y = to_radians(self.pitch).sin();
         front.z =  to_radians(self.yaw).sin() * to_radians(self.pitch).cos();
         self.cameraFront = front.normalize();
-        */
+
     }
 
     //Return view matrix as [[f32; 4]; 4]

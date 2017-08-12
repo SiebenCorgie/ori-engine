@@ -73,7 +73,7 @@ impl InputHandler{
                 {
                     let mut state_lck = state_instance.lock().expect("failed to lock thread state");
                     if *state_lck == InputHandlerStates::ShouldEnd{
-                        //println!("STATUS: INPUT HANDLER: ending input thread", );
+                        println!("STATUS: INPUT HANDLER: ending input thread", );
                         break;
                     }
                 }
@@ -117,7 +117,7 @@ impl InputHandler{
                                 KeyboardInput {device_id, input} =>{
                                     use winit::KeyboardInput;
                                     match input{
-
+                                        
                                         _ => {},
                                     }
 

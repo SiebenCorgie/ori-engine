@@ -22,15 +22,14 @@ pub struct Vertex {
     color: [f32; 3],
 }
 
-unsafe impl Send for Vertex {}
-unsafe impl Sync for Vertex {}
+//unsafe impl Send for Vertex {}
+//unsafe impl Sync for Vertex {}
 
 //Implements the vulkano::vertex trait on Vertex
 impl_vertex!(Vertex, position, tex_coord, normal, tangent, color);
 
 //TODO
 //Every mesh needs its own indice and vertex buffer plus its pipeline to be drawn
-
 impl Vertex{
     ///Creates a new Vertex
     pub fn new(
@@ -200,6 +199,7 @@ impl Mesh {
         queue: Arc<vulkano::device::Queue>) ->
         Arc<vulkano::buffer::cpu_access::CpuAccessibleBuffer<[u32]>>
     {
+
         vulkano::buffer::cpu_access::CpuAccessibleBuffer
             ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()), self.indices.iter().cloned())
             .expect("failed to create index buffer 02")

@@ -1,7 +1,12 @@
 use render::pipeline_manager;
 use render::pipeline_infos;
+use render::uniform_manager;
 use core::asset_manager;
 use core::camera::Camera;
+use render::window;
+use core::engine_settings;
+
+use rt_error;
 
 use na;
 
@@ -9,13 +14,20 @@ use vulkano;
 use vulkano::framebuffer::RenderPass;
 use vulkano::framebuffer::FramebufferAbstract;
 use vulkano::framebuffer::RenderPassAbstract;
+use vulkano::swapchain::SwapchainCreationError;
+use vulkano::swapchain::SwapchainAcquireFuture;
+use vulkano::swapchain::AcquireError;
+use vulkano::framebuffer;
 use vulkano::sync::GpuFuture;
 use vulkano_win;
 use vulkano_win::VkSurfaceBuild;
+use vulkano::instance::debug::{DebugCallback, MessageTypes};
+
 use winit;
 
 use std::sync::{Arc,Mutex};
 use std::time::{Duration,Instant};
+use std::mem;
 use time;
 
 ///The main renderer
@@ -26,9 +38,9 @@ pub struct Renderer  {
     //Vulkano data
     extensions: vulkano::instance::InstanceExtensions,
     instance: Arc<vulkano::instance::Instance>,
-    //physical: Arc<vulkano::instance::PhysicalDevice>,
-    events_loop: winit::EventsLoop,
-    window: vulkano_win::Window,
+    debug_callback: Option<DebugCallback>,
+    //window: vulkano_win::Window,
+    window: window::Window,
     device: Arc<vulkano::device::Device>,
     queues: vulkano::device::QueuesIter,
     queue: Arc<vulkano::device::Queue>,
@@ -40,71 +52,162 @@ pub struct Renderer  {
 
     previous_frame: Option<Box<GpuFuture>>,
 
+    //Is true if we need to recreate the swap chain
+    recreate_swapchain: bool,
 
-
+    engine_settings: Arc<Mutex<engine_settings::EngineSettings>>,
+    uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
 
 }
 
 impl Renderer {
     ///Creates a new renderer with all subsystems
-    pub fn new() -> Self{
+    pub fn new(
+            events_loop: Arc<Mutex<winit::EventsLoop>>,
+            engine_settings: Arc<Mutex<engine_settings::EngineSettings>>
+        ) -> Self{
         //Init Vulkan
 
         //Check for needed extensions
-        let extensions = vulkano_win::required_extensions();
+        let mut extensions = vulkano_win::required_extensions();
+        //Add the debug extension
+        extensions.ext_debug_report = true;
+
+        //Add debuging layer
+        println!("STATUS: RENDER CORE: List of Vulkan debugging layers available to use: ", );
+        let mut layers = vulkano::instance::layers_list().expect("failed to get layer list");
+        while let Some(l) = layers.next() {
+            println!("STATUS: RENDER: \t{}", l.name());
+        }
+
+        // NOTE: To simplify the example code we won't verify these layer(s) are actually in the layers list:
+        let layer = "VK_LAYER_LUNARG_standard_validation";
+        let layers = vec![&layer];
+
         //Create a vulkan instance from these extensions
-        let instance = vulkano::instance::Instance::new(None, &extensions, None).expect("failed to create instance");
+        let instance = vulkano::instance::Instance::new(None, &extensions, layers)
+        .expect("failed to create instance");
+
+        let engine_settings_wrk = {
+            let engine_settings_isnt = engine_settings.clone();
+            let engine_settings_lck = engine_settings_isnt
+            .lock()
+            .expect("failed to lock engine settings");
+
+            (*engine_settings_lck).clone()
+        };
+
+        //Register debuging messages
+        let mut all = MessageTypes {
+            error: true,
+            warning: true,
+            performance_warning: true,
+            information: true,
+            debug: true,
+        };
+
+        //if vulkan is set silent, show no messages
+        if engine_settings_wrk.vulkan_silence(){
+            all = MessageTypes {
+                error: false,
+                warning: false,
+                performance_warning: false,
+                information: false,
+                debug: false,
+            };
+        }
+
+        let _debug_callback = DebugCallback::new(&instance, all, |msg| {
+            let ty = if msg.ty.error {
+                "error"
+            } else if msg.ty.warning {
+                "warning"
+            } else if msg.ty.performance_warning {
+                "performance_warning"
+            } else if msg.ty.information {
+                "information"
+            } else if msg.ty.debug {
+                "debug"
+            } else {
+                panic!("no-impl");
+            };
+            println!("STATUS: RENDER: {} {}: {}", msg.layer_prefix, ty, msg.description);
+        }).ok();
+
         //Get us a graphics card
         let physical = vulkano::instance::PhysicalDevice::enumerate(&instance)
                                 .next().expect("no device available");
-        println!("Using device: {} (type: {:?})", physical.name(), physical.ty());
-        //Create an events loop
-        let mut events_loop = winit::EventsLoop::new();
-        //and create a window for it TODO bring this in the systen:: module
-        let window = winit::WindowBuilder::new()
-        .with_dimensions(800, 600)
-        .with_title("Thingy!")
-        .with_decorations(true)
-        .build_vk_surface(&events_loop, instance.clone()).expect("failed to !");
+        println!("STATUS: RENDER: Using device: {} (type: {:?})", physical.name(), physical.ty());
+        //copy the events loop for the window creation
+        let events_loop_instance = events_loop.clone();
+        let events_loop_unlck = events_loop_instance
+        .lock()
+        .expect("Failed to hold lock on events loop");
+
+        //and create a window for it
+        let mut window = window::Window::new(
+            &instance.clone(), &*events_loop_unlck, engine_settings.clone()
+        );
 
         //Create a queue
-        let queue = physical.queue_families().find(|&q| q.supports_graphics() &&
-                                                       window.surface().is_supported(q).unwrap_or(false))
-                                                    .expect("couldn't find a graphical queue family");
+        let queue = physical.queue_families().find(
+            |&q| q.supports_graphics() &&
+            window.surface().is_supported(q).unwrap_or(false)
+        )
+        .expect("couldn't find a graphical queue family");
+
         //select needed device extensions
         let device_ext = vulkano::device::DeviceExtensions {
             khr_swapchain: true,
             .. vulkano::device::DeviceExtensions::none()
         };
         //Create a artificial device and its queue
-        let (device, mut queues) = vulkano::device::Device::new(physical, physical.supported_features(),
-                                                                &device_ext, [(queue, 0.5)].iter().cloned())
-                                   .expect("failed to create device");
-        let queue = queues.next().expect("failed to !");
+        let (device, mut queues) = vulkano::device::Device::new(
+            physical, physical.supported_features(),
+            &device_ext, [(queue, 0.5)].iter().cloned()
+        )
+        .expect("failed to create device");
+
+        let queue = queues.next().expect("failed to create queue!");
 
         //Get the swapchain and its images
         let (swapchain, images) = {
-            let caps = window.surface().capabilities(physical).expect("failed to get surface capabilities");
 
-            let dimensions = caps.current_extent.unwrap_or([800, 600]);
+            let caps = window.surface()
+            .capabilities(physical).expect("failed to get surface capabilities");
+
+            //lock settings to read fallback settings
+            let engine_settings_inst = engine_settings.clone();
+
+            let mut engine_settings_lck = engine_settings_inst
+            .lock()
+            .expect("Failed to lock settings");
+
+
+            //Set dimensions or fallback to the ones in the settings
+            let dimensions = caps.current_extent.unwrap_or((*engine_settings_lck).get_dimensions());
             let usage = caps.supported_usage_flags;
             let format = caps.supported_formats[0].0;
 
-            vulkano::swapchain::Swapchain::new(device.clone(), window.surface().clone(), caps.min_image_count, format, dimensions, 1,
-                                               usage, &queue, vulkano::swapchain::SurfaceTransform::Identity,
-                                               vulkano::swapchain::CompositeAlpha::Opaque,
-                                               vulkano::swapchain::PresentMode::Fifo, true, None).expect("failed to create swapchain")
+            vulkano::swapchain::Swapchain::new(
+                device.clone(), window.surface().clone(), caps.min_image_count, format, dimensions, 1,
+                usage, &queue, vulkano::swapchain::SurfaceTransform::Identity,
+                vulkano::swapchain::CompositeAlpha::Opaque,
+                vulkano::swapchain::PresentMode::Fifo, true, None
+            )
+            .expect("failed to create swapchain")
         };
 
         //Create a depth buffer
-        let depth_buffer = vulkano::image::attachment::AttachmentImage::transient(device.clone(), images[0].dimensions(), vulkano::format::D16Unorm).expect("failed to !");
+        let depth_buffer = vulkano::image::attachment::AttachmentImage::transient(
+            device.clone(), images[0].dimensions(), vulkano::format::D16Unorm)
+            .expect("failed to create depth buffer!");
 
-        ///Create a uniform buffer with just [[f32; 4]; 4], the buffer will be updated bevore the first loop
-        let world = pipeline_infos::Main {
-            model : <na::Matrix4<f32>>::identity().into(),
-            view : <na::Matrix4<f32>>::identity().into(),
-            proj : <na::Matrix4<f32>>::identity().into(),
-        };
+
+
+        let mut uniform_manager_tmp = uniform_manager::UniformManager::new(
+            device.clone(), queue.clone()
+        );
 
 
         //TODO, create custom renderpass with different stages (light computing, final shading (how to loop?),
@@ -151,15 +254,22 @@ impl Renderer {
         let previous_frame = Some(Box::new(vulkano::sync::now(device.clone())) as Box<GpuFuture>);
 
         //Creates the renderers pipeline manager
-        let pipeline_manager = Arc::new(Mutex::new(pipeline_manager::PipelineManager::new(device.clone(), queue.clone(), renderpass.clone(), images.clone(), world)));
+        let pipeline_manager = Arc::new(
+            Mutex::new(
+                pipeline_manager::PipelineManager::new(
+                    device.clone(), queue.clone(), renderpass.clone(), images.clone(),
+                )
+            )
+        );
+
+        //Pas everthing to the struct
         Renderer{
             pipeline_manager: pipeline_manager,
 
             //Vulkano data
             extensions: extensions,
             instance: instance.clone(),
-            //physical: physical,
-            events_loop: events_loop,
+            debug_callback: _debug_callback,
             window: window,
             device: device,
             queues: queues,
@@ -171,41 +281,143 @@ impl Renderer {
             framebuffers: store_framebuffer,
 
             previous_frame: previous_frame,
+
+            recreate_swapchain: false,
+
+            engine_settings: engine_settings.clone(),
+            uniform_manager: Arc::new(Mutex::new(uniform_manager_tmp)),
         }
     }
 
+
+
+    ///Recreates swapchain for the window size in `engine_settings`
+    ///Returns true if successfully recreated chain
+    pub fn recreate_swapchain(&mut self) -> bool{
+        //get new dimmensions etc
+        let engine_settings_inst = self.engine_settings.clone();
+        let mut engine_settings_lck = engine_settings_inst
+        .lock()
+        .expect("Faield to lock settings");
+
+        let (new_width, new_height) = self.window
+        .window()
+        .get_inner_size_pixels()
+        .expect("failed to get hight and width of current window");
+
+        (*engine_settings_lck).set_dimensions(new_width, new_height);
+
+        let (new_swapchain, new_images) =
+        match self.swapchain.recreate_with_dimension(engine_settings_lck.get_dimensions()) {
+            Ok(r) => r,
+            // This error tends to happen when the user is manually resizing the window.
+            // Simply restarting the loop is the easiest way to fix this issue.
+            Err(SwapchainCreationError::UnsupportedDimensions) => {
+                return false;
+            },
+            Err(err) => panic!("{:?}", err)
+        };
+
+        ///Now repace
+        mem::replace(&mut self.swapchain, new_swapchain);
+        mem::replace(&mut self.images, new_images);
+
+        //Recreate depth buffer for new size
+        //Create a depth buffer
+        self.depth_buffer = vulkano::image::attachment::AttachmentImage::transient(
+            self.device.clone(), self.images[0].dimensions(), vulkano::format::D16Unorm)
+            .expect("failed to create depth buffer!");
+
+
+        // Because framebuffers contains an Arc on the old swapchain, we need to
+        // recreate framebuffers as well.
+        //Create the frame buffers from all images
+        let framebuffers = self.images.iter().map(|image| {
+            Arc::new(vulkano::framebuffer::Framebuffer::start(self.renderpass.clone())
+                //The color pass
+                .add(image.clone()).expect("failed to add image to frame buffer!")
+                //and its depth pass
+                .add(self.depth_buffer.clone()).expect("failed to add depth to frame buffer!")
+                .build().expect("failed to build framebuffer!"))
+        }).collect::<Vec<_>>();
+
+        let mut store_framebuffer: Vec<Arc<FramebufferAbstract + Send + Sync>> = Vec::new();
+        for i in framebuffers{
+            store_framebuffer.push(i.clone());
+        }
+
+
+        mem::replace(&mut self.framebuffers, store_framebuffer);
+
+        //Now when can mark the swapchain as "fine" again
+        self.recreate_swapchain = false;
+        true
+    }
+
+    ///Returns the image if the image state is outdated
+    ///Panics if another error occures while pulling a new image
+    pub fn check_image_state(&self) -> Result<(usize, SwapchainAcquireFuture), AcquireError>{
+        match vulkano::swapchain::acquire_next_image(self.swapchain.clone(), None) {
+            Ok(r) => return Ok(r),
+            Err(vulkano::swapchain::AcquireError::OutOfDate) => {
+                return Err(vulkano::swapchain::AcquireError::OutOfDate);
+            },
+            Err(err) => panic!("{:?}", err)
+        };
+    }
+
     ///Renders the scene with the parameters supplied by the asset_manager
-    pub fn render(&mut self, asset_manager: &mut asset_manager::AssetManager) -> bool{
+    pub fn render(&mut self, asset_manager: &mut asset_manager::AssetManager){
+
+        println!("STATUS: RENDER CORE: Starting render ", );
         //DEBUG
         let start_time = Instant::now();
 
-        self.previous_frame.as_mut().unwrap().cleanup_finished();
+        //Clean the last frame for starting a new one
+        self.previous_frame.as_mut().expect("failed to clean previous frame").cleanup_finished();
 
-        let (image_num, acquire_future) = vulkano::swapchain::acquire_next_image(self.swapchain.clone(), None).expect("failed to !");
 
-        let rotation = na::Rotation3::from_axis_angle(&na::Vector3::y_axis(), time::precise_time_ns() as f32 * 0.000000001);
-        let mat_4: na::Matrix4<f32> = na::convert(rotation);
-        let uniform_data = pipeline_infos::Main {
-            model: mat_4.into(),
-            view: asset_manager.get_camera().get_view_matrix().into(),
-            proj: asset_manager.get_camera().get_perspective().into(),
-        };
-        //Lock the pipeline manager and update all uniforms
-        let local_pipe_man = self.pipeline_manager.clone();
-        {
-            (*local_pipe_man).lock().expect("Failed to lock local pipeline manager").update_all_uniform_buffer_01(uniform_data);
+        //If found out in last frame that images are out of sync, generate new ones
+        if self.recreate_swapchain{
+            if !self.recreate_swapchain(){
+                //If we got the UnsupportedDimensions Error (and therefor returned false)
+                //Abord the frame
+                return;
+            }
         }
+
+        //Try to get a new image
+        //If not possible becuase outdated (result is Err)
+        //then return (abort frame)
+        //and recreate swapchain
+        let (image_num, acquire_future) =
+        match self.check_image_state(){
+            Ok(r) => r,
+            Err(_) => {
+                self.recreate_swapchain = true;
+                return;
+            },
+        };
 
 
         //TODO have to find a nicer way of doing this... later
         let command_buffer = {
+            let engine_settings_inst = self.engine_settings.clone();
+            let mut engine_settings_lck = engine_settings_inst
+            .lock()
+            .expect("Faield to lock settings");
+
+            let dimensions = engine_settings_lck.get_dimensions().clone();
+
             let mut tmp_cmd_buffer = Some(
                 vulkano::command_buffer::AutoCommandBufferBuilder::new(
                     self.device.clone(),
-                    self.queue.family()).expect("failed to !")
+                    self.queue.family()).expect("failed to create tmp buffer!")
                 );
 
-            let build_start = tmp_cmd_buffer.take().expect("failed to take cmd buffer build for start");
+            let build_start = tmp_cmd_buffer
+            .take()
+            .expect("failed to take cmd buffer build for start");
 
             tmp_cmd_buffer = Some(build_start.begin_render_pass(
                 self.framebuffers[image_num].clone(), false,
@@ -217,63 +429,117 @@ impl Renderer {
 
             //Draw
                 //get all meshes, later in view frustum based on camera
-
-
             let mut index = 0;
             for i in asset_manager.get_all_meshes().iter(){
-                let cb = tmp_cmd_buffer.take().expect("Failed to recive command buffer in loop!");
-                let material = asset_manager.get_material_manager().get_material(&i.lock().expect("Could not lock mesh for material").get_material_name());
-                let unlocked_material = (*material).lock().expect("Failed to lock material");
 
-                let unlocked_mesh = i.lock().expect("Could not lock mesh for rendering :(");
-                let mut unlocked_pipeline_manager = (*local_pipe_man).lock().expect("Failed to lock the pipeline manager while rendering");
+                let mesh_lck = i
+                .lock()
+                .expect("could not lock mesh for building command buffer");
+
+                let cb = tmp_cmd_buffer
+                .take()
+                .expect("Failed to recive command buffer in loop!");
+
+                let material = asset_manager
+                .get_material_manager()
+                .get_material(&(*mesh_lck).get_material_name());
+
+                let unlocked_material = material
+                .lock()
+                .expect("Failed to lock material");
+
+                //We have to create all the types in advance to prevent a lock
+                let pipeline_copy = {
+                    let local_pipe_man = self.pipeline_manager.clone();
+                    let mut unlocked_pipeline_manager = (*local_pipe_man)
+                    .lock()
+                    .expect("Failed to lock the pipeline manager while rendering");
+
+                    //Returning pipeline
+                    unlocked_pipeline_manager
+                    .get_pipeline_by_name(
+                        &(*unlocked_material)
+                        .get_pipeline_name().to_string()
+                    )
+                };
+
+                let set_01 = {
+                    (*unlocked_material).get_set_01().clone()
+                };
+
+
+                let set_02 = {
+                    (*unlocked_material).get_set_02().clone()
+                };
+
+                let set_03 = {
+                    (*unlocked_material).get_set_03().clone()
+                };
+
+                println!("STATUS: RENDER CORE: Adding to tmp cmd buffer", );
 
                 tmp_cmd_buffer = Some(cb
                     .draw_indexed(
-                        unlocked_pipeline_manager.get_pipeline_by_name(&unlocked_material.get_pipeline_name().to_string()),
-                        vulkano::command_buffer::DynamicState::none(),
-                        (*unlocked_mesh).get_vertex_buffer(),
-                        (*unlocked_mesh).get_index_buffer(self.device.clone(), self.queue.clone()).clone(),
-                        unlocked_pipeline_manager.get_set_01(&unlocked_material.get_pipeline_name().to_string()),
+                        pipeline_copy,
+
+                        vulkano::command_buffer::DynamicState{
+                            line_width: None,
+                            viewports: Some(vec![vulkano::pipeline::viewport::Viewport {
+                                origin: [0.0, 0.0],
+                                dimensions: [dimensions[0] as f32, dimensions[1] as f32],
+                                depth_range: 0.0 .. 1.0,
+                            }]),
+                            scissors: None,
+                        },
+                        (*mesh_lck)
+                        .get_vertex_buffer(),
+
+                        (*mesh_lck)
+                        .get_index_buffer(
+                            self.device.clone(), self.queue.clone()
+                        ).clone(),
+
+                        (set_01, set_02, set_03),
+
                         ()
                     ).expect("Failed to draw in command buffer!")
                 );
             }
             //End renderpass
-            tmp_cmd_buffer.take().expect("failed to return command buffer to main buffer")
+            tmp_cmd_buffer
+            .take()
+            .expect("failed to return command buffer to main buffer")
         }
+
         .end_render_pass().expect("failed to end")
         .build().expect("failed to end");;
 
-        //TODO find a better methode then Option<Box<GpuFuture>>
-        let future = self.previous_frame.take().unwrap().join(acquire_future)
-                      .then_execute(self.queue.clone(), command_buffer).expect("failed to !")
-                      .then_swapchain_present(self.queue.clone(), self.swapchain.clone(), image_num)
-                      .then_signal_fence_and_flush().expect("failed to flush");
-        self.previous_frame = Some(Box::new(future) as Box<_>);
-        /*
-        self.previous_frame = Box::new({
-                self.previous_frame.join(acquire_future)
-                .then_execute(self.queue.clone(), command_buffer).expect("failed to !")
-                .then_swapchain_present(self.queue.clone(), self.swapchain.clone(), image_num)
-                .then_signal_fence_and_flush().expect("failed to flush")
+        println!("STATUS: RENDER CORE: Trying flush", );
 
-        });
-        */
-        let mut done = false;
-        self.events_loop.poll_events(|ev| {
-            match ev {
-                winit::Event::WindowEvent { event: winit::WindowEvent::Closed, .. } => done = true,
-                _ => ()
-            }
-        });
-        if done { return true; }
+        //TODO find a better methode then Option<Box<GpuFuture>>
+        let future = self.previous_frame
+        .take()
+        .expect("failed to take previous frame")
+        .join(acquire_future)
+        .then_execute(
+            self.queue.clone(), command_buffer
+        )
+        .expect("failed to execute buffer!")
+        .then_swapchain_present(
+            self.queue.clone(), self.swapchain.clone(), image_num
+        )
+        .then_signal_fence_and_flush().expect("failed to flush");
+
+        self.previous_frame = Some(Box::new(future) as Box<_>);
 
         //DEBUG
         let fps_time = start_time.elapsed().subsec_nanos();
-        println!("FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+        println!("STATUS: RENDER: FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+    }
 
-        false
+    ///Returns the uniform manager
+    pub fn get_uniform_manager(&self) -> Arc<Mutex<uniform_manager::UniformManager>>{
+        self.uniform_manager.clone()
     }
 
     ///Returns the pipeline manager of this renderer
@@ -295,6 +561,26 @@ impl Renderer {
     pub fn get_queue(&self) -> Arc<vulkano::device::Queue>{
         self.queue.clone()
     }
+
+    ///A helper function whicht will creat a tubel of
+    ///(`pipeline_manager`, `uniform_manager`, `device`)
+    ///This is needed for the material creation
+    pub fn get_material_instances(&self) -> (
+        Arc<Mutex<pipeline_manager::PipelineManager>>,
+        Arc<Mutex<uniform_manager::UniformManager>>,
+        Arc<vulkano::device::Device>,
+        Arc<vulkano::device::Queue>,
+        )
+    {
+        let pipe_man = self.pipeline_manager.clone();
+        let uni_man = self.uniform_manager.clone();
+        let device = self.device.clone();
+        let queue = self.queue.clone();
+
+        (pipe_man, uni_man, device, queue)
+    }
+
+
 }
 
 /*TODO:

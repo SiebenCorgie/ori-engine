@@ -57,13 +57,14 @@ fn main() {
         //println!("STATUS: GAME: Updated all assets", );
         let render_instance = render.clone();
         (*render).lock().expect("Failed to lock renderer for rendering").render(&mut asset_manager);
-        ///Check if loop should close
-        //println!("STATUS: GAME: Rendered!", );
-        let input_inst = input_handler.key_map.clone();
-        let input_lck = input_inst.lock().expect("Failed to lock keymap while reading");
-        //println!("STATUS: GAME: Processed Input", );
-        if input_lck.closed{
+        //Check if loop should close
+        if input_handler.get_key_map_copy().closed{
             //println!("STATUS: GAME: Shuting down", );
+            input_handler.end();
+            break;
+        }
+
+        if input_handler.get_key_map_copy().escape{
             input_handler.end();
             break;
         }

@@ -96,8 +96,16 @@ impl Camera for DefaultCamera{
     ///Updates the camera view information
     fn update_view(&mut self){
 
-        let delta_time: f32 = (self.last_time.elapsed().subsec_nanos()) as f32;
+        let delta_time: f32 ={
+            //Get the time and / 1_000_000_000 for second
+            (self.last_time.elapsed().subsec_nanos()) as f32
+            /
+            1_000_000_000.0
+        };
+        //and update "last time" for the next frame
+        self.last_time = Instant::now();
 
+        //println!("Delta_Seconds: {}", delta_time.clone() );
 
         //Corrected Camera Speed
         let camera_speed = 50.0 * delta_time;
@@ -113,31 +121,29 @@ impl Camera for DefaultCamera{
             return_key_map
         };
 
-        /*
+
         //Input processing
         {
-            if input_handler.keys.A == true {
-                self.cameraPos = self.cameraPos + (self.cameraFront.cross(self.cameraUp).normalize()) * camera_speed;
+            if key_map_inst.a == true {
+                self.cameraPos = self.cameraPos + (self.cameraFront.cross(&self.cameraUp).normalize()) * camera_speed;
             }
-            if input_handler.keys.W == true {
+            if key_map_inst.w == true {
                 self.cameraPos = self.cameraPos - self.cameraFront * camera_speed;
             }
-            if input_handler.keys.S == true {
+            if key_map_inst.s == true {
                 self.cameraPos = self.cameraPos + self.cameraFront * camera_speed;
             }
-            if input_handler.keys.D == true {
-                self.cameraPos = self.cameraPos - (self.cameraFront.cross(self.cameraUp).normalize()) * camera_speed;
+            if key_map_inst.d == true {
+                self.cameraPos = self.cameraPos - (self.cameraFront.cross(&self.cameraUp).normalize()) * camera_speed;
             }
-            if (input_handler.keys.CTRL_L == true) | (input_handler.keys.Q == true) {
+            if (key_map_inst.ctrl_l == true) | (key_map_inst.q == true) {
                 self.cameraPos = self.cameraPos - Vector3::new(0.0, camera_speed, 0.0);
             }
-            if (input_handler.keys.SHIFT_L == true) | (input_handler.keys.E == true) {
+            if (key_map_inst.shift_l == true) | (key_map_inst.e == true) {
                 self.cameraPos = self.cameraPos + Vector3::new(0.0, camera_speed, 0.0);
             }
-
-
         }
-        */
+
         let sensitivity = 10.0;
 
         //Fixed camera gittering by slowing down so one integer delta = movement of
@@ -215,8 +221,8 @@ impl Camera for DefaultCamera{
             let engine_settings_inst = self.settings.clone();
             let mut engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
 
-            width = engine_settings_lck.get_dimensions()[0];
-            height = engine_settings_lck.get_dimensions()[1];
+            width = (*engine_settings_lck).get_dimensions()[0];
+            height = (*engine_settings_lck).get_dimensions()[1];
         }
 
 
@@ -236,8 +242,8 @@ impl Camera for DefaultCamera{
             let engine_settings_inst = self.settings.clone();
             let mut engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
 
-            width = engine_settings_lck.get_dimensions()[0];
-            height = engine_settings_lck.get_dimensions()[1];
+            width = (*engine_settings_lck).get_dimensions()[0];
+            height = (*engine_settings_lck).get_dimensions()[1];
         }
 
 

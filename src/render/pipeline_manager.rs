@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Mutex, Arc};
 use std;
 
+use rt_error;
 use render::pipeline;
 use render::pipeline_infos;
 
@@ -47,17 +48,17 @@ impl PipelineManager{
     pub fn get_default_pipeline(&mut self) -> Arc<GraphicsPipelineAbstract + Send + Sync>{
         match self.pipelines.get_mut(&String::from("DefaultPipeline")){
             Some(ref mut pipe) => return pipe.get_pipeline_ref(),
-            None => println!("STATUS: PIPELINE MANAGER: Could not find default pipe this should not happen", ),
+            None =>rt_error("PIPELINE_MANAGER", "PIPELINE MANAGER: Could not find default pipe this should not happen"),
         }
         panic!("Crash could not get default pipeline!")
     }
 
     ///Returns a pipeline by name, if not existend, returns the default pipeline
     pub fn get_pipeline_by_name(&mut self, name: &str) -> Arc<GraphicsPipelineAbstract + Send + Sync>{
-        println!("SEARCHING FOR PIPELINE: {}", name.clone() );
+        //println!("SEARCHING FOR PIPELINE: {}", name.clone() );
         match self.pipelines.get_mut(&String::from(name)){
             Some(ref mut pipe) => return pipe.get_pipeline_ref(),
-            None => println!("STATUS: PIPELINE MANAGER: Could not find pipe {}", name.clone()),
+            None => rt_error("PIPELINE_MANAGER","Could not find pipe"),
         }
         self.get_default_pipeline()
     }

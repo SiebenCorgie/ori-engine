@@ -84,7 +84,7 @@ impl  AssetManager {
     ///Updates all child components
     pub fn update(&mut self){
 
-        println!("STATUS: ASSET_MANAGER: Trying to update", );
+        //println!("STATUS: ASSET_MANAGER: Trying to update", );
         //Update uniform manager
         let render_int = self.renderer.clone();
         let render_lck = render_int.lock().expect("failed to lock renderer");
@@ -106,10 +106,13 @@ impl  AssetManager {
         }
 
 
-        println!("STATUS: ASSET_MANAGER: Now I'll update the materials", );
+        //println!("STATUS: ASSET_MANAGER: Now I'll update the materials", );
         //Update materials
         self.material_manager.update();
-        println!("STATUS: ASSET_MANAGER: Finished materials", );
+        //println!("STATUS: ASSET_MANAGER: Finished materials", );
+
+        //Now update the camera
+        self.camera.update_view();
     }
 
     ///Returns the camera in use TODO this will be managed by a independent camera manager in the future

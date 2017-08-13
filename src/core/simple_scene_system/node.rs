@@ -8,6 +8,7 @@ use na;
 use nc;
 use nc::bounding_volume::BoundingVolume;
 
+use rt_error;
 use core;
 use core::NodeMember;
 use core::mesh;
@@ -180,7 +181,7 @@ impl GenericNode{
     pub fn add_node_at_sub_node(&mut self, node_name: &str,  node_to_add: GenericNode){
         let node = self.get_node(node_name);
         match node{
-            None => println!("ERROR: NODE: couldn't find node for name {}",node_to_add.name.clone() ),
+            None => rt_error("NODE: ", "Could not find subnode while trying to add"),
             Some(nd)=> nd.add_node(node_to_add),
         }
 

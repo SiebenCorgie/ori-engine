@@ -56,7 +56,7 @@ impl MeshManager {
 
         let thread = thread::spawn(move ||{
 
-            println!("STATUS: MESH_MANAGER: Spawned thread with id: {:?}", thread::current().id());
+            //println!("STATUS: MESH_MANAGER: Spawned thread with id: {:?}", thread::current().id());
 
             let mut importer = assimp_importer::AssimpImporter::new();
             let new_meshes = importer.import(&path_instance, &name_instance, device_instance.clone(), queue_instance.clone());
@@ -80,7 +80,7 @@ impl MeshManager {
             }
 
             //now lock the scene Vec and add a scene with an empty root with the name of this mesh
-            println!("STATUS: MESH_MANAGER: Adding scene with name: {}", &name_instance.clone());
+            //println!("STATUS: MESH_MANAGER: Adding scene with name: {}", &name_instance.clone());
             let mut root_node = node::GenericNode::new_empty(&name_instance.clone());
             for i in arc_meshes.iter(){
                 let mesh_node = node::ContentTypes::StaticMesh(i.clone());
@@ -95,7 +95,7 @@ impl MeshManager {
             }
 
 
-            println!("STATUS: MESH_MANAGER: Finshed importing {}", name_instance.clone());
+            //println!("STATUS: MESH_MANAGER: Finshed importing {}", name_instance.clone());
         });
 
     }

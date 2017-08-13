@@ -77,7 +77,7 @@ pub struct KeyMap {
     pub ctrl_l: bool,
     pub ctrl_r: bool,
     pub alt_l: bool,
-    pub alt_gr: bool,
+    pub alt_r: bool,
     pub super_l: bool,
     pub super_r: bool,
     pub caps_lock: bool,
@@ -85,8 +85,8 @@ pub struct KeyMap {
     pub shift_r: bool,
     pub tab: bool,
     pub space: bool,
-    pub return_l: bool,
-    pub return_num: bool,
+    pub enter: bool,
+    pub nume_enter: bool,
     pub escape: bool,
     //todo addrest
     /*
@@ -246,7 +246,7 @@ impl KeyMap{
             ctrl_l: false,
             ctrl_r: false,
             alt_l: false,
-            alt_gr: false,
+            alt_r: false,
             super_l: false,
             super_r: false,
             caps_lock: false,
@@ -254,8 +254,8 @@ impl KeyMap{
             shift_r: false,
             tab: false,
             space: false,
-            return_l: false,
-            return_num: false,
+            enter: false,
+            nume_enter: false,
             escape: false,
         }
     }
@@ -314,6 +314,18 @@ impl Input{
     ///Returns the input handler
     pub fn get_input_handler(&mut self) -> &mut input_handler::InputHandler{
         &mut self.input_handler
+    }
+
+    pub fn get_key_map_copy(&self) -> KeyMap{
+        //get the map
+        let key_map = {
+            //lock
+            let tmp_map = self.key_map.lock().expect("failed to lock keymap for copy return");
+            //copy
+            (*tmp_map).clone()
+        };
+        //return it
+        key_map
     }
 
 

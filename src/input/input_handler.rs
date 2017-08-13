@@ -180,21 +180,40 @@ impl InputHandler{
                                                 Some(VirtualKeyCode::Key8) => current_keys.t_8 = true,
                                                 Some(VirtualKeyCode::Key9) => current_keys.t_9 = true,
                                                 Some(VirtualKeyCode::Key0) => current_keys.t_0 = true,
-
+                                                //num pad
+                                                Some(VirtualKeyCode::Numpad0) => current_keys.num_0 = true,
+                                                Some(VirtualKeyCode::Numpad1) => current_keys.num_1 = true,
+                                                Some(VirtualKeyCode::Numpad2) => current_keys.num_2 = true,
+                                                Some(VirtualKeyCode::Numpad3) => current_keys.num_3 = true,
+                                                Some(VirtualKeyCode::Numpad4) => current_keys.num_4 = true,
+                                                Some(VirtualKeyCode::Numpad5) => current_keys.num_5 = true,
+                                                Some(VirtualKeyCode::Numpad6) => current_keys.num_6 = true,
+                                                Some(VirtualKeyCode::Numpad7) => current_keys.num_7 = true,
+                                                Some(VirtualKeyCode::Numpad8) => current_keys.num_8 = true,
+                                                Some(VirtualKeyCode::Numpad9) => current_keys.num_9 = true,
+                                                //special keys
+                                                Some(VirtualKeyCode::LControl) => current_keys.ctrl_l = true,
+                                                Some(VirtualKeyCode::RControl) => current_keys.ctrl_r = true,
+                                                Some(VirtualKeyCode::LAlt) => current_keys.alt_l = true,
+                                                Some(VirtualKeyCode::RAlt) => current_keys.alt_r = true,
+                                                Some(VirtualKeyCode::LWin) => current_keys.super_l = true,
+                                                Some(VirtualKeyCode::RWin) => current_keys.super_r = true,
+                                                Some(VirtualKeyCode::Capital) => current_keys.caps_lock = true,
+                                                Some(VirtualKeyCode::LShift) => current_keys.shift_l = true,
+                                                Some(VirtualKeyCode::RShift) => current_keys.shift_r = true,
+                                                Some(VirtualKeyCode::Tab) => current_keys.tab = true,
+                                                Some(VirtualKeyCode::Space) => current_keys.space = true,
+                                                Some(VirtualKeyCode::Return) => current_keys.enter = true,
+                                                Some(VirtualKeyCode::NumpadEnter) => current_keys.nume_enter = true,
+                                                Some(VirtualKeyCode::Escape) => current_keys.escape = true,
                                                 _ => {},
                                             }
                                         },
                                         winit::ElementState::Released => {
                                             //leave state to false
                                             match input.virtual_keycode{
-                                                Some(VirtualKeyCode::A) => {
-                                                    current_keys.a = false;
-                                                    println!("Pressed A", );
-                                                },
-                                                Some(VirtualKeyCode::B) => {
-                                                    current_keys.b = false;
-                                                    println!("Pressed B", );
-                                                },
+                                                Some(VirtualKeyCode::A) => current_keys.a = false,
+                                                Some(VirtualKeyCode::B) => current_keys.b = false,
                                                 Some(VirtualKeyCode::C) => current_keys.c = false,
                                                 Some(VirtualKeyCode::D) => current_keys.d = false,
                                                 Some(VirtualKeyCode::E) => current_keys.e = false,
@@ -230,6 +249,35 @@ impl InputHandler{
                                                 Some(VirtualKeyCode::Key8) => current_keys.t_8 = false,
                                                 Some(VirtualKeyCode::Key9) => current_keys.t_9 = false,
                                                 Some(VirtualKeyCode::Key0) => current_keys.t_0 = false,
+                                                //num pad
+                                                Some(VirtualKeyCode::Numpad0) => current_keys.num_0 = false,
+                                                Some(VirtualKeyCode::Numpad1) => current_keys.num_1 = false,
+                                                Some(VirtualKeyCode::Numpad2) => current_keys.num_2 = false,
+                                                Some(VirtualKeyCode::Numpad3) => current_keys.num_3 = false,
+                                                Some(VirtualKeyCode::Numpad4) => current_keys.num_4 = false,
+                                                Some(VirtualKeyCode::Numpad5) => current_keys.num_5 = false,
+                                                Some(VirtualKeyCode::Numpad6) => current_keys.num_6 = false,
+                                                Some(VirtualKeyCode::Numpad7) => current_keys.num_7 = false,
+                                                Some(VirtualKeyCode::Numpad8) => current_keys.num_8 = false,
+                                                Some(VirtualKeyCode::Numpad9) => current_keys.num_9 = false,
+                                                //special keys
+                                                Some(VirtualKeyCode::LControl) => current_keys.ctrl_l = false,
+                                                Some(VirtualKeyCode::RControl) => current_keys.ctrl_r = false,
+                                                Some(VirtualKeyCode::LAlt) => current_keys.alt_l = false,
+                                                Some(VirtualKeyCode::RAlt) => current_keys.alt_r = false,
+                                                Some(VirtualKeyCode::LWin) => current_keys.super_l = false,
+                                                Some(VirtualKeyCode::RWin) => current_keys.super_r = false,
+                                                Some(VirtualKeyCode::Capital) => current_keys.caps_lock = false,
+                                                Some(VirtualKeyCode::LShift) => current_keys.shift_l = false,
+                                                Some(VirtualKeyCode::RShift) => current_keys.shift_r = false,
+                                                Some(VirtualKeyCode::Tab) => current_keys.tab = false,
+                                                Some(VirtualKeyCode::Space) => current_keys.space = false,
+                                                Some(VirtualKeyCode::Return) => current_keys.enter = false,
+                                                Some(VirtualKeyCode::NumpadEnter) => current_keys.nume_enter = false,
+                                                Some(VirtualKeyCode::Escape) => current_keys.escape = false,
+
+
+
 
                                                 _ => {},
                                             }

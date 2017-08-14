@@ -18,12 +18,26 @@ pub mod input_handler;
 #[derive(Debug, Copy, Clone)]
 pub struct KeyMap {
 
+    //WINDOW
     ///Window info (usually not needed recreation is handled by renderer)
     pub window_dimensions: [u32; 2],
 
+    //GLOBAL
     ///Global States
     pub closed: bool,
 
+    //MOUSE
+    //moving
+    ///Represents the current location of the mouse
+    pub mouse_location: [i32; 2],
+    ///represents the current active delta of mouse mouement, this can be used to implement mouse
+    ///speed dependent movement like camera-rotation
+    pub mouse_delta_x: f64,
+    //same as `mouse_delta_x` for axis-y
+    pub mouse_delta_y: f64,
+
+
+    //KEYBOARD
     //normal keys
     pub a: bool,
     pub b: bool,
@@ -88,6 +102,11 @@ pub struct KeyMap {
     pub enter: bool,
     pub nume_enter: bool,
     pub escape: bool,
+    pub up: bool,
+    pub down: bool,
+    pub left: bool,
+    pub right: bool,
+
     //todo addrest
     /*
 F1,
@@ -114,11 +133,6 @@ Delete,
 End,
 PageDown,
 PageUp,
-Left,
-Up,
-Right,
-Down,
-Back,
 Compose,
 AbntC1,
 AbntC2,
@@ -193,6 +207,10 @@ impl KeyMap{
             //state
             closed: false,
 
+            mouse_location: [0; 2],
+            mouse_delta_x: 0.0,
+            mouse_delta_y: 0.0,
+
             //normal keys
             a: false,
             b: false,
@@ -257,6 +275,11 @@ impl KeyMap{
             enter: false,
             nume_enter: false,
             escape: false,
+            //arrows
+            up: false,
+            down: false,
+            left: false,
+            right: false,
         }
     }
 }

@@ -148,9 +148,9 @@ impl Camera for DefaultCamera{
 
         //Fixed camera gittering by slowing down so one integer delta = movement of
         // delta * sensitvity * time_delta * slowdown (virtual speed up)
-        let virtual_speedup = 0.25;
-        let x_offset: f32 = 0.0; //input_handler.keys.Delta_x as f32 * sensitivity * delta_time * virtual_speedup;
-        let y_offset: f32 = 0.0; //input_handler.keys.Delta_y as f32 * sensitivity * delta_time * virtual_speedup;
+        let virtual_speedup = 1.0;
+        let x_offset: f32 = key_map_inst.mouse_delta_x as f32 * sensitivity * delta_time * virtual_speedup;
+        let y_offset: f32 = key_map_inst.mouse_delta_y as f32 * sensitivity * delta_time * virtual_speedup;
 
         self.yaw += x_offset;
         self.pitch += y_offset;

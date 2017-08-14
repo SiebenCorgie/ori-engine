@@ -22,17 +22,50 @@ impl Window{
         engine_settings: Arc<Mutex<engine_settings::EngineSettings>>
     )-> Self{
 
+        let mut available_monitors = winit::get_available_monitors();
+
         let engine_settings_inst = engine_settings.clone();
         let engine_settings_lck = engine_settings_inst.lock().expect("Failed to lock engine settings");
 
-        let window = winit::WindowBuilder::new()
-        .with_dimensions(
-            engine_settings_lck.get_dimensions()[0],
-            engine_settings_lck.get_dimensions()[1]
-        )
-        .with_title("Thingy!")
-        .with_decorations(true)
+        let mut window_builder = winit::WindowBuilder::new();
+
+        //do not specifiy screen dimensions when creating with fullscreen
+        //Set fullscreen if needed
+        if engine_settings_lck.fullscreen{
+            let valid_monitor_id = {
+                match available_monitors.nth(engine_settings_lck.main_monitor as usize){
+                    Some(monitor) => monitor,
+                    None => {
+                        //The monitor id in the settings is not valid, trying to get the 0th
+                        //one, if this fails then there is no monitor and we have to panic :(
+                        match available_monitors.nth(0){
+                            Some(monitor_id) => monitor_id,
+                            None => panic!("could not find monitor for this system!"),
+                        }
+                    },
+                }
+            };
+            //After getting a vaild monitor id, returning if for the fullscreen
+            window_builder = window_builder.with_fullscreen(valid_monitor_id);
+        }else{
+            //is not fullscreen, so we set up a window with dimensions
+            window_builder = window_builder.with_dimensions(
+                engine_settings_lck.get_dimensions()[0],
+                engine_settings_lck.get_dimensions()[1]
+            );
+        }
+        //set some global info for the builder
+        window_builder = window_builder
+        .with_title(engine_settings_lck.app_name.clone())
+        .with_decorations(true);
+
+        //build the vulkano_win window
+        let window = window_builder
         .build_vk_surface(events_loop, instance.clone()).expect("failed to create window!");
+
+        //Set the cursor state (can only be done on a already created window)
+        window.window().set_cursor(engine_settings_lck.cursor_visible_state);
+        window.window().set_cursor_state(engine_settings_lck.cursor_state);
 
         Window{
             window: window,

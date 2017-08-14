@@ -3,7 +3,7 @@ extern crate ori_engine;
 use ori_engine::*;
 use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::Duration;
+use std::time::{Instant, Duration};
 
 fn main() {
 
@@ -14,6 +14,7 @@ fn main() {
     .with_dimensions(800, 600)
     .with_name("Teddy the bear")
     .set_vulkan_silent()
+    .with_fullscreen_mode(true)
     ));
 
     //Input
@@ -44,6 +45,8 @@ fn main() {
 
     let mut adding_status = false;
 
+    let mut start_time = Instant::now();
+
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later
         if adding_status == false && asset_manager.has_scene("Ape"){
@@ -68,5 +71,9 @@ fn main() {
             input_handler.end();
             break;
         }
+
+        let fps_time = start_time.elapsed().subsec_nanos();
+        println!("STATUS: RENDER: FPS IN GAME: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+        start_time = Instant::now();
     }
 }

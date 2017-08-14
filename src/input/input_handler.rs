@@ -25,6 +25,7 @@ pub struct InputHandler {
     max_polling_speed: i32,
 }
 
+
 impl InputHandler{
     ///Creates a new input handler, needs to be started via `start` and ended via `end`
     pub fn new(

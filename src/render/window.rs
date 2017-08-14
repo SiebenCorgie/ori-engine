@@ -65,7 +65,7 @@ impl Window{
 
         //Set the cursor state (can only be done on a already created window)
         window.window().set_cursor(engine_settings_lck.cursor_visible_state);
-        window.window().set_cursor_state(engine_settings_lck.cursor_state);
+        window.window().set_cursor_state(engine_settings_lck.cursor_state).ok().expect("could not set cursor");
 
         Window{
             window: window,

@@ -9,3 +9,5 @@ ori-engine = { path = "../../" }
 vulkano = "0.5.6"
 vulkano-shader-derive = "0.5.6"
 vulkano-win = "0.5.6"
+
+winit = "0.7.5"

@@ -118,7 +118,7 @@ impl InputHandler{
                                     //println!("Resized to {} / {}", width, height );
                                 },
                                 Moved(width, height) =>{
-                                    //println!("STATUS: INPUT HANDLER: moved: {} / {}", width, height );
+                                    println!("STATUS: INPUT HANDLER: moved window: {} / {}", width, height );
 
                                 },
                                 Closed => {
@@ -207,6 +207,11 @@ impl InputHandler{
                                                 Some(VirtualKeyCode::Return) => current_keys.enter = true,
                                                 Some(VirtualKeyCode::NumpadEnter) => current_keys.nume_enter = true,
                                                 Some(VirtualKeyCode::Escape) => current_keys.escape = true,
+                                                //arrows
+                                                Some(VirtualKeyCode::Up) => current_keys.up = true,
+                                                Some(VirtualKeyCode::Down) => current_keys.down = true,
+                                                Some(VirtualKeyCode::Left) => current_keys.left = true,
+                                                Some(VirtualKeyCode::Right) => current_keys.right = true,
                                                 _ => {},
                                             }
                                         },
@@ -276,6 +281,11 @@ impl InputHandler{
                                                 Some(VirtualKeyCode::Return) => current_keys.enter = false,
                                                 Some(VirtualKeyCode::NumpadEnter) => current_keys.nume_enter = false,
                                                 Some(VirtualKeyCode::Escape) => current_keys.escape = false,
+                                                //arrows
+                                                Some(VirtualKeyCode::Up) => current_keys.up = false,
+                                                Some(VirtualKeyCode::Down) => current_keys.down = false,
+                                                Some(VirtualKeyCode::Left) => current_keys.left = false,
+                                                Some(VirtualKeyCode::Right) => current_keys.right = false,
 
 
 
@@ -287,6 +297,7 @@ impl InputHandler{
 
                                 },
                                 MouseMoved {device_id, position} =>{
+                                    println!("STATUS: MOUSE {:?} moved to: {} / {}", device_id, position.0, position.1);
 
                                 },
                                 MouseEntered{device_id} =>{
@@ -320,17 +331,60 @@ impl InputHandler{
                         },
                         //Device
                         winit::Event::DeviceEvent{device_id, event} => {
+                            //Using raw events for the mouse movement
+                            //One could, potentually use a 3rd axis for a 3d controller movement
+                            //I think
                             match event{
+                                winit::DeviceEvent::Motion{axis, value} => {
+
+                                    /* waiting for winit 0.7.6 to land
+                                    match axis {
+                                        0 => current_keys.mouse_delta_x = value,
+                                        1 => current_keys.mouse_delta_y = value,
+                                    }
+                                    */
+
+                                    println!("Mouse Motion: {:?} of value {}", axis, value);
+                                }
                                 //This could register raw device events, however, not used atm
                                 _ => {},
                             }
-
                         },
                         //Awake (not implemented)
                         winit::Event::Awakened => {},
 
                     }
                 });
+
+                //Have to fake mouse via errors till a fix lands in winit > 0.7.5
+                if current_keys.down{
+                    current_keys.mouse_delta_y = -1.0;
+                    println!("Down", );
+                }else{
+                    current_keys.mouse_delta_y = 0.0;
+                }
+                if current_keys.up{
+                    current_keys.mouse_delta_y = 1.0;
+                    println!("Up", );
+
+                }else{
+                    current_keys.mouse_delta_y = 0.0;
+                }
+                if current_keys.left{
+                    current_keys.mouse_delta_x = -1.0;
+                    println!("left", );
+
+                }else{
+                    current_keys.mouse_delta_x = 0.0;
+                }
+                if current_keys.right{
+                    current_keys.mouse_delta_x = 1.0;
+                    println!("right", );
+
+                }else{
+                    current_keys.mouse_delta_x = 0.0;
+                }
+                //FAKE END
 
                 //Overwrite the Arc<Mutex<KeyMap>> with the new capture
                 {

@@ -5,16 +5,20 @@ use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Instant, Duration};
 
+extern crate winit;
+
 fn main() {
 
     //Start
 
     //Settings
     let settings = Arc::new(Mutex::new(core::engine_settings::EngineSettings::new()
-    .with_dimensions(800, 600)
+    .with_dimensions(1200, 720)
     .with_name("Teddy the bear")
     .set_vulkan_silent()
-    .with_fullscreen_mode(true)
+    .with_fullscreen_mode(false)
+    .with_cursor_state(winit::CursorState::Grab)
+    .with_cursor_visibility(winit::MouseCursor::Arrow)
     ));
 
     //Input
@@ -35,7 +39,7 @@ fn main() {
         input_handler.key_map.clone()
     );
 
-    ///Start the input thread
+    //Start the input thread
     input_handler.start();
 
     //Import the ape

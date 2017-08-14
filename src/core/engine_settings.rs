@@ -1,13 +1,26 @@
 
+use winit;
+
 ///The struc with the information
 #[derive(Clone)]
 pub struct EngineSettings {
-    //Displayed name
+    ///Displayed name
     pub app_name: String,
-    //Dimensions in pixel
+
+    ///Dimensions in pixel
     pub window_dimensions: [u32; 2],
-    //location in pixel
+    ///location in pixel
     pub window_location: [u32; 2],
+    ///Sets the visibility state of the cursor
+    pub cursor_visible_state: winit::MouseCursor,
+    ///Cursor state (i.e. normal, hidden "catched" etc.)
+    pub cursor_state: winit::CursorState,
+    ///flag to determin if the window should be created fullscreen
+    pub fullscreen: bool,
+    ///represents the monitor used for fullscreen mode
+    pub main_monitor: i32,
+
+
     //Debug settings:
     silent_vulkan: bool,
 
@@ -32,11 +45,39 @@ impl EngineSettings{
 
         EngineSettings{
             app_name: String::from("Ori-Engine"),
+
             window_dimensions: [800, 600],
             window_location: [100, 100],
+            cursor_visible_state: winit::MouseCursor::NoneCursor,
+            cursor_state: winit::CursorState::Grab,
+            fullscreen: false,
+            main_monitor: 0,
 
             silent_vulkan: false,
         }
+    }
+
+    ///Sets the main monitor, used to define where the fullscreen mode has to be applied
+    pub fn with_main_monitor(mut self, id: i32) -> Self{
+        self.main_monitor = id;
+        self
+    }
+    ///Sets the fullscreen mode (true = fullscreen)
+    pub fn with_fullscreen_mode(mut self, mode: bool) -> Self{
+        self.fullscreen = mode;
+        self
+    }
+
+    ///Sets a new visibility state for the cursor
+    pub fn with_cursor_visibility(mut self, state: winit::MouseCursor) -> Self{
+        self.cursor_visible_state = state;
+        self
+    }
+
+    ///sets the cursor state, most usefull is a free or a crapped cursor
+    pub fn with_cursor_state(mut self, state: winit::CursorState) -> Self{
+        self.cursor_state = state;
+        self
     }
 
     /// Sets vulkan silent, vulkan won't print any validation layer infos anymore

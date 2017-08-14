@@ -65,8 +65,8 @@ impl Camera for DefaultCamera{
     ) -> Self {
         //camera General
         let cameraPos = Vector3::new(0.0, 0.0, 0.0);
-        let cameraFront = Vector3::new(0.0, 0.0, -1.0);
-        let cameraUp = Vector3::new(0.0, 1.0, 0.0);
+        let cameraFront = Vector3::new(0.0, 0.0, 1.0);
+        let cameraUp = Vector3::new(0.0, -1.0, 0.0);
         //Camera Rotation
         let yaw: f32 = 0.0;
         let pitch: f32 = 0.0;

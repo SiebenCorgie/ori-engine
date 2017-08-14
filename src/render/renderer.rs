@@ -534,7 +534,7 @@ impl Renderer {
 
         //DEBUG
         let fps_time = start_time.elapsed().subsec_nanos();
-        //println!("STATUS: RENDER: FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+        println!("STATUS: RENDER: FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
     }
 
     ///Returns the uniform manager

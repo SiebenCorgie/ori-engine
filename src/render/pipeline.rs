@@ -8,7 +8,7 @@ use vulkano_shader_derive;
 use std::sync::Arc;
 use std;
 use std::boxed::Box;
-use core::mesh;
+use core::resources::mesh;
 use render::pipeline_infos;
 ///Definition of a single pipeline together with its creation and deleting behavoir
 pub struct Pipeline {

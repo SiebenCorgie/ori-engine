@@ -1,4 +1,4 @@
-use core::mesh;
+use core::resources::mesh;
 use core::simple_scene_system::node;
 use tools::Importer;
 use tools::assimp_importer;

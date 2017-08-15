@@ -1,23 +1,14 @@
 ///The scene system mod responsible for handling the scene hirachie and handeling
 ///queries
 pub mod simple_scene_system;
-///Definition of a default camera, the momvement has to be controlled by a gameplay-controller
-pub mod camera;
-///Defines all possible light
-///Spot, point and directional light so far
-pub mod light;
-///Defines a normal mesh along with its properties
-pub mod mesh;
-///An empty can be used if a node should not have any content
-pub mod empty;
-///Defines a material with all it's properties, NOTE: this might switch to a UE4 like
-///node based approach in the future.
-pub mod material;
 ///Holds many useful information for different kinds of information
 pub mod engine_settings;
 ///the resource manager is a abstraction to group al management systems together, it is
 ///not an actuall system
 pub mod resource_management;
+///Resources holds all loadable resources, they should ussually be managed though one
+///of the management systems in `core::resource_management`.
+pub mod resources;
 
 use na;
 use nc;

@@ -9,7 +9,7 @@ use vulkano;
 
 use core;
 use core::NodeMember;
-use core::material;
+use core::resources::material;
 use render::pipeline;
 
 ///Defines the information a Vertex should have

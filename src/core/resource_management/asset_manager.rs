@@ -4,14 +4,14 @@ use time;
 
 use core::simple_scene_system::node;
 use core::resource_management::material_manager;
-use core::light;
-use core::mesh;
+use core::resources::light;
+use core::resources::mesh;
 use core::resource_management::mesh_manager;
 use tools::assimp_importer;
 use tools::Importer;
 use core::resource_management::scene_manager;
-use core::camera::Camera;
-use core::camera::DefaultCamera;
+use core::resources::camera::Camera;
+use core::resources::camera::DefaultCamera;
 use core::engine_settings;
 
 use rt_error;

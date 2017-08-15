@@ -1,6 +1,6 @@
 use std::sync::{Mutex,Arc};
 use std::collections::HashMap;
-use core::material;
+use core::resources::material;
 use render;
 use render::pipeline;
 use render::pipeline_manager;

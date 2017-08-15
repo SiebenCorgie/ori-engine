@@ -11,11 +11,11 @@ use nc::bounding_volume::BoundingVolume;
 use rt_error;
 use core;
 use core::NodeMember;
-use core::mesh;
-use core::light;
-use core::empty;
-use core::camera;
-use core::camera::Camera;
+use core::resources::mesh;
+use core::resources::light;
+use core::resources::empty;
+use core::resources::camera;
+use core::resources::camera::Camera;
 ///All possible types of content a Node can hold.
 ///This enum as well as all `match` sequenzes in the `impl Node for GenereicNode` have to be
 ///Changed in order to apply a new type
@@ -213,9 +213,9 @@ impl GenericNode{
     }
 
     ///Returns a mesh from childs with this name
-    pub fn get_mesh(&mut self, name: &str)-> Option<Arc<Mutex<core::mesh::Mesh>>>{
+    pub fn get_mesh(&mut self, name: &str)-> Option<Arc<Mutex<core::resources::mesh::Mesh>>>{
 
-        let mut result_value: Option<Arc<Mutex<core::mesh::Mesh>>> = None;
+        let mut result_value: Option<Arc<Mutex<core::resources::mesh::Mesh>>> = None;
 
         //first have a look if self's content is the searched one
         //NOTE if the searched value is somewhere in the tree, this should return
@@ -256,8 +256,8 @@ impl GenericNode{
     }
 
     ///Returns the first light point with this name
-    pub fn get_light_point(&mut self, name: &str) -> Option<Arc<Mutex<core::light::LightPoint>>>{
-        let mut result_value: Option<Arc<Mutex<core::light::LightPoint>>> = None;
+    pub fn get_light_point(&mut self, name: &str) -> Option<Arc<Mutex<core::resources::light::LightPoint>>>{
+        let mut result_value: Option<Arc<Mutex<core::resources::light::LightPoint>>> = None;
 
         //first have a look if self's content is the searched one
         //NOTE if the searched value is somewhere in the tree, this should return
@@ -363,7 +363,7 @@ impl GenericNode{
     }
 
     ///Gets all LightPoint from this node down
-    pub fn get_all_light_points(&mut self) -> Vec<Arc<Mutex<core::light::LightPoint>>>{
+    pub fn get_all_light_points(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightPoint>>>{
         let mut return_vector = Vec::new();
         //Check self
         match self.content{
@@ -377,7 +377,7 @@ impl GenericNode{
     }
 
     ///Gets all LightDir from this node down
-    pub fn get_all_light_directionals(&mut self) -> Vec<Arc<Mutex<core::light::LightDirectional>>>{
+    pub fn get_all_light_directionals(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightDirectional>>>{
         let mut return_vector = Vec::new();
         //Check self
         match self.content{
@@ -391,7 +391,7 @@ impl GenericNode{
     }
 
     ///Gets all LightSpot from this node down
-    pub fn get_all_light_spots(&mut self) -> Vec<Arc<Mutex<core::light::LightSpot>>>{
+    pub fn get_all_light_spots(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightSpot>>>{
         let mut return_vector = Vec::new();
         //Check self
         match self.content{

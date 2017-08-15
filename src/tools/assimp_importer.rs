@@ -7,8 +7,8 @@ use vulkano;
 use rt_error;
 use tools::Importer;
 use core::NodeMember;
-use core::mesh;
-use core::mesh::Vertex;
+use core::resources::mesh;
+use core::resources::mesh::Vertex;
 use tools;
 
 pub struct AssimpImporter {}

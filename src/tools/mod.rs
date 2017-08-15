@@ -4,7 +4,7 @@ use std::sync::Arc;
 use vulkano;
 
 use render::pipeline;
-use core::mesh;
+use core::resources::mesh;
 
 /// an importer via the assimp library
 pub mod assimp_importer;

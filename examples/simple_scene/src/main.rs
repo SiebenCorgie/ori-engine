@@ -33,7 +33,7 @@ fn main() {
         )
     );
     //Create a asset manager for the renderer
-    let mut asset_manager = core::asset_manager::AssetManager::new(
+    let mut asset_manager = core::resource_management::asset_manager::AssetManager::new(
         render.clone(),
         settings.clone(),
         input_handler.key_map.clone()

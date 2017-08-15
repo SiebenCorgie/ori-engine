@@ -3,13 +3,13 @@ use std::thread;
 use time;
 
 use core::simple_scene_system::node;
-use core::material_manager;
+use core::resource_management::material_manager;
 use core::light;
 use core::mesh;
-use core::mesh_manager;
+use core::resource_management::mesh_manager;
 use tools::assimp_importer;
 use tools::Importer;
-use core::scene_manager;
+use core::resource_management::scene_manager;
 use core::camera::Camera;
 use core::camera::DefaultCamera;
 use core::engine_settings;

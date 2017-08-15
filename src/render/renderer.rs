@@ -1,7 +1,7 @@
 use render::pipeline_manager;
 use render::pipeline_infos;
 use render::uniform_manager;
-use core::asset_manager;
+use core::resource_management::asset_manager;
 use core::camera::Camera;
 use render::window;
 use core::engine_settings;

@@ -10,3 +10,5 @@ pub mod empty;
 ///Defines a material with all it's properties, NOTE: this might switch to a UE4 like
 ///node based approach in the future.
 pub mod material;
+///Defines a texture along with it's different settings, like mipmapping and tiling-mode
+pub mod texture;

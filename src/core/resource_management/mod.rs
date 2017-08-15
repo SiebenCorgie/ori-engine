@@ -8,3 +8,5 @@ pub mod mesh_manager;
 pub mod asset_manager;
 ///The scene manager manages all available scene, he is tightly packet with the mesh and light manager(todo)
 pub mod scene_manager;
+///Manages all available textues and gives out `Arc<Texture>` copys on request
+pub mod texture_manager;

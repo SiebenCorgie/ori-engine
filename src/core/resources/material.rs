@@ -437,7 +437,7 @@ impl Material {
         self.material_factors = info;
     }
 
-    ///Recreates set_02, set_03 and set_04
+    ///Recreates set_02, set_03
     pub fn recreate_static_sets(&mut self){
         //println!("STATUS: MATERIAL: Recreation static sets", );
         //Recreate Texture, this might be moved to a Texture manager which will store

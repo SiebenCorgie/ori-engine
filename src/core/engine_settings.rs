@@ -24,6 +24,10 @@ pub struct EngineSettings {
     //Debug settings:
     silent_vulkan: bool,
 
+    //Graphics settings
+    anisotropic_filtering: f32,
+    msaa: u32,
+
 }
 
 impl EngineSettings{
@@ -44,16 +48,20 @@ impl EngineSettings{
 
 
         EngineSettings{
+            //main
             app_name: String::from("Ori-Engine"),
-
+            //window
             window_dimensions: [800, 600],
             window_location: [100, 100],
             cursor_visible_state: winit::MouseCursor::NoneCursor,
             cursor_state: winit::CursorState::Grab,
             fullscreen: false,
             main_monitor: 0,
-
+            //graphics debuging
             silent_vulkan: false,
+            //Graphics settings
+            anisotropic_filtering: 1.0,
+            msaa: 1,
         }
     }
 
@@ -79,6 +87,19 @@ impl EngineSettings{
         self.cursor_state = state;
         self
     }
+
+    ///Sets up a custom anisotropical filtering factor
+    pub fn with_anisotropical_filtering(mut self, af_factor: f32)-> Self{
+        self.anisotropic_filtering = af_factor;
+        self
+    }
+
+    ///Sets up a custom anisotropical filtering factor
+    pub fn with_msaa_factor(mut self, msaa_factor: u32) -> Self{
+        self.msaa = msaa_factor;
+        self
+    }
+
 
     /// Sets vulkan silent, vulkan won't print any validation layer infos anymore
     pub fn set_vulkan_silent(mut self) -> Self{

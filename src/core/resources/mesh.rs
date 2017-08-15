@@ -50,6 +50,8 @@ impl Vertex{
     }
 }
 
+///Defines a mesh, a mesh mostly consists of: Name, Vertices (and the corresbondig vertex buffer)
+///, the vertex indices, a material and its AABB (bounding box)
 #[derive(Clone)]
 pub struct Mesh {
     pub name: String,

@@ -4,7 +4,7 @@ use render::pipeline_manager;
 use render::pipeline_infos;
 use render::uniform_manager;
 use core::resources::texture;
-
+use core::engine_settings::EngineSettings;
 
 use vulkano::descriptor::descriptor_set::PersistentDescriptorSet;
 use vulkano::image::ImmutableImage;
@@ -148,6 +148,225 @@ impl MaterialFactors{
     }
 }
 
+
+
+
+///A Structure used to build a material from in the MaterialBuilder described attributes
+pub struct MaterialBuilder {
+    albedo: Option<Arc<texture::Texture>>,
+    normal: Option<Arc<texture::Texture>>,
+    physical: Option<Arc<texture::Texture>>,
+    emissive: Option<Arc<texture::Texture>>,
+    fallback_texture: Arc<texture::Texture>,
+    //texture and material infos
+    texture_usage_info: TextureUsageFlags,
+    material_factors: MaterialFactors,
+
+}
+
+impl MaterialBuilder{
+    ///Creates a new Builder for this `texture::Texture`s with default parameters
+    pub fn new(
+        albedo: Option<Arc<texture::Texture>>,
+        normal: Option<Arc<texture::Texture>>,
+        physical: Option<Arc<texture::Texture>>,
+        emissive: Option<Arc<texture::Texture>>,
+        fallback_texture: Arc<texture::Texture>,
+    ) -> Self {
+
+        //Sort out the texture usage flags for this material
+        let mut used_albedo = 0;
+        let mut used_normal = 0;
+        let mut used_emissive = 0;
+        let mut used_physical = 0;
+
+        match albedo.clone(){
+            Some(albedo) => used_albedo = 1,
+             _=> {},
+        }
+        match normal.clone(){
+            Some(normal) => used_normal = 1,
+             _=> {},
+        }
+        match physical.clone(){
+            Some(physical) => used_physical = 1,
+             _=> {},
+        }
+        match emissive.clone(){
+            Some(emissive) => used_emissive = 1,
+             _=> {},
+        }
+
+        //Create the usag flags from the info
+        let mut usage_flags = TextureUsageFlags::new();
+        usage_flags.albedo = used_albedo;
+        usage_flags.normal = used_normal;
+        usage_flags.roughness = used_physical;
+        usage_flags.metal = used_physical;
+        usage_flags.occlusion = used_physical;
+        usage_flags.emissive = used_emissive;
+
+        MaterialBuilder{
+            albedo: albedo,
+            normal: normal,
+            physical: physical,
+            emissive: emissive,
+            fallback_texture: fallback_texture,
+            //texture and material infos
+            texture_usage_info: usage_flags,
+            //and default factors
+            material_factors: MaterialFactors::new(),
+        }
+    }
+
+    ///can be used to set different usage flags, most of the flag should be sorted correctly by
+    ///the supplied textures though
+    pub fn with_usage_flags(mut self, new_flags: TextureUsageFlags) -> Self{
+        self.texture_usage_info = new_flags;
+        self
+    }
+
+    ///can be used to set custom factors
+    pub fn with_factors(mut self, new_factors: MaterialFactors) -> Self{
+        self.material_factors = new_factors;
+        self
+    }
+
+    ///builds a material from the supplied textures and other info
+    pub fn build(
+        mut self,
+        name: &str,
+        pipeline: &str,
+        pipeline_manager: Arc<Mutex<pipeline_manager::PipelineManager>>,
+        uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
+        device: Arc<vulkano::device::Device>,
+        queue: Arc<vulkano::device::Queue>,
+        engine_settings: Arc<Mutex<EngineSettings>>,
+    ) -> Material{
+
+        //find out if a texture was supplied per slot
+        //if not return the fallback texture for this builder
+        //should usally be the 1x1 pixel texture
+        let tmp_albedo = {
+            match self.albedo{
+                Some(texture) => texture,
+                None => self.fallback_texture.clone(),
+            }
+        };
+
+        let tmp_normal = {
+            match self.normal{
+                Some(texture) => texture,
+                None => self.fallback_texture.clone(),
+            }
+        };
+
+        let tmp_physical = {
+            match self.physical{
+                Some(texture) => texture,
+                None => self.fallback_texture.clone(),
+            }
+        };
+
+        let tmp_emissive = {
+            match self.emissive{
+                Some(texture) => texture,
+                None => self.fallback_texture.clone(),
+            }
+        };
+
+        ///The TextureUsageFlags and Factor Info comes from the builder, we create a pool for
+        //them...
+        //Create a pool to allocate from
+        let usage_info_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<TextureUsageFlags>
+                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
+
+
+        let material_factor_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<MaterialFactors>
+                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
+
+        //lock the pipe
+        let pipe_man_in = pipeline_manager.clone();
+        let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
+
+        //Additionaly lock the uniformanager to get the first global information
+        let uniform_manager_isnt = uniform_manager.clone();
+        let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
+
+        //TODO add set 02 for material information
+        //println!("STATUS: MATERIAL: Creating set 01 for the first time", );
+        let set_01 = Arc::new(PersistentDescriptorSet::start(
+            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 0)
+            .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
+            .build().expect("failed to build descriptor")
+        );
+
+
+        //Create the set 02
+        //println!("STATUS: MATERIAL: Creating set 02 for the first time", );
+        let set_02 = Arc::new(
+            PersistentDescriptorSet::start(
+            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 1)
+            .add_sampled_image(tmp_albedo.get_raw_texture(), tmp_albedo.get_raw_sampler())
+            .expect("failed to add sampled albedo")
+            .add_sampled_image(tmp_normal.get_raw_texture(), tmp_normal.get_raw_sampler())
+            .expect("failed to add sampled nrm")
+            .add_sampled_image(tmp_physical.get_raw_texture(), tmp_physical.get_raw_sampler())
+            .expect("failed to add sampled physical")
+            .add_sampled_image(tmp_emissive.get_raw_texture(), tmp_emissive.get_raw_sampler())
+            .expect("failed to add emissive texture")
+            .build().expect("failed to build set_02")
+        );
+
+        //Create the Usage Flag descriptor
+        let set_03 = Arc::new(PersistentDescriptorSet::start(
+            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 2)
+            .add_buffer(usage_info_pool.next(
+                //need to clone for storing in struct later
+                self.texture_usage_info.clone()
+            ).clone()).expect("Failed to create descriptor set")
+            .add_buffer(material_factor_pool.next(
+                //need to clone for storing in struct later
+                self.material_factors.clone()
+            ).clone()).expect("failed to create the first material factor pool")
+            .build().expect("failed to build descriptor")
+        );
+
+        ///Now create the new material
+        Material{
+            name: String::from(name),
+            //albedo describtion
+            t_albedo: tmp_albedo,
+            //normal
+            t_normal: tmp_normal,
+            //Physical
+            t_physical: tmp_physical,
+            //Additional textures
+            t_emissive: tmp_emissive,
+
+            //All Unifrom infos
+            pipeline: String::from(pipeline),
+            pipeline_manager: pipeline_manager,
+            device: device,
+            queue: queue.clone(),
+            uniform_manager: uniform_manager,
+
+            set_01: set_01,
+
+            set_02: set_02,
+
+            set_03: set_03,
+
+            texture_usage_info: self.texture_usage_info,
+            usage_info_pool: usage_info_pool,
+
+            material_factors: self.material_factors,
+            material_factor_pool: material_factor_pool,
+        }
+    }
+}
+
+
 ///The material descibes the physical implementation of the material
 ///It mostly contains three textures:
 /// - albedo: the color representation (without light)
@@ -160,21 +379,16 @@ impl MaterialFactors{
 
 ///Describes a standart material
 pub struct Material {
-    name: String,
+    
+    pub name: String,
     //albedo describtion
-    t_albedo_path: String,
-    sampler_albedo: Arc<vulkano::sampler::Sampler>,
-    t_albedo: Arc<vulkano::image::ImmutableImage<vulkano::format::R8G8B8A8Srgb>>,
+    t_albedo: Arc<texture::Texture>,
     //normal
-    t_normal_path: String,
-    sampler_normal: Arc<vulkano::sampler::Sampler>,
-    t_normal: Arc<vulkano::image::ImmutableImage<vulkano::format::R8G8B8A8Srgb>>,
+    t_normal: Arc<texture::Texture>,
     //Physical
-    t_physical_path: String,
-    sampler_physical: Arc<vulkano::sampler::Sampler>,
-    t_physical: Arc<vulkano::image::ImmutableImage<vulkano::format::R8G8B8A8Srgb>>,
+    t_physical: Arc<texture::Texture>,
     //Additional textures: TODO implent
-
+    t_emissive: Arc<texture::Texture>,
 
     //Technical implementation
     ///Reference to parent pipeline
@@ -202,232 +416,27 @@ pub struct Material {
 
 
 impl Material {
-    ///Creates an empty material with standart parameter for a pipeline
-    pub fn new(name: &str, pipeline: &str,
-        pipeline_manager: Arc<Mutex<pipeline_manager::PipelineManager>>,
-        uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
-        device: Arc<vulkano::device::Device>,
-        queue: Arc<vulkano::device::Queue>,
-    )-> Self{
-
-        //Generate all the samplers for the different textures
-            //NOTE this might be changed to be configurable
-            //Either with an update function or a builder type
-            //Which will create a new maTypeNameterial and replace the old one
-            //However, the material properties might stay static on runtime
-
-            //Antistrophical filtering level as well as lod levels might be moved to
-            //a configuration file
-        ///Create the samplers
-
-        let sampler_albedo_tmp = vulkano::sampler::Sampler::new(
-            device.clone(),
-            vulkano::sampler::Filter::Linear,
-            vulkano::sampler::Filter::Linear,
-            vulkano::sampler::MipmapMode::Nearest,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            0.0, 1.0, 0.0, 0.0
-        ).expect("Failed to generate albedo sampler");
-
-        let sampler_normal_tmp = vulkano::sampler::Sampler::new(
-            device.clone(),
-            vulkano::sampler::Filter::Linear,
-            vulkano::sampler::Filter::Linear,
-            vulkano::sampler::MipmapMode::Nearest,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            0.0, 1.0, 0.0, 0.0
-        ).expect("Failed to generate normal sampler");
-
-        let sampler_physical_tmp= vulkano::sampler::Sampler::new(
-            device.clone(),
-            vulkano::sampler::Filter::Linear,
-            vulkano::sampler::Filter::Linear,
-            vulkano::sampler::MipmapMode::Nearest,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            vulkano::sampler::SamplerAddressMode::Repeat,
-            0.0, 1.0, 0.0, 0.0
-        ).expect("Failed to generate physical sampler");
-
-
-
-        //Now load a "nothing" texture, the multiplier might be used instead for colors
-        let texture_albedo = {
-            let (texture_albedo_tmp, tex_future_albedo) = {
-                let image = image::open("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/fallback_alb.png")
-                .expect("failed to load png normal in creation").flipv().to_rgba();
-
-                let (width, height) = image.dimensions();
-                let image_data = image.into_raw().clone();
-
-                vulkano::image::immutable::ImmutableImage::from_iter(
-                    image_data.iter().cloned(),
-                    vulkano::image::Dimensions::Dim2d { width: width, height: height },
-                    vulkano::format::R8G8B8A8Srgb,
-                    Some(queue.family()),
-                    queue.clone()).expect("failed to create immutable image")
-            };
-            //println!("STATUS: MATERIAL: droping future", );
-            texture_albedo_tmp
-        };
-        //println!("STATUS: MATERIAL: Now with fully loaded albedo", );
-
-
-        //Now load a default texture
-        let texture_nrm = {
-            let (texture_nrm_tmp, tex_future_nrm) = {
-                let image = image::open("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/nothing.png")
-                .expect("failed to load png normal in creation").to_rgba();
-
-                let (width, height) = image.dimensions();
-                let image_data = image.into_raw().clone();
-
-                vulkano::image::immutable::ImmutableImage::from_iter(
-                    image_data.iter().cloned(),
-                    vulkano::image::Dimensions::Dim2d { width: width, height: height },
-                    vulkano::format::R8G8B8A8Srgb,
-                    Some(queue.family()),
-                    queue.clone()).expect("failed to create immutable image")
-            };
-
-            //println!("STATUS: MATERIAL: Returning Normal", );
-            texture_nrm_tmp
-        };
-
-        //Now load a default texture
-        let texture_physical = {
-            let (texture_physical_tmp, tex_future_physical) = {
-                let image = image::open("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/nothing.png")
-                .expect("failed to load png physical in creation").to_rgba();
-
-                let (width, height) = image.dimensions();
-                let image_data = image.into_raw().clone();
-
-                vulkano::image::immutable::ImmutableImage::from_iter(
-                    image_data.iter().cloned(),
-                    vulkano::image::Dimensions::Dim2d { width: width, height: height },
-                    vulkano::format::R8G8B8A8Srgb,
-                    Some(queue.family()),
-                    queue.clone()).expect("failed to create immutable image")
-            };
-            //println!("STATUS: MATERIAL: Returning physical", );
-            texture_physical_tmp
-        };
-
-
-        //For the 3rd descriptor set create a usage information struct, this might be changed
-        let usage_info = TextureUsageFlags::new();
-        //and its pool
-        //Create a pool to allocate from
-        let usage_info_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<TextureUsageFlags>
-                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
-
-        //for the 3rd as well the default factors
-        let material_factor = MaterialFactors::new();
-
-        let material_factor_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<MaterialFactors>
-                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
-
-        //lock the pipe
-        let pipe_man_in = pipeline_manager.clone();
-        let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
-
-        //Additionaly lock the uniformanager to get the first global information
-        let uniform_manager_isnt = uniform_manager.clone();
-        let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
-
-        //TODO add set 02 for material information
-        //println!("STATUS: MATERIAL: Creating set 01 for the first time", );
-        let set_01 = Arc::new(PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 0)
-            .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
-            .build().expect("failed to build descriptor")
-        );
-
-
-        //Create the set 02
-        //println!("STATUS: MATERIAL: Creating set 02 for the first time", );
-        let set_02 = Arc::new(
-            PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 1)
-            .add_sampled_image(texture_albedo.clone(), sampler_albedo_tmp.clone())
-            .expect("failed to add sampled albedo")
-            .add_sampled_image(texture_nrm.clone(), sampler_normal_tmp.clone())
-            .expect("failed to add sampled nrm")
-            .add_sampled_image(texture_physical.clone(), sampler_physical_tmp.clone())
-            .expect("failed to add sampled physical")
-            .build().expect("failed to build set_02")
-        );
-
-        //Create the Usage Flag descriptor
-        let set_03 = Arc::new(PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 2)
-            .add_buffer(usage_info_pool.next(
-                usage_info.clone()
-            ).clone()).expect("Failed to create descriptor set")
-            .add_buffer(material_factor_pool.next(
-                material_factor.clone()
-            ).clone()).expect("failed to create the first material factor pool")
-            .build().expect("failed to build descriptor")
-        );
-
-        //println!("STATUS: MATERIAL: Created material!", );
-
-        Material{
-            name: String::from(name),
-
-            t_albedo_path: String::from("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/nothing.png"),
-            sampler_albedo: sampler_albedo_tmp,
-            t_albedo: texture_albedo,
-
-            t_normal_path: String::from("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/nothing.png"),
-            sampler_normal: sampler_normal_tmp,
-            t_normal: texture_nrm,
-
-            t_physical_path: String::from("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/nothing.png"),
-            sampler_physical: sampler_physical_tmp,
-            t_physical: texture_physical,
-
-            //All Unifrom infos
-            pipeline: String::from(pipeline),
-            pipeline_manager: pipeline_manager,
-            device: device,
-            queue: queue.clone(),
-            uniform_manager: uniform_manager,
-
-            set_01: set_01,
-
-            set_02: set_02,
-
-            set_03: set_03,
-
-            texture_usage_info: usage_info,
-            usage_info_pool: usage_info_pool,
-
-            material_factors: material_factor,
-            material_factor_pool: material_factor_pool,
-        }
-    }
-
     ///Adds a albedo texture to the material
-    pub fn set_albedo_texture(&mut self, albedo_path: &str){
-        self.t_albedo_path = String::from(albedo_path);
+    pub fn set_albedo_texture(&mut self, albedo: Arc<texture::Texture>){
+        self.t_albedo = albedo;
         self.texture_usage_info.albedo = 1;
     }
 
     ///Adds a normal Texture
-    pub fn set_normal_texture(&mut self, normal_path: &str){
-        self.t_normal_path = String::from(normal_path);
+    pub fn set_normal_texture(&mut self, normal: Arc<texture::Texture>){
+        self.t_normal = normal;
         self.texture_usage_info.normal = 1;
     }
 
     ///Adds a physical texture
-    pub fn set_physical_texture(&mut self, physical_path: &str){
-        self.t_physical_path = String::from(physical_path);
+    pub fn set_physical_texture(&mut self, physical: Arc<texture::Texture>){
+        self.t_physical = physical;
+    }
+
+    ///Adds a emissive texture
+    pub fn set_emissive_texture(&mut self, emissive: Arc<texture::Texture>){
+        self.t_emissive = emissive;
+        self.texture_usage_info.emissive = 1;
     }
 
     pub fn set_texture_usage_info(&mut self, info: TextureUsageFlags){
@@ -442,75 +451,6 @@ impl Material {
     ///Recreates set_02, set_03
     pub fn recreate_static_sets(&mut self){
         //println!("STATUS: MATERIAL: Recreation static sets", );
-        //Recreate Texture, this might be moved to a Texture manager which will store
-        //MaterialTexture Structs of Type Option<Arc<Texture>> for each type
-
-        //Now load a default texture
-        //println!("WARNING: MATERIAL: loading albedo: {}", self.t_albedo_path.clone());
-        let texture_albedo = {
-            let (texture_albedo_tmp, tex_future_albedo) = {
-                let image = image::open(self.t_albedo_path.to_string())
-                .expect("failed to load png for albedo").flipv().to_rgba();
-
-                let (width, height) = image.dimensions();
-                let image_data = image.into_raw().clone();
-
-                vulkano::image::immutable::ImmutableImage::from_iter(
-                    image_data.iter().cloned(),
-                    vulkano::image::Dimensions::Dim2d { width: width, height: height },
-                    vulkano::format::R8G8B8A8Srgb,
-                    Some(self.queue.family()),
-                    self.queue.clone()).expect("failed to create immutable image")
-            };
-            //println!("STATUS: MATERIAL: droping future", );
-            texture_albedo_tmp
-        };
-        self.t_albedo = texture_albedo;
-        //println!("STATUS: MATERIAL: Now with fully loaded albedo", );
-
-
-        //Now load a default texture
-        let texture_nrm = {
-            let (texture_nrm_tmp, tex_future_nrm) = {
-                let image = image::open(self.t_normal_path.to_string())
-                .expect("failed to load png for nrm").flipv().to_rgba();
-
-                let (width, height) = image.dimensions();
-                let image_data = image.into_raw().clone();
-
-                vulkano::image::immutable::ImmutableImage::from_iter(
-                    image_data.iter().cloned(),
-                    vulkano::image::Dimensions::Dim2d { width: width, height: height },
-                    vulkano::format::R8G8B8A8Srgb,
-                    Some(self.queue.family()),
-                    self.queue.clone()).expect("failed to create immutable image")
-            };
-
-            //println!("STATUS: MATERIAL: Returning Normal", );
-            texture_nrm_tmp
-        };
-        self.t_normal = texture_nrm;
-
-        //Now load a default texture
-        let texture_physical = {
-            let (texture_physical_tmp, tex_future_physical) = {
-                let image = image::open(self.t_physical_path.to_string())
-                .expect("failed to load png for physical").flipv().to_rgba();;
-
-                let (width, height) = image.dimensions();
-                let image_data = image.into_raw().clone();
-
-                vulkano::image::immutable::ImmutableImage::from_iter(
-                    image_data.iter().cloned(),
-                    vulkano::image::Dimensions::Dim2d { width: width, height: height },
-                    vulkano::format::R8G8B8A8Srgb,
-                    Some(self.queue.family()),
-                    self.queue.clone()).expect("failed to create immutable image")
-            };
-            //println!("STATUS: MATERIAL: Returning physical", );
-            texture_physical_tmp
-        };
-        self.t_physical = texture_physical;
 
         //Lock resources
         //lock the pipe
@@ -527,11 +467,17 @@ impl Material {
         let set_02 = Arc::new(
             PersistentDescriptorSet::start(
             (*pipe_lck).get_pipeline_by_name(&self.pipeline.clone().to_string()), 1)
-            .add_sampled_image(self.t_albedo.clone(), self.sampler_albedo.clone())
+            .add_sampled_image(
+                self.t_albedo.get_raw_texture().clone(), self.t_albedo.get_raw_sampler().clone()
+            )
             .expect("failed to add sampled albedo")
-            .add_sampled_image(self.t_normal.clone(), self.sampler_normal.clone())
+            .add_sampled_image(
+                self.t_normal.get_raw_texture().clone(), self.t_normal.get_raw_sampler().clone()
+            )
             .expect("failed to add sampled nrm")
-            .add_sampled_image(self.t_physical.clone(), self.sampler_physical.clone())
+            .add_sampled_image(
+                self.t_physical.get_raw_texture().clone(), self.t_physical.get_raw_sampler().clone()
+            )
             .expect("failed to add sampled physical")
             .build().expect("failed to build set_02")
         );

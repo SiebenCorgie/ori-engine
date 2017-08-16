@@ -545,7 +545,7 @@ impl Renderer {
 
         //DEBUG
         let fps_time = start_time.elapsed().subsec_nanos();
-        println!("STATUS: RENDER: FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+        //println!("STATUS: RENDER: FPS: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
     }
 
     ///Returns the uniform manager
@@ -591,6 +591,11 @@ impl Renderer {
         (pipe_man, uni_man, device, queue)
     }
 
+    ///Returns an instance of the engine settings
+    ///This might be a dublicate, still helpful
+    pub fn get_engine_settings(&mut self) -> Arc<Mutex<engine_settings::EngineSettings>>{
+        self.engine_settings.clone()
+    }
 
 }
 

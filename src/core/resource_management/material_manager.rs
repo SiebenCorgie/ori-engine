@@ -4,6 +4,7 @@ use core::resources::material;
 use render;
 use render::pipeline;
 use render::pipeline_manager;
+use core::resources::texture::Texture;
 
 ///Handles all available materials
 pub struct MaterialManager {
@@ -13,8 +14,18 @@ pub struct MaterialManager {
 }
 
 impl MaterialManager {
-    ///Creates the manager with a default `fallback` material
-    pub fn new(render: Arc<Mutex<render::renderer::Renderer>>)->Self{
+    ///Creates the manager with a default `fallback` material.
+    ///The fallback textures have to be passed to the material though
+    ///for a good performance, the none texture should be as small as possible.
+    ///For instance a black 1x1 pixel.
+    pub fn new(
+        render: Arc<Mutex<render::renderer::Renderer>>,
+        albedo_texture: Arc<Texture>,
+        normal_texture: Arc<Texture>,
+        physical_texture: Arc<Texture>,
+        none_texture: Arc<Texture>,
+
+    )->Self{
 
         //First get a tmp render instance
         let render_inst = render.clone();
@@ -39,48 +50,38 @@ impl MaterialManager {
         //println!("STATUS: MATERIAL_MANAGER: Checked pipeline for default pipeline in material manager creation", );
         //Creates a fallback material to which the programm can fallback in case of a "materal not found"
 
-        let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
+        let (pipe_man, uni_man, device, queue) ={
+            let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
+            (*render_lck).get_material_instances()
+        };
 
-        let (pipe_man, uni_man, device, queue) = (*render_lck).get_material_instances();
+        let engine_settings = {
+            let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
+            (*render_lck).get_engine_settings()
+        };
 
-        let fallback_material = Arc::new(Mutex::new(
-        {
-            let mut tmp_material = material::Material::new(
-                        "fallback",
-                        "DefaultPipeline",
-                        pipe_man,
-                        uni_man,
-                        device,
-                        queue
-                    );
-            tmp_material.set_albedo_texture("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/fallback_alb.png");
-            tmp_material.set_normal_texture("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/fallback_nrm.png");
-            tmp_material.set_physical_texture("/home/siebencorgie/Scripts/Rust/engine/ori-engine/data/fallback_physical.png");
-            tmp_material.set_texture_usage_info({
-                //Create a temporary info and add all the info needed
-                let mut tmp_info = material::TextureUsageFlags::new()
-                .with_albedo(1)
-                .with_metal(1)
-                .with_normal(1)
-                .with_roughness(1)
-                .with_occlusion(1)
-                .with_emissive(1);
-                //Return it cor recretion of the whole material
-                tmp_info
-            });
-            tmp_material.set_material_factor_info({
-                let mut tmp_fac_info = material::MaterialFactors::new()
-                //.with_factor_albedo([1.0, 0.0, 0.5, 1.0])
-                ;
-                tmp_fac_info
-            });
-
-            tmp_material.recreate_static_sets();
-            //And finnally return the material to be used in Arc<Mutex<material>>
-            tmp_material
-        }
-        //now make to a Arc<Mutex<Material>>
-        ));
+        //finally create the material from the textures
+        ///this will serv as fallback for any unsuccessful `get_material()`
+        let fallback_material = Arc::new(
+            Mutex::new(
+                material::MaterialBuilder::new(
+                    Some(albedo_texture),
+                    Some(normal_texture),
+                    Some(physical_texture),
+                    None,
+                    none_texture
+                )
+                .build(
+                    "fallback",
+                    "DefaultPipeline",
+                    pipe_man,
+                    uni_man,
+                    device,
+                    queue,
+                    engine_settings
+                )
+            )
+        );
 
         let mut tmp_map = HashMap::new();
         //and finnaly insert
@@ -141,6 +142,13 @@ impl MaterialManager {
     ///Checks for a material
     pub fn is_available(&self, name: &str) -> bool{
         self.material_vault.contains_key(&String::from(name))
+    }
+
+    ///A debuging fuction to see all materials
+    pub fn print_all_materials(&mut self){
+        for (k,i) in self.material_vault.iter(){
+            println!("Material: {}", k.clone());
+        }
     }
 
 }

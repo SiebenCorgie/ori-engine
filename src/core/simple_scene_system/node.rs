@@ -57,7 +57,7 @@ pub struct GenericNode {
 
 ///Implementation of the Node trait for Generic node
 impl GenericNode{
-
+    ///Creates a new, empty node
     pub fn new_empty(name: &str)-> Self{
         let mut tmp_bound = nc::bounding_volume::AABB::new(na::Point3::new(0.0, 0.0, 0.0), na::Point3::new(1.0, 1.0, 1.0));
         GenericNode{

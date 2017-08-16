@@ -9,6 +9,7 @@ layout(location = 1) in vec2 tex_coordinates;
 layout(set = 1, binding = 0) uniform sampler2D albedo;
 layout(set = 1, binding = 1) uniform sampler2D normal;
 layout(set = 1, binding = 2) uniform sampler2D physical;
+layout(set = 1, binding = 3) uniform sampler2D emessive;
 //Texture usage infos (!= 1 is "not used" for now)
 layout(set = 2, binding = 0) uniform TextureUsageInfo {
   int b_albedo;

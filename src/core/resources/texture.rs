@@ -241,7 +241,7 @@ impl TextureBuilder {
 
     ///This function will use the information currently present in the `TextureBuilder`
     ///and create a `core::resources::Texture` from it
-    pub fn build(mut self) -> Arc<Texture>
+    pub fn build_with_name(mut self, texture_name: &str) -> Arc<Texture>
         {
         //Setup a sampler from the info
         let tmp_sampler = Sampler::new(
@@ -351,6 +351,7 @@ impl TextureBuilder {
         };
 
         let texture_struct = Texture{
+            name: String::from(texture_name),
             texture: texture,
             sampler: tmp_sampler,
             original_path: self.image_path.clone(),
@@ -377,6 +378,8 @@ let sampler_albedo_tmp = vulkano::sampler::Sampler::new(
 ///Several textures can be compined in a material
 #[derive(Clone)]
 pub struct Texture {
+    ///A name which can be used to reference the texture
+    pub name: String,
     texture: Arc<ImmutableImage<vulkano::format::R8G8B8A8Srgb>>,
     sampler: Arc<vulkano::sampler::Sampler>,
 

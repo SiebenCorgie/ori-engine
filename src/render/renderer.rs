@@ -161,6 +161,17 @@ impl Renderer {
             khr_swapchain: true,
             .. vulkano::device::DeviceExtensions::none()
         };
+
+        //TODO Test for availabe features via a difference check maybe
+        //first create a
+        let minimal_features = vulkano::instance::Features {
+            geometry_shader: true,
+            .. vulkano::instance::Features::none()
+        };
+        //then look if physical.supported_features() doesnt crash the creation, if so, change engine
+        //settings to a fallback state where we can create the device
+        //ref: https://docs.rs/vulkano/0.5.6/vulkano/instance/struct.Features.html#structfield.sampler_anisotropy
+
         //Create a artificial device and its queue
         let (device, mut queues) = vulkano::device::Device::new(
             physical, physical.supported_features(),

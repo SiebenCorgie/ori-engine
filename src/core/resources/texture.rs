@@ -385,3 +385,16 @@ pub struct Texture {
 
     original_path: String,
 }
+
+///The implementation doesn't change anything on this texture
+impl Texture{
+    ///Returns the raw `Arc<ImmutableImage<vulkano::format::R8G8B8A8Srgb>>`
+    pub fn get_raw_texture(&self) -> Arc<ImmutableImage<vulkano::format::R8G8B8A8Srgb>>{
+        self.texture.clone()
+    }
+
+    ///Returns the raw `Arc<vulkano::sampler::Sampler>`
+    pub fn get_raw_sampler(&self) -> Arc<vulkano::sampler::Sampler>{
+        self.sampler.clone()
+    }
+}

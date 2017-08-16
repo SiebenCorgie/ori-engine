@@ -3,6 +3,7 @@ use std::thread;
 use time;
 
 use core::simple_scene_system::node;
+use core::resource_management::texture_manager;
 use core::resource_management::material_manager;
 use core::resources::light;
 use core::resources::mesh;
@@ -31,6 +32,10 @@ use vulkano;
 pub struct AssetManager {
     ///Holds the current active scene
     active_main_scene: node::GenericNode,
+
+    ///holds all textures
+    texture_manager: texture_manager::TextureManager,
+
     ///Holds the current material manager
     material_manager: material_manager::MaterialManager,
 
@@ -62,14 +67,40 @@ impl  AssetManager {
         //The camera will be moved to a camera manager
         let camera = DefaultCamera::new(settings.clone(), key_map.clone());
 
-        //Make a nice copy so we can retrive the pipeline manager
+        //Make a nice copy so we can retrive the device and queueu
         let renderer_instance = renderer.clone();
-        let pipeline_instance = (*renderer_instance).lock().expect("Failed to hold the lock while getting the pipeline instance").get_pipeline_manager().clone();
+
+        //Gt us needed instances
+        let device = {
+            let mut render_lck = renderer_instance.lock().expect("failed to hold renderer lock");
+            (*render_lck).get_device().clone()
+        };
+
+        let queue = {
+            let mut render_lck = renderer_instance.lock().expect("failed to hold renderer lock");
+            (*render_lck).get_queue().clone()
+        };
+
+        let mut tmp_texture_manager = texture_manager::TextureManager::new(
+            device, queue, settings.clone()
+        );
+
+        let (fallback_alb, fallback_nrm, fallback_phy) = tmp_texture_manager.get_fallback_textures();
+        let none_texture = tmp_texture_manager.get_none();
+
+        let tmp_material_manager = material_manager::MaterialManager::new(
+            renderer.clone(),
+            fallback_alb,
+            fallback_nrm,
+            fallback_phy,
+            none_texture,
+        );
 
 
         AssetManager{
             active_main_scene: node::GenericNode::new_empty("Empty"),
-            material_manager: material_manager::MaterialManager::new(renderer.clone()),
+            texture_manager: tmp_texture_manager,
+            material_manager: tmp_material_manager,
             mesh_manager: mesh_manager::MeshManager::new(),
             scene_manager: scene_manager::SceneManager::new(),
             renderer: renderer_instance,
@@ -115,6 +146,11 @@ impl  AssetManager {
         self.camera.update_view();
     }
 
+    ///Returns the scene manager
+    pub fn get_scene_manager(&mut self) -> &mut scene_manager::SceneManager{
+        &mut self.scene_manager
+    }
+
     ///Returns the camera in use TODO this will be managed by a independent camera manager in the future
     pub fn get_camera(&mut self) -> &mut DefaultCamera{
         &mut self.camera
@@ -135,6 +171,10 @@ impl  AssetManager {
     pub fn start_asset_thread(&mut self){
         /// NOTE has to be implemented
         return
+    }
+
+    pub fn get_texture_manager(&mut self) -> &mut texture_manager::TextureManager{
+        &mut self.texture_manager
     }
 
     ///Returns a reference to the material manager

@@ -47,6 +47,44 @@ fn main() {
     //asset_manager.import_scene("Ape_02", "Apes.fbx");
     //asset_manager.import_scene("Ape_03", "Apes.fbx");
 
+    ///Creating a new material, currently a bit ugly
+    {
+        let render_inst = render.clone();
+        let mut render_lck = render_inst.lock().expect("failed to hold renderer");
+        //Create a second material
+        //create new texture
+        let new_texture = core::resources::texture::TextureBuilder::from_image(
+            "/share/3DFiles/TextureLibary/Comix/Mariuhana.jpg",
+            (*render_lck).get_device(),
+            (*render_lck).get_queue(),
+            settings.clone()
+        ).build_with_name("new_texture");
+        asset_manager.get_texture_manager().add_texture(new_texture);
+
+        let (_ , normal, physical) = asset_manager.get_texture_manager().get_fallback_textures();
+
+        let texture_in_manager = asset_manager.get_texture_manager().get_texture("new_texture");
+
+        let mut new_material = core::resources::material::MaterialBuilder::new(
+            Some(texture_in_manager),
+            Some(normal),
+            Some(physical),
+            None,
+            asset_manager.get_texture_manager().get_none()
+        ).build(
+            "new_material",
+            "DefaultPipeline",
+            (*render_lck).get_pipeline_manager(),
+            (*render_lck).get_uniform_manager(),
+            (*render_lck).get_device(),
+            (*render_lck).get_queue(),
+            settings.clone()
+        );
+
+        //add to the manager
+        asset_manager.get_material_manager().add_material(new_material);
+    }
+
     let mut adding_status = false;
 
     let mut start_time = Instant::now();
@@ -54,6 +92,14 @@ fn main() {
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later
         if adding_status == false && asset_manager.has_scene("Ape"){
+
+            let mut ape_scene = asset_manager.get_scene_manager().get_scene("Ape").expect("no Apes :(");
+            for i in ape_scene.get_all_meshes().iter(){
+                let mesh_inst = i.clone();
+                let mut mesh_lck = mesh_inst.lock().expect("failed to change material");
+                (*mesh_lck).set_material("new_material");
+            }
+
             asset_manager.add_scene_to_main_scene("Ape");
             adding_status = true;
             //println!("STATUS: GAME: added all apes", );
@@ -77,7 +123,8 @@ fn main() {
         }
 
         let fps_time = start_time.elapsed().subsec_nanos();
-        println!("STATUS: RENDER: FPS IN GAME: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+        //println!("STATUS: RENDER: FPS IN GAME: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
         start_time = Instant::now();
+        asset_manager.get_material_manager().print_all_materials();
     }
 }

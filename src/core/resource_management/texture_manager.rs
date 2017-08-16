@@ -84,6 +84,24 @@ impl TextureManager{
         }
     }
 
+    ///Returns the set of fallback textures in teh order: (albedo, normal, physical)
+    ///TODO This could be faster by using index 1-3
+    pub fn get_fallback_textures(&mut self) -> (
+        Arc<texture::Texture>, Arc<texture::Texture>, Arc<texture::Texture>
+    ){
+        let albedo_tex = self.get_texture("fallback_albedo");
+        let normal_tex = self.get_texture("fallback_normal");
+        let physical_tex = self.get_texture("fallback_physical");
+
+        (albedo_tex, normal_tex, physical_tex)
+    }
+
+    ///Returns the nothing 1x1 pixel texture
+    ///TODO this could be faster by using index 0
+    pub fn get_none(&mut self) -> Arc<texture::Texture>{
+        self.get_texture("none")
+    }
+
     ///Returns a texture if this name, if not found, returns th fallback texture
     pub fn get_texture(&mut self, name: &str) -> Arc<texture::Texture>{
 
@@ -120,6 +138,7 @@ impl TextureManager{
 
     ///Removes the texture from the manager, keep in mind that any copy will live till it is droped
     ///by its holder.
+    ///TODO verfiy that not index 0-3 is delted (used for the system)
     pub fn remove_texture(mut self, texture_name: &str) -> Result<(), &'static str>{
 
         //Test if the texture is in the naming index

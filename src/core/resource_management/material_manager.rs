@@ -16,8 +16,10 @@ impl MaterialManager {
     ///Creates the manager with a default `fallback` material
     pub fn new(render: Arc<Mutex<render::renderer::Renderer>>)->Self{
 
-        //We'll have to check for a default pipeline, otherwise the Manager creation could fail
+        //First get a tmp render instance
         let render_inst = render.clone();
+
+        //We'll have to check for a default pipeline, otherwise the Manager creation could fail
         {
             let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
 

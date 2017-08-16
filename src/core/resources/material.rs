@@ -3,6 +3,8 @@ use render::pipeline;
 use render::pipeline_manager;
 use render::pipeline_infos;
 use render::uniform_manager;
+use core::resources::texture;
+
 
 use vulkano::descriptor::descriptor_set::PersistentDescriptorSet;
 use vulkano::image::ImmutableImage;

@@ -47,6 +47,7 @@ material system with different Shader components.
 
 ### Asset management
 
+#### Meshes, cameras and lights
 All of the assets will be grouped in different managers as `Arc<Mutex<T>>`
 components, for instance all meshes.
 There is a scene manager who saves different hierarchical "scenes" of those
@@ -55,11 +56,16 @@ saved as a scene "wall_lamp".
 This has the advantage of being able to modify one of the meshes in the mesh
 manager and simultaneously changing all of its references as well.
 
-This scene trees are 1-n trees for now. So every parent can have n childs.
+This scene trees are 1-n trees for now. So every parent can have n children.
 The Node types are hard coded for now but will be changed to a Arc<NodeType> in
 the future. If you have a better system, please add a issue to the repository.
 I took inspiration from the Godot-engine for the scene system.
 
+#### Other assets
+The meshes usually have a material attached which consists of several textures.
+Those are manged by a `TextureManager`. Each material can request one of the stored textures as a `Arc<Texture>` and then use it in one of the slots.
+This way no texture needs to be loaded twice.
+The `MaterialManger` works similar, it takes the created materials and gives out `Arc<Mutex<Material>>` copies upon request.
 
 ## Documentation
 There is currently no documentation hosted, but you can do

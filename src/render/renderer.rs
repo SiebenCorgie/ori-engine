@@ -22,6 +22,7 @@ use vulkano::sync::GpuFuture;
 use vulkano_win;
 use vulkano_win::VkSurfaceBuild;
 use vulkano::instance::debug::{DebugCallback, MessageTypes};
+use vulkano::pipeline::GraphicsPipelineAbstract;
 
 use winit;
 
@@ -461,30 +462,21 @@ impl Renderer {
 
                 //We have to create all the types in advance to prevent a lock
                 let pipeline_copy = {
-                    let local_pipe_man = self.pipeline_manager.clone();
-                    let mut unlocked_pipeline_manager = (*local_pipe_man)
-                    .lock()
-                    .expect("Failed to lock the pipeline manager while rendering");
-
                     //Returning pipeline
-                    unlocked_pipeline_manager
-                    .get_pipeline_by_name(
-                        &(*unlocked_material)
-                        .get_pipeline_name().to_string()
-                    )
+                    (*unlocked_material).get_pipeline()
                 };
 
                 let set_01 = {
-                    (*unlocked_material).get_set_01().clone()
+                    (*unlocked_material).get_set_01()
                 };
 
 
                 let set_02 = {
-                    (*unlocked_material).get_set_02().clone()
+                    (*unlocked_material).get_set_02()
                 };
 
                 let set_03 = {
-                    (*unlocked_material).get_set_03().clone()
+                    (*unlocked_material).get_set_03()
                 };
 
                 //println!("STATUS: RENDER CORE: Adding to tmp cmd buffer", );
@@ -577,18 +569,26 @@ impl Renderer {
     ///(`pipeline_manager`, `uniform_manager`, `device`)
     ///This is needed for the material creation
     pub fn get_material_instances(&self) -> (
-        Arc<Mutex<pipeline_manager::PipelineManager>>,
+        Arc<GraphicsPipelineAbstract + Send + Sync>,
         Arc<Mutex<uniform_manager::UniformManager>>,
         Arc<vulkano::device::Device>,
         Arc<vulkano::device::Queue>,
         )
     {
-        let pipe_man = self.pipeline_manager.clone();
+        //Copy a default pipeline currently there is no way to nicly create a pipeline from a
+        //shader file without doubling the pipeline code :/
+        let pipeline_copy = {
+            let pipe_man_inst = self.pipeline_manager.clone();
+            let mut pipe_man_lck = pipe_man_inst.lock().expect("failed to hold pipe man lock");
+            (*pipe_man_lck).get_default_pipeline()
+        };
+
+        let pipe = pipeline_copy;
         let uni_man = self.uniform_manager.clone();
         let device = self.device.clone();
         let queue = self.queue.clone();
 
-        (pipe_man, uni_man, device, queue)
+        (pipe, uni_man, device, queue)
     }
 
     ///Returns an instance of the engine settings

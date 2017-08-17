@@ -236,8 +236,7 @@ impl MaterialBuilder{
     pub fn build(
         mut self,
         name: &str,
-        pipeline: &str,
-        pipeline_manager: Arc<Mutex<pipeline_manager::PipelineManager>>,
+        pipeline: Arc<GraphicsPipelineAbstract + Send + Sync>,
         uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
         device: Arc<vulkano::device::Device>,
         queue: Arc<vulkano::device::Queue>,
@@ -285,9 +284,6 @@ impl MaterialBuilder{
         let material_factor_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<MaterialFactors>
                                    ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
 
-        //lock the pipe
-        let pipe_man_in = pipeline_manager.clone();
-        let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
 
         //Additionaly lock the uniformanager to get the first global information
         let uniform_manager_isnt = uniform_manager.clone();
@@ -296,7 +292,8 @@ impl MaterialBuilder{
         //TODO add set 02 for material information
         //println!("STATUS: MATERIAL: Creating set 01 for the first time", );
         let set_01 = Arc::new(PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 0)
+                pipeline.clone(), 0
+            )
             .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
             .build().expect("failed to build descriptor")
         );
@@ -306,7 +303,8 @@ impl MaterialBuilder{
         //println!("STATUS: MATERIAL: Creating set 02 for the first time", );
         let set_02 = Arc::new(
             PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 1)
+                pipeline.clone(), 1
+            )
             .add_sampled_image(tmp_albedo.get_raw_texture(), tmp_albedo.get_raw_sampler())
             .expect("failed to add sampled albedo")
             .add_sampled_image(tmp_normal.get_raw_texture(), tmp_normal.get_raw_sampler())
@@ -320,7 +318,8 @@ impl MaterialBuilder{
 
         //Create the Usage Flag descriptor
         let set_03 = Arc::new(PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&pipeline.clone().to_string()), 2)
+                pipeline.clone(), 2
+            )
             .add_buffer(usage_info_pool.next(
                 //need to clone for storing in struct later
                 self.texture_usage_info.clone()
@@ -345,8 +344,7 @@ impl MaterialBuilder{
             t_emissive: tmp_emissive,
 
             //All Unifrom infos
-            pipeline: String::from(pipeline),
-            pipeline_manager: pipeline_manager,
+            pipeline: pipeline,
             device: device,
             queue: queue.clone(),
             uniform_manager: uniform_manager,
@@ -379,7 +377,7 @@ impl MaterialBuilder{
 
 ///Describes a standart material
 pub struct Material {
-    
+
     pub name: String,
     //albedo describtion
     t_albedo: Arc<texture::Texture>,
@@ -392,8 +390,7 @@ pub struct Material {
 
     //Technical implementation
     ///Reference to parent pipeline
-    pipeline: String,
-    pipeline_manager: Arc<Mutex<pipeline_manager::PipelineManager>>,
+    pipeline: Arc<GraphicsPipelineAbstract + Send + Sync>,
     device: Arc<vulkano::device::Device>,
     queue: Arc<vulkano::device::Queue>,
     ///A reference to the global uniform manager
@@ -452,11 +449,6 @@ impl Material {
     pub fn recreate_static_sets(&mut self){
         //println!("STATUS: MATERIAL: Recreation static sets", );
 
-        //Lock resources
-        //lock the pipe
-        let pipe_man_in = self.pipeline_manager.clone();
-        let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
-
         //Additionaly lock the uniformanager to get the first global information
         let uniform_manager_isnt = self.uniform_manager.clone();
         let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
@@ -466,7 +458,8 @@ impl Material {
         //println!("STATUS: MATERIAL: ReCreating set 02", );
         let set_02 = Arc::new(
             PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&self.pipeline.clone().to_string()), 1)
+                self.pipeline.clone(), 1
+            )
             .add_sampled_image(
                 self.t_albedo.get_raw_texture().clone(), self.t_albedo.get_raw_sampler().clone()
             )
@@ -486,7 +479,8 @@ impl Material {
 
         //Create the Usage Flag descriptor
         let set_03 = Arc::new(PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&self.pipeline.clone().to_string()), 2)
+                self.pipeline.clone(), 2
+            )
             .add_buffer(
                 self.get_usage_info_subbuffer()
             ).expect("Failed to create descriptor set")
@@ -502,7 +496,7 @@ impl Material {
 
     //TODO Setup changes of the materials, maybe make possible to only insert colors for albedo etc
     ///Returns the name of the currently used pipeline
-    pub fn get_pipeline_name(&self) -> String{
+    pub fn get_pipeline(&self) -> Arc<GraphicsPipelineAbstract + Send + Sync>{
         self.pipeline.clone()
     }
 
@@ -516,9 +510,6 @@ impl Material {
 
     ///Recreates set_01 based on the current unfiorm_manager information
     pub fn recreate_set_01(&mut self){
-        //println!("STATUS: MATERIAL: Trying to lock pipeline", );
-        let pipe_man_in = self.pipeline_manager.clone();
-        let mut pipe_lck = pipe_man_in.lock().expect("failed to lock pipeline manager");
 
         //println!("STATUS: MATERIAL: Trying to locj uniform manager", );
         let uniform_manager_isnt = self.uniform_manager.clone();
@@ -526,7 +517,8 @@ impl Material {
         //println!("STATUS: MATERIAL: Generation new set_01", );
         //TODO add set 02 for material information
         let new_set = Arc::new(PersistentDescriptorSet::start(
-            (*pipe_lck).get_pipeline_by_name(&self.pipeline.clone().to_string()), 0)
+                self.pipeline.clone(), 0
+            )
             .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
             .build().expect("failed to build descriptor")
         );
@@ -568,8 +560,8 @@ impl Material {
     }
 
     ///Sets a new pipeline
-    pub fn set_pipeline(&mut self, new_pipe: &str){
-        self.pipeline = String::from(new_pipe);
+    pub fn set_pipeline(&mut self, new_pipe: Arc<GraphicsPipelineAbstract + Send + Sync>){
+        self.pipeline = new_pipe;
     }
 
     ///Returns a copy/clone of this name

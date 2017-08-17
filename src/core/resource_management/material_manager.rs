@@ -50,7 +50,7 @@ impl MaterialManager {
         //println!("STATUS: MATERIAL_MANAGER: Checked pipeline for default pipeline in material manager creation", );
         //Creates a fallback material to which the programm can fallback in case of a "materal not found"
 
-        let (pipe_man, uni_man, device, queue) ={
+        let (pipe, uni_man, device, queue) ={
             let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
             (*render_lck).get_material_instances()
         };
@@ -73,8 +73,7 @@ impl MaterialManager {
                 )
                 .build(
                     "fallback",
-                    "DefaultPipeline",
-                    pipe_man,
+                    pipe,
                     uni_man,
                     device,
                     queue,

@@ -23,6 +23,7 @@ fn main() {
 
     //Input
     let mut input_handler = input::Input::new(settings.clone()).with_polling_speed(60);
+
     //Create a renderer with the input system
     let mut render = Arc::new(
         Mutex::new(
@@ -51,6 +52,7 @@ fn main() {
     {
         let render_inst = render.clone();
         let mut render_lck = render_inst.lock().expect("failed to hold renderer");
+
         //Create a second material
         //create new texture
         let new_texture = core::resources::texture::TextureBuilder::from_image(

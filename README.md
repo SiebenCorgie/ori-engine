@@ -18,7 +18,7 @@ aspects of the engine and its systems.
 
 In addition the system will spawn threads for workloads like config-loading
 or mesh importing.
-Here is a little drawing to symbolize how it works, hoever its not finished and not constructed according to any standarts.
+Here is a little drawing to symbolize how it works, however its not finished and not constructed according to any standards.
 ![alt text](https://github.com/SiebenCorgie/ori-engine/blob/master/media/Drawing_02_impress%20-%201.jpg "Architecture")
 
 
@@ -26,12 +26,12 @@ Here is a little drawing to symbolize how it works, hoever its not finished and 
 
 The engine should be safe because of two major points.
  1. it uses Rust which is "safe" by design
- 2. it uses the vulkano for interacting with vulkan, which will be safe as well
+ 2. it uses Vulkano for interacting with Vulkan, which will be safe as well
     in the future
 
 ### Graphical target
 
-The graphical target is defined by these keyn points:
+The graphical target is defined by these key points:
 
  - PBR shading
  - normal mapping
@@ -95,7 +95,7 @@ cargo run --examples simple
 ```
 to run an example application.
 
-*Note: You'll need vulkan installed*
+*Note: You'll need Vulkan installed*
 
 ## License
 

@@ -1,5 +1,4 @@
 
-use render::pipeline;
 use render::pipeline_infos;
 
 use vulkano;
@@ -22,8 +21,7 @@ pub struct UniformManager {
 //Recreate set in material not pipeline
 //
 impl UniformManager{
-    pub fn new(device: Arc<vulkano::device::Device>,
-            queue: Arc<vulkano::device::Queue>) -> Self{
+    pub fn new(device: Arc<vulkano::device::Device>) -> Self{
 
         //Create a uniform buffer with just [[f32; 4]; 4], the buffer will be updated bevore the first loop
         let world = pipeline_infos::Main {
@@ -34,7 +32,7 @@ impl UniformManager{
 
         //Create a pool to allocate from
         let tmp_uniform_buffer_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<pipeline_infos::Main>
-                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
+                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all());
 
 
         UniformManager{

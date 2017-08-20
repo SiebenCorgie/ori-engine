@@ -218,7 +218,7 @@ impl Renderer {
 
 
         let mut uniform_manager_tmp = uniform_manager::UniformManager::new(
-            device.clone(), queue.clone()
+            device.clone()
         );
 
 

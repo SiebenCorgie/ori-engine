@@ -82,7 +82,7 @@ impl Mesh {
         vertices.push(Vertex::new([0.0; 3], [0.0; 2], [0.0; 3], [0.0; 3], [0.0; 3]));
 
         let sample_vertex_buffer = vulkano::buffer::cpu_access::CpuAccessibleBuffer
-                                    ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()), vertices.iter().cloned())
+                                    ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), vertices.iter().cloned())
                                     .expect("failed to create buffer");
 
         Mesh{
@@ -190,7 +190,7 @@ impl Mesh {
         queue: Arc<vulkano::device::Queue>)
     {
         let vertex_buffer = vulkano::buffer::cpu_access::CpuAccessibleBuffer
-                                    ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()), self.vertices.iter().cloned())
+                                    ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), self.vertices.iter().cloned())
                                     .expect("failed to create buffer");
         //self.vertex_buffer = vertex_buffer;
         self.vertex_buffer = vertex_buffer;
@@ -203,7 +203,7 @@ impl Mesh {
     {
 
         vulkano::buffer::cpu_access::CpuAccessibleBuffer
-            ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()), self.indices.iter().cloned())
+            ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), self.indices.iter().cloned())
             .expect("failed to create index buffer 02")
     }
 /*

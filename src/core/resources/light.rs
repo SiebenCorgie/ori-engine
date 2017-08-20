@@ -14,6 +14,12 @@ pub struct LightPoint {
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
 }
 
+///A stripped down version of a point light which can be passed to a shader
+pub struct LightPointShaderInfo {
+    intensity: f32,
+    color: [f32; 3],
+}
+
 ///A generic directional light i.e. a sun
 pub struct LightDirectional {
     pub name: String,
@@ -25,7 +31,15 @@ pub struct LightDirectional {
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
 }
 
-///A generic spot light like car lights or stage light
+///A stripped down version of a directional light which can be passed to a shader
+pub struct LightDirectionalShaderInfo {
+    intensity: f32,
+    color: [f32; 3],
+
+    direction: [f32; 3],
+}
+
+///A generic spot light, like car lights or stage light
 pub struct LightSpot {
     pub name: String,
     intensity: f32,
@@ -39,11 +53,22 @@ pub struct LightSpot {
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
 }
 
+///A stripped down version of a spot light which can be passed to a shader
+pub struct LightSpotShaderInfo {
+    intensity: f32,
+    color: [f32; 3],
+
+    direction: [f32; 3],
+
+    outer_radius: f32,
+    inner_radius: f32,
+}
+
 ///Custom PointLight implementation
 impl LightPoint{
     ///Returns the Member with the passed `name`
     ///Special parameters light radius or color will have to be set later
-    fn new(name: &str)->Self{
+    pub fn new(name: &str)->Self{
         //Creating the box extend from the location, there might be a better way
         let min = na::Point3::new(0.5, 0.5, 0.5, );
         let max = na::Point3::new(0.5, 0.5, 0.5, );
@@ -54,6 +79,14 @@ impl LightPoint{
             color: na::Vector3::new(1.0, 1.0, 1.0),
 
             bound: nc::bounding_volume::AABB::new(min, max),
+        }
+    }
+
+    ///Returns this lught as its shader-useable instance
+    pub fn as_shader_info(&self) -> LightPointShaderInfo{
+        LightPointShaderInfo{
+            intensity: self.intensity.clone(),
+            color: self.color.into(),
         }
     }
 
@@ -82,7 +115,7 @@ impl LightPoint{
 impl LightDirectional{
     ///Returns the Member with the passed `name`
     ///Special parameters light radius or color will have to be set later
-    fn new(name: &str)->Self{
+    pub fn new(name: &str)->Self{
         //Creating the box extend from the location, there might be a better way
         let min = na::Point3::new(0.5, 0.5, 0.5, );
         let max = na::Point3::new(0.5, 0.5, 0.5, );
@@ -96,6 +129,15 @@ impl LightDirectional{
             direction: direction,
 
             bound: nc::bounding_volume::AABB::new(min, max),
+        }
+    }
+
+    ///Returns this lught as its shader-useable instance
+    pub fn as_shader_info(&self) -> LightDirectionalShaderInfo{
+        LightDirectionalShaderInfo{
+            intensity: self.intensity.clone(),
+            color: self.color.into(),
+            direction: self.direction.into()
         }
     }
 
@@ -134,7 +176,7 @@ impl LightDirectional{
 impl LightSpot{
     ///Returns the Member with the passed `name`
     ///Special parameters light radius or color will have to be set later
-    fn new(name: &str)->Self{
+    pub fn new(name: &str)->Self{
         //Creating the box extend from the location, there might be a better way
         let min = na::Point3::new(0.5, 0.5, 0.5, );
         let max = na::Point3::new(0.5, 0.5, 0.5, );
@@ -155,6 +197,18 @@ impl LightSpot{
             bound: nc::bounding_volume::AABB::new(min, max),
         }
     }
+
+    ///Returns this lught as its shader-useable instance
+    pub fn as_shader_info(&self) -> LightSpotShaderInfo{
+        LightSpotShaderInfo{
+            intensity: self.intensity.clone(),
+            color: self.color.into(),
+            direction: self.direction.into(),
+            outer_radius: self.outer_radius.clone(),
+            inner_radius: self.inner_radius.clone(),
+        }
+    }
+
     ///Change the direction
     pub fn set_direction(&mut self, new_direction: na::Vector3<f32>){
         self.direction = new_direction;

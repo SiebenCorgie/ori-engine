@@ -18,6 +18,8 @@ aspects of the engine and its systems.
 
 In addition the system will spawn threads for workloads like config-loading
 or mesh importing.
+Here is a little drawing to symbolize how it works, hoever its not finished and not constructed according to any standarts.
+![alt text](https://github.com/SiebenCorgie/ori-engine/blob/master/media/Drawing_02_impress%20-%201.jpg "Architecture")
 
 
 ### Safety

@@ -45,6 +45,7 @@ fn main() {
 
     //Import the ape
     asset_manager.import_scene("Ape", "Apes.fbx");
+    asset_manager.import_scene("Ring", "Ring.fbx");
     //asset_manager.import_scene("Ape_02", "Apes.fbx");
     //asset_manager.import_scene("Ape_03", "Apes.fbx");
 
@@ -95,9 +96,11 @@ fn main() {
 
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later
-        if adding_status == false && asset_manager.has_scene("Ape"){
+        if adding_status == false && asset_manager.has_scene("Ape") && asset_manager.has_scene("Ring"){
 
             let mut ape_scene = asset_manager.get_scene_manager().get_scene("Ape").expect("no Apes :(");
+            //let mut Ring = asset_manager.get_scene_manager().get_scene("Ring").expect("no Rings :(");
+
             for i in ape_scene.get_all_meshes().iter(){
                 let mesh_inst = i.clone();
                 let mut mesh_lck = mesh_inst.lock().expect("failed to change material");
@@ -105,6 +108,7 @@ fn main() {
             }
 
             asset_manager.add_scene_to_main_scene("Ape");
+            asset_manager.add_scene_to_main_scene("Ring");
             adding_status = true;
             //println!("STATUS: GAME: added all apes", );
         }

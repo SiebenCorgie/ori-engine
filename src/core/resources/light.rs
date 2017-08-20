@@ -3,6 +3,9 @@ use na;
 use nc;
 use nc::shape::Cuboid;
 
+use render::pipeline_infos::LightPointShaderInfo;
+use render::pipeline_infos::LightDirectionalShaderInfo;
+use render::pipeline_infos::LightSpotShaderInfo;
 use core::NodeMember;
 
 ///A Generic Point Light
@@ -14,11 +17,7 @@ pub struct LightPoint {
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
 }
 
-///A stripped down version of a point light which can be passed to a shader
-pub struct LightPointShaderInfo {
-    intensity: f32,
-    color: [f32; 3],
-}
+
 
 ///A generic directional light i.e. a sun
 pub struct LightDirectional {
@@ -31,13 +30,7 @@ pub struct LightDirectional {
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
 }
 
-///A stripped down version of a directional light which can be passed to a shader
-pub struct LightDirectionalShaderInfo {
-    intensity: f32,
-    color: [f32; 3],
 
-    direction: [f32; 3],
-}
 
 ///A generic spot light, like car lights or stage light
 pub struct LightSpot {
@@ -53,16 +46,7 @@ pub struct LightSpot {
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
 }
 
-///A stripped down version of a spot light which can be passed to a shader
-pub struct LightSpotShaderInfo {
-    intensity: f32,
-    color: [f32; 3],
 
-    direction: [f32; 3],
-
-    outer_radius: f32,
-    inner_radius: f32,
-}
 
 ///Custom PointLight implementation
 impl LightPoint{

@@ -275,14 +275,14 @@ impl MaterialBuilder{
         };
 
         ///The TextureUsageFlags and Factor Info comes from the builder, we create a pool for
-        //them...
+        ///them...
         //Create a pool to allocate from
         let usage_info_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<TextureUsageFlags>
-                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
+                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all());
 
 
         let material_factor_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<MaterialFactors>
-                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all(), Some(queue.family()));
+                                   ::new(device.clone(), vulkano::buffer::BufferUsage::all());
 
 
         //Additionaly lock the uniformanager to get the first global information
@@ -504,12 +504,32 @@ impl Material {
     pub fn update(&mut self){
         //println!("STATUS: MATERIAL: In material, updating now", );
         self.recreate_set_01();
+        self.recreate_set_04();
         //println!("STATUS: MATERIAL: Finished updating", );
         //if needed, update the static sets
     }
 
-    ///Recreates set_01 based on the current unfiorm_manager information
+    ///Recreates set_01 based on the current unfiorm_manager information (mvp matrix)
     pub fn recreate_set_01(&mut self){
+
+        //println!("STATUS: MATERIAL: Trying to locj uniform manager", );
+        let uniform_manager_isnt = self.uniform_manager.clone();
+        let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
+        //println!("STATUS: MATERIAL: Generation new set_01", );
+        //TODO add set 02 for material information
+        let new_set = Arc::new(PersistentDescriptorSet::start(
+                self.pipeline.clone(), 0
+            )
+            .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
+            .build().expect("failed to build descriptor")
+        );
+        //println!("STATUS: MATERIAL: Returning new set to self", );
+        //return the new set
+        self.set_01 = new_set;
+    }
+
+    ///Recreates set_04 based on the current unfiorm_manager information (light)
+    pub fn recreate_set_04(&mut self){
 
         //println!("STATUS: MATERIAL: Trying to locj uniform manager", );
         let uniform_manager_isnt = self.uniform_manager.clone();

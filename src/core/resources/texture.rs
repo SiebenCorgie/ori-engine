@@ -241,7 +241,7 @@ impl TextureBuilder {
 
     ///This function will use the information currently present in the `TextureBuilder`
     ///and create a `core::resources::Texture` from it
-    pub fn build_with_name(mut self, texture_name: &str) -> Arc<Texture>
+    pub fn build_with_name(self, texture_name: &str) -> Arc<Texture>
         {
         //Setup a sampler from the info
         let tmp_sampler = Sampler::new(
@@ -256,8 +256,7 @@ impl TextureBuilder {
             self.max_anisotropy,
             self.min_lod,
             self.max_lod,
-        ).expect("Failed to generate albedo sampler");
-
+        ).expect("Failed to generate sampler");
         //Now load a the texture
         let texture = {
             let (texture_tmp, tex_future) = {
@@ -266,7 +265,6 @@ impl TextureBuilder {
 
                 //now apply, based on the settings all the post progressing
                 //after applying everything we can convert the Dynamic image into the correct format
-
                 //blur
                 if self.b_blur {
                     image = image.blur(self.blur_factor);
@@ -343,20 +341,17 @@ impl TextureBuilder {
                     Dim2d { width: width, height: height },
                     //Set format dependent on self.color_format
                     vulkano::format::R8G8B8A8Srgb,
-                    Some(self.queue.family()),
                     self.queue.clone()).expect("failed to create immutable image")
             };
             //drop the future to wait for gpu
             texture_tmp
         };
-
         let texture_struct = Texture{
             name: String::from(texture_name),
             texture: texture,
             sampler: tmp_sampler,
             original_path: self.image_path.clone(),
         };
-
         Arc::new(texture_struct)
     }
 }

@@ -2,7 +2,6 @@ extern crate vulkano;
 extern crate ori_engine;
 use ori_engine::*;
 use std::sync::{Arc, Mutex};
-use std::thread;
 use std::time::{Instant, Duration};
 
 extern crate winit;
@@ -25,7 +24,7 @@ fn main() {
     let mut input_handler = input::Input::new(settings.clone()).with_polling_speed(60);
 
     //Create a renderer with the input system
-    let mut render = Arc::new(
+    let render = Arc::new(
         Mutex::new(
             render::renderer::Renderer::new(
                 input_handler.get_events_loop(),
@@ -45,33 +44,29 @@ fn main() {
 
     //Import the ape
     asset_manager.import_scene("Ape", "Apes.fbx");
-    asset_manager.import_scene("Ring", "Ring.fbx");
     //asset_manager.import_scene("Ape_02", "Apes.fbx");
     //asset_manager.import_scene("Ape_03", "Apes.fbx");
 
-    ///Creating a new material, currently a bit ugly
+    //Creating a new material, currently a bit ugly
     {
         let render_inst = render.clone();
-        let mut render_lck = render_inst.lock().expect("failed to hold renderer");
+        let  render_lck = render_inst.lock().expect("failed to hold renderer");
 
         //Create a second material
         //create new texture
         let new_texture = core::resources::texture::TextureBuilder::from_image(
-            "/share/3DFiles/TextureLibary/Comix/Mariuhana.jpg",
+            "/home/siebencorgie/Pictures/MyPictures/ben_mauro_01.jpg",
             (*render_lck).get_device(),
             (*render_lck).get_queue(),
             settings.clone()
         ).build_with_name("new_texture");
-
-        asset_manager.get_texture_manager().add_texture(new_texture);
+        asset_manager.get_texture_manager().add_texture(new_texture).expect("failed to add texture");
 
         let (_ , normal, physical) = asset_manager.get_texture_manager().get_fallback_textures();
-
         let texture_in_manager = asset_manager.get_texture_manager().get_texture("new_texture");
 
         let (pipe, uni_man, device, queue) = (*render_lck).get_material_instances();
-
-        let mut new_material = core::resources::material::MaterialBuilder::new(
+        let new_material = core::resources::material::MaterialBuilder::new(
             Some(texture_in_manager),
             Some(normal),
             Some(physical),
@@ -85,19 +80,19 @@ fn main() {
             queue,
             settings.clone()
         );
-
         //add to the manager
         asset_manager.get_material_manager().add_material(new_material);
     }
 
+    asset_manager.import_scene("Ring", "Ring.fbx");
+
     let mut adding_status = false;
 
     let mut start_time = Instant::now();
-
+    println!("starting loop", );
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later
         if adding_status == false && asset_manager.has_scene("Ape") && asset_manager.has_scene("Ring"){
-
             let mut ape_scene = asset_manager.get_scene_manager().get_scene("Ape").expect("no Apes :(");
             //let mut Ring = asset_manager.get_scene_manager().get_scene("Ring").expect("no Rings :(");
 
@@ -106,7 +101,6 @@ fn main() {
                 let mut mesh_lck = mesh_inst.lock().expect("failed to change material");
                 (*mesh_lck).set_material("new_material");
             }
-
             asset_manager.add_scene_to_main_scene("Ape");
             asset_manager.add_scene_to_main_scene("Ring");
             adding_status = true;
@@ -116,7 +110,6 @@ fn main() {
         //Update the content of the render_manager
         asset_manager.update();
         //println!("STATUS: GAME: Updated all assets", );
-        let render_instance = render.clone();
         (*render).lock().expect("Failed to lock renderer for rendering").render(&mut asset_manager);
         //Check if loop should close
         if input_handler.get_key_map_copy().closed{

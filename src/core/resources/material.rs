@@ -531,6 +531,8 @@ impl Material {
     ///Recreates set_04 based on the current unfiorm_manager information (light)
     pub fn recreate_set_04(&mut self){
 
+        ///TODO Add the buffers of the uniform manager to the descriptor set
+
         //println!("STATUS: MATERIAL: Trying to locj uniform manager", );
         let uniform_manager_isnt = self.uniform_manager.clone();
         let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");

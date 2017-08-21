@@ -17,6 +17,7 @@ pub struct UniformManager {
     u_point_lights: pipeline_infos::PointLightInfo,
     u_directional_lights: pipeline_infos::DirectionlLightInfo,
     u_spot_lights: pipeline_infos::SpotLightInfo,
+    u_light_count: pipeline_infos::LightCount,
 
 
     ///First uniform buffer pool block, used or model, view and perspecive matrix
@@ -30,6 +31,9 @@ pub struct UniformManager {
 
     ///4th uniform buffer pool block, used for spot lights
     buffer_pool_04_spot: vulkano::buffer::cpu_pool::CpuBufferPool<pipeline_infos::SpotLightInfo>,
+
+    ///4th uniform buffer pool block, used for spot lights
+    buffer_pool_05_light_num: vulkano::buffer::cpu_pool::CpuBufferPool<pipeline_infos::LightCount>,
 }
 
 //Create a buffer and the pool
@@ -57,6 +61,13 @@ impl UniformManager{
             l_spot: Vec::new(),
         };
 
+        //init a light count
+        let light_count = pipeline_infos::LightCount{
+            num_point_lights: 0,
+            num_directional_lights: 0,
+            num_spot_lights: 0,
+        };
+
 
 
         //Create some pools to allocate from
@@ -76,6 +87,10 @@ impl UniformManager{
             device.clone(), vulkano::buffer::BufferUsage::all()
         );
 
+        let tmp_uniform_buffer_pool_05 = CpuBufferPool::<pipeline_infos::LightCount>::new(
+            device.clone(), vulkano::buffer::BufferUsage::all()
+        );
+
 
 
         UniformManager{
@@ -85,6 +100,7 @@ impl UniformManager{
             u_point_lights: points,
             u_directional_lights: direct,
             u_spot_lights: spots,
+            u_light_count: light_count,
 
             ///First uniform buffer pool block, used or model, view and perspecive matrix
             buffer_pool_01_mvp: tmp_uniform_buffer_pool_01,
@@ -97,6 +113,8 @@ impl UniformManager{
 
             ///4th uniform buffer pool block, used for spot lights
             buffer_pool_04_spot: tmp_uniform_buffer_pool_04,
+
+            buffer_pool_05_light_num: tmp_uniform_buffer_pool_05,
         }
     }
 
@@ -124,16 +142,24 @@ impl UniformManager{
         self.buffer_pool_04_spot.next(self.u_spot_lights.clone())
     }
 
+    ///Returns a subbuffer of the u_spot_light
+    pub fn get_subbuffer_05 (&mut self) ->
+    CpuBufferPoolSubbuffer<pipeline_infos::LightCount, Arc<vulkano::memory::pool::StdMemoryPool>>{
+        self.buffer_pool_05_light_num.next(self.u_light_count.clone())
+    }
+
     ///Updates the internal data used for the uniform buffer creation
     pub fn update(
         &mut self, new_u_world: pipeline_infos::Main,
         new_point: pipeline_infos::PointLightInfo,
         new_dir: pipeline_infos::DirectionlLightInfo,
         new_spot: pipeline_infos::SpotLightInfo,
+        new_light_count: pipeline_infos::LightCount,
     ){
         self.u_world = new_u_world;
         self.u_point_lights = new_point;
         self.u_directional_lights = new_dir;
         self.u_spot_lights = new_spot;
+        self.u_light_count = new_light_count;
     }
 }

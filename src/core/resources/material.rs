@@ -1,22 +1,11 @@
-use render::renderer;
-use render::pipeline;
-use render::pipeline_manager;
-use render::pipeline_infos;
 use render::uniform_manager;
 use core::resources::texture;
 use core::engine_settings::EngineSettings;
 
 use vulkano::descriptor::descriptor_set::PersistentDescriptorSet;
-use vulkano::image::ImmutableImage;
-use vulkano::descriptor::descriptor_set::StdDescriptorPoolAlloc;
-use vulkano::descriptor::descriptor_set::PersistentDescriptorSetBuf;
-use vulkano::descriptor::descriptor_set::PersistentDescriptorSetImg;
-use vulkano::descriptor::descriptor_set::PersistentDescriptorSetSampler;
 use vulkano::descriptor::descriptor_set::DescriptorSet;
 use vulkano::pipeline::GraphicsPipelineAbstract;
 use vulkano;
-
-use image;
 
 use std::sync::{Mutex,Arc};
 
@@ -90,10 +79,10 @@ impl TextureUsageFlags{
 pub struct MaterialFactors{
     albedo_factor: [f32; 4],
     normal_factor: [f32; 4],
+    emissive_factor: [f32; 4],
     metal_factor: f32,
     roughness_factor: f32,
     occlusion_factor: f32,
-    emissive_factor: [f32; 4],
 
 }
 
@@ -104,10 +93,10 @@ impl MaterialFactors{
             albedo_factor: [1.0; 4],
             //this needs to be set to just blue for not manipulating the rest
             normal_factor: [0.0, 0.0, 1.0, 1.0],
+            emissive_factor: [1.0; 4],
             metal_factor: 1.0,
             roughness_factor: 1.0,
             occlusion_factor: 1.0,
-            emissive_factor: [1.0; 4],
         }
     }
 
@@ -181,19 +170,19 @@ impl MaterialBuilder{
         let mut used_physical = 0;
 
         match albedo.clone(){
-            Some(albedo) => used_albedo = 1,
+            Some(_) => used_albedo = 1,
              _=> {},
         }
         match normal.clone(){
-            Some(normal) => used_normal = 1,
+            Some(_) => used_normal = 1,
              _=> {},
         }
         match physical.clone(){
-            Some(physical) => used_physical = 1,
+            Some(_) => used_physical = 1,
              _=> {},
         }
         match emissive.clone(){
-            Some(emissive) => used_emissive = 1,
+            Some(_) => used_emissive = 1,
              _=> {},
         }
 
@@ -234,7 +223,7 @@ impl MaterialBuilder{
 
     ///builds a material from the supplied textures and other info
     pub fn build(
-        mut self,
+        self,
         name: &str,
         pipeline: Arc<GraphicsPipelineAbstract + Send + Sync>,
         uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
@@ -274,8 +263,8 @@ impl MaterialBuilder{
             }
         };
 
-        ///The TextureUsageFlags and Factor Info comes from the builder, we create a pool for
-        ///them...
+        //The TextureUsageFlags and Factor Info comes from the builder, we create a pool for
+        //them...
         //Create a pool to allocate from
         let usage_info_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<TextureUsageFlags>
                                    ::new(device.clone(), vulkano::buffer::BufferUsage::all());
@@ -331,7 +320,22 @@ impl MaterialBuilder{
             .build().expect("failed to build descriptor")
         );
 
-        ///Now create the new material
+        //Creates thje first descriptor set 04
+        let set_04 = Arc::new(PersistentDescriptorSet::start(
+                pipeline.clone(), 3
+            )
+            .add_buffer((*uniform_manager_lck).get_subbuffer_02())
+            .expect("Failed to create descriptor set")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_03())
+            .expect("Failed to create descriptor set")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_04())
+            .expect("Failed to create descriptor set")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_05())
+            .expect("Failed to create descriptor set")
+            .build().expect("failed to build descriptor")
+        );
+
+        //Now create the new material
         Material{
             name: String::from(name),
             //albedo describtion
@@ -360,6 +364,8 @@ impl MaterialBuilder{
 
             material_factors: self.material_factors,
             material_factor_pool: material_factor_pool,
+
+            set_04: set_04,
         }
     }
 }
@@ -402,13 +408,15 @@ pub struct Material {
     //A persistent material set which only needs to be alter if a texture changes
     set_02: Arc<DescriptorSet + Send + Sync>,
 
-    //Usage flags of the different buffers, stored in a seperate set
+    //Usage flags of the different buffers, stored in a seperate set as well as material factors buffer
     set_03: Arc<DescriptorSet + Send + Sync>,
     texture_usage_info: TextureUsageFlags,
     usage_info_pool: vulkano::buffer::cpu_pool::CpuBufferPool<TextureUsageFlags>,
 
     material_factors: MaterialFactors,
     material_factor_pool: vulkano::buffer::cpu_pool::CpuBufferPool<MaterialFactors>,
+    //Responsible for lighting information
+    set_04: Arc<DescriptorSet + Send + Sync>,
 }
 
 
@@ -520,7 +528,7 @@ impl Material {
         let new_set = Arc::new(PersistentDescriptorSet::start(
                 self.pipeline.clone(), 0
             )
-            .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_01()).expect("Failed to create descriptor set")
             .build().expect("failed to build descriptor")
         );
         //println!("STATUS: MATERIAL: Returning new set to self", );
@@ -529,24 +537,35 @@ impl Material {
     }
 
     ///Recreates set_04 based on the current unfiorm_manager information (light)
+    ///NOTE:
+    /// - Binding 0 = point lights
+    /// - Binding 1 = directional lights
+    /// - Binding 2 = spot lights
+    ///*ENHANCE*: This and the first set could be created in the uniform manager because they are
+    ///always the same
     pub fn recreate_set_04(&mut self){
 
-        ///TODO Add the buffers of the uniform manager to the descriptor set
 
-        //println!("STATUS: MATERIAL: Trying to locj uniform manager", );
+        //TODO Add the buffers of the uniform manager to the descriptor set
         let uniform_manager_isnt = self.uniform_manager.clone();
         let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
-        //println!("STATUS: MATERIAL: Generation new set_01", );
-        //TODO add set 02 for material information
+        //println!("STATUS: MATERIAL: Generation new set_04", );
         let new_set = Arc::new(PersistentDescriptorSet::start(
-                self.pipeline.clone(), 0
+                self.pipeline.clone(), 3
             )
-            .add_buffer((*uniform_manager_lck).get_subbuffer_01().clone()).expect("Failed to create descriptor set")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_02())
+            .expect("Failed to create descriptor set")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_03())
+            .expect("Failed to create descriptor set")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_04())
+            .expect("Failed to create descriptor set")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_05())
+            .expect("Failed to create descriptor set")
             .build().expect("failed to build descriptor")
         );
         //println!("STATUS: MATERIAL: Returning new set to self", );
         //return the new set
-        self.set_01 = new_set;
+        self.set_04 = new_set;
     }
 
     ///Returns a subbuffer from the `usage_info_pool` to be used when adding a buffer to a set
@@ -577,8 +596,14 @@ impl Material {
 
     }
 
+    ///Returns the 3rd descriptor set, responsible for the material specific settings
     pub fn get_set_03(&self) -> Arc<DescriptorSet + Send + Sync>{
         self.set_03.clone()
+    }
+
+    ///Returns the 4th desciptor set responsible for the lighting information
+    pub fn get_set_04(&self) -> Arc<DescriptorSet + Send + Sync>{
+        self.set_04.clone()
     }
 
     ///Sets a new pipeline

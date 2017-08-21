@@ -130,10 +130,71 @@ impl  AssetManager {
             proj: self.get_camera().get_perspective().into(),
         };
         //in scope to prevent dead lock while updating material manager
+        //TODO get the lights from the light-pre-pass
+        let all_point_lights = self.active_main_scene.get_all_light_points();
+        let all_directional_lights = self.active_main_scene.get_all_light_directionals();
+        let all_spot_lights = self.active_main_scene.get_all_light_spots();
+
+        //init the light count and fill it
+        let light_count = pipeline_infos::LightCount{
+            ///Sets number of currently used point lights
+            num_point_lights: all_spot_lights.len() as u32,
+            ///Sets number of currently used directional lights
+            num_directional_lights: all_directional_lights.len() as u32,
+            ///Sets number of currently used spot lights
+            num_spot_lights: all_spot_lights.len() as u32,
+        };
+
+        //after getting all lights, create the shader-usable shader infos
+        let point_shader_info = {
+            let mut return_vec = Vec::new();
+            //transform into shader infos
+            for light in all_point_lights.iter(){
+                let light_inst = light.clone();
+                let light_lck = light_inst.lock().expect("failed to lock light");
+                return_vec.push((*light_lck).as_shader_info());
+            }
+
+            pipeline_infos::PointLightInfo{
+                l_point: return_vec
+            }
+        };
+
+        let directional_shader_info = {
+            let mut return_vec = Vec::new();
+            //transform into shader infos
+            for light in all_directional_lights.iter(){
+                let light_inst = light.clone();
+                let light_lck = light_inst.lock().expect("failed to lock light");
+                return_vec.push((*light_lck).as_shader_info());
+            }
+
+            pipeline_infos::DirectionlLightInfo{
+                l_directional: return_vec
+            }
+        };
+
+        let spot_shader_info = {
+            let mut return_vec = Vec::new();
+            //transform into shader infos
+            for light in all_spot_lights.iter(){
+                let light_inst = light.clone();
+                let light_lck = light_inst.lock().expect("failed to lock light");
+                return_vec.push((*light_lck).as_shader_info());
+            }
+            pipeline_infos::SpotLightInfo{
+                l_spot: return_vec,
+            }
+
+        };
+
+        //Update the uniform manager with the latest infos about camera and light
         {
             let uniform_manager = (*render_lck).get_uniform_manager();
             let mut uniform_manager_lck = uniform_manager.lock().expect("failed to lock uniform_man.");
-            (*uniform_manager_lck).update(uniform_data);
+            (*uniform_manager_lck).update(
+                uniform_data, point_shader_info, directional_shader_info, spot_shader_info, light_count
+            );
         }
 
 

@@ -12,45 +12,55 @@ pub struct Main {
 #[derive(Clone)]
 ///A stripped down version of a point light which can be passed to a shader
 pub struct LightPointShaderInfo {
-    intensity: f32,
-    color: [f32; 3],
+    pub color: [f32; 3],
+    pub intensity: f32,
 }
 
 #[derive(Clone)]
 ///A stripped down version of a directional light which can be passed to a shader
 pub struct LightDirectionalShaderInfo {
-    intensity: f32,
-    color: [f32; 3],
-
-    direction: [f32; 3],
+    pub color: [f32; 3],
+    pub direction: [f32; 3],
+    pub intensity: f32,
 }
 
 #[derive(Clone)]
 ///A stripped down version of a spot light which can be passed to a shader
 pub struct LightSpotShaderInfo {
-    intensity: f32,
-    color: [f32; 3],
-
-    direction: [f32; 3],
-
-    outer_radius: f32,
-    inner_radius: f32,
+    pub color: [f32; 3],
+    pub direction: [f32; 3],
+    pub intensity: f32,
+    pub outer_radius: f32,
+    pub inner_radius: f32,
 }
 
 #[derive(Clone)]
 ///Describes the components which will be send to the shader for `PointLight`s
 pub struct PointLightInfo {
-    l_point: Vec<LightPointShaderInfo>
+    ///Holds an array of all the point lights currently used
+    pub l_point: Vec<LightPointShaderInfo>
 }
 
 #[derive(Clone)]
 ///Describes the components which will be send to the shader for `DirectionlLight`s
 pub struct DirectionlLightInfo {
-    l_directional: Vec<LightDirectionalShaderInfo>
+    ///Holds an array of all the directional lights currently used
+    pub l_directional: Vec<LightDirectionalShaderInfo>
 }
 
 #[derive(Clone)]
 ///Describes the components which will be send to the shader for `SportLight`s
 pub struct SpotLightInfo {
-    l_spot: Vec<LightSpotShaderInfo>
+    ///Holds an array of all the spot lights currently used
+    pub l_spot: Vec<LightSpotShaderInfo>
+}
+
+#[derive(Clone)]
+pub struct LightCount {
+    ///Sets number of currently used point lights
+    pub num_point_lights: u32,
+    ///Sets number of currently used directional lights
+    pub num_directional_lights: u32,
+    ///Sets number of currently used spot lights
+    pub num_spot_lights: u32,
 }

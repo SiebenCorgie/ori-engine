@@ -330,7 +330,7 @@ impl Renderer {
             Err(err) => panic!("{:?}", err)
         };
 
-        ///Now repace
+        //Now repace
         mem::replace(&mut self.swapchain, new_swapchain);
         mem::replace(&mut self.images, new_images);
 
@@ -415,7 +415,7 @@ impl Renderer {
         //TODO have to find a nicer way of doing this... later
         let command_buffer = {
             let engine_settings_inst = self.engine_settings.clone();
-            let mut engine_settings_lck = engine_settings_inst
+            let engine_settings_lck = engine_settings_inst
             .lock()
             .expect("Faield to lock settings");
 
@@ -441,7 +441,6 @@ impl Renderer {
 
             //Draw
                 //get all meshes, later in view frustum based on camera
-            let mut index = 0;
             for i in asset_manager.get_all_meshes().iter(){
 
                 let mesh_lck = i
@@ -479,6 +478,9 @@ impl Renderer {
                     (*unlocked_material).get_set_03()
                 };
 
+                let set_04 = {
+                    (*unlocked_material).get_set_04()
+                };
                 //println!("STATUS: RENDER CORE: Adding to tmp cmd buffer", );
 
                 tmp_cmd_buffer = Some(cb
@@ -502,7 +504,7 @@ impl Renderer {
                             self.device.clone(), self.queue.clone()
                         ).clone(),
 
-                        (set_01, set_02, set_03),
+                        (set_01, set_02, set_03, set_04),
 
                         ()
                     ).expect("Failed to draw in command buffer!")

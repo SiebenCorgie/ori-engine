@@ -1,3 +1,4 @@
+
 ///A high level material manager used for creating, managing and destroying the materials
 pub mod material_manager;
 ///Handels all available meshes as well as the scenes created from an import with several meshes

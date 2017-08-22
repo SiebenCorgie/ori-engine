@@ -12,26 +12,44 @@ pub struct Main {
 #[derive(Clone)]
 ///A stripped down version of a point light which can be passed to a shader
 pub struct LightPointShaderInfo {
-    pub color: [f32; 3],
+    pub color: [f32; 4],
+    pub intensity: [f32; 4],
+    /*
     pub intensity: f32,
+    pub pad_01: f32,
+    pub pad_02: f32,
+    pub pad_03: f32,
+    */
 }
 
 #[derive(Clone)]
 ///A stripped down version of a directional light which can be passed to a shader
 pub struct LightDirectionalShaderInfo {
-    pub color: [f32; 3],
-    pub direction: [f32; 3],
+    pub color: [f32; 4],
+    pub direction: [f32; 4],
+    pub intensity: [f32; 4],
+    /*
     pub intensity: f32,
+    pub pad_01: f32,
+    pub pad_02: f32,
+    pub pad_03: f32,
+    */
 }
 
 #[derive(Clone)]
 ///A stripped down version of a spot light which can be passed to a shader
+///NOTE: The this are always vec4 at the start for correct padding (hopfully)
+
 pub struct LightSpotShaderInfo {
-    pub color: [f32; 3],
-    pub direction: [f32; 3],
+    pub color: [f32; 4],
+    pub direction: [f32; 4],
+    pub int_outer_inner: [f32; 4],
+    /*
     pub intensity: f32,
     pub outer_radius: f32,
     pub inner_radius: f32,
+    pub pad_01: f32,
+    */
 }
 
 #[derive(Clone)]

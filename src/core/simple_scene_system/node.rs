@@ -8,9 +8,11 @@ use na;
 use nc;
 use nc::bounding_volume::BoundingVolume;
 
+
 use rt_error;
 use core;
 use core::NodeMember;
+use core::simple_scene_system::node_member;
 use core::resources::mesh;
 use core::resources::light;
 use core::resources::empty;
@@ -19,15 +21,18 @@ use core::resources::camera::Camera;
 ///All possible types of content a Node can hold.
 ///This enum as well as all `match` sequenzes in the `impl Node for GenereicNode` have to be
 ///Changed in order to apply a new type
-#[derive(Clone)]
-pub enum ContentTypes{
-    StaticMesh(Arc<Mutex<mesh::Mesh>>),
-    LightPoint(Arc<Mutex<light::LightPoint>>),
-    LightDir(Arc<Mutex<light::LightDirectional>>),
-    LightSpot(Arc<Mutex<light::LightSpot>>),
-    Empty(Arc<Mutex<empty::Empty>>),
-}
 
+
+#[derive(Clone)]
+pub enum ContentTag {
+    StaticMesh,
+    DynamicMesh,
+    LightPoint,
+    LightDirectional,
+    LightSpot,
+    Empty,
+    Custom,
+}
 
 ///The normal Node of this Scene Tree
 ///TODO implement some kind of state mode.
@@ -52,16 +57,18 @@ pub struct GenericNode {
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
     ///The content is a contaier from the `ContentTypes` type which can hold any implemented
     ///Enum value
-    content: ContentTypes,
+    content: Arc<NodeMember + Send + Sync>,
+    content_tag: ContentTag,
 }
 
 ///Implementation of the Node trait for Generic node
 impl GenericNode{
     ///Creates a new, empty node
     pub fn new_empty(name: &str)-> Self{
-        let mut tmp_bound = nc::bounding_volume::AABB::new(na::Point3::new(0.0, 0.0, 0.0), na::Point3::new(1.0, 1.0, 1.0));
-        GenericNode{
 
+        let mut tmp_bound = nc::bounding_volume::AABB::new(na::Point3::new(0.0, 0.0, 0.0), na::Point3::new(1.0, 1.0, 1.0));
+
+        GenericNode{
             children: Vec::new(),
             name: String::from(name),
             location: na::Vector3::new(0.0, 0.0, 0.0),
@@ -70,38 +77,66 @@ impl GenericNode{
 
             bound: tmp_bound,
 
-            content: ContentTypes::Empty(Arc::new(Mutex::new(empty::Empty::new("Empty")))),
+            content: Arc::new(
+                node_member::SimpleNodeMember::from_empty(
+                    Arc::new(
+                        Mutex::new(
+                            empty::Empty::new("Empty")
+                        )
+                    )
+                )
+            ),
+
+            content_tag: ContentTag::Empty,
         }
     }
 
     ///Should return an node
-    pub fn new(name: &str, content: ContentTypes)->Self{
+    pub fn new(name: &str, content: Arc<NodeMember + Send + Sync>)->Self{
+
+        //Lock a copy of `content` to set the usage tag
+        //let content_inst = content.clone();
+        //let content_lck = content_inst.lock().expect("failed to lock content while adding to tree");
 
         let mut tmp_bound = nc::bounding_volume::AABB::new(na::Point3::new(0.0, 0.0, 0.0), na::Point3::new(1.0, 1.0, 1.0));
         //Building node bound from mesh
 
-        match content {
-            ContentTypes::StaticMesh(ref mesh)=> {
-                let tmp_mesh = mesh.lock().expect("Failed to hold mesh in node creation");
-                tmp_bound = nc::bounding_volume::AABB::new((*tmp_mesh).get_bound_min().clone(), (*tmp_mesh).get_bound_max().clone());
-            },
-            ContentTypes::LightPoint(ref light_point) => {
-                let tmp_light = light_point.lock().expect("Failed to hold light_point in node creation");
-                tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
-            },
-            ContentTypes::LightDir(ref light_dir) => {
-                let tmp_light = light_dir.lock().expect("Failed to hold light_dir in node creation");
-                tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
-            },
-            ContentTypes::LightSpot(ref light_spot) => {
-                let tmp_light = light_spot.lock().expect("Failed to hold light_spot in node creation");
-                tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
-            },
-            ContentTypes::Empty(ref empty) => {
-                let tmp_light = empty.lock().expect("Failed to hold empty in node creation");
-                tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
-            },
+        let mut imported_content_tag = content.get_content_type().clone();
+
+        // and bound
+        {
+            tmp_bound = nc::bounding_volume::AABB::new(
+                content.get_bound_min().clone(), content.get_bound_max().clone()
+            );
         }
+
+
+        /*
+        {
+            match (*content_lck).get_content_type() {
+                mesh::Mesh(ref mesh)=> {
+                    let tmp_mesh = mesh.lock().expect("Failed to hold mesh in node creation");
+                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_mesh).get_bound_min().clone(), (*tmp_mesh).get_bound_max().clone());
+                },
+                ContentTypes::LightPoint(ref light_point) => {
+                    let tmp_light = light_point.lock().expect("Failed to hold light_point in node creation");
+                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
+                },
+                ContentTypes::LightDir(ref light_dir) => {
+                    let tmp_light = light_dir.lock().expect("Failed to hold light_dir in node creation");
+                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
+                },
+                ContentTypes::LightSpot(ref light_spot) => {
+                    let tmp_light = light_spot.lock().expect("Failed to hold light_spot in node creation");
+                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
+                },
+                ContentTypes::Empty(ref empty) => {
+                    let tmp_light = empty.lock().expect("Failed to hold empty in node creation");
+                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
+                },
+            }
+        }
+        */
 
         GenericNode{
             children: Vec::new(),
@@ -113,6 +148,7 @@ impl GenericNode{
             bound: tmp_bound,
 
             content: content,
+            content_tag: imported_content_tag,
         }
     }
 
@@ -128,41 +164,20 @@ impl GenericNode{
 
     ///Destroy this node and all its children
     pub fn destroy(&mut self){
-        ///First delete all children
+        //First delete all children
         for i in self.children.iter_mut(){
             i.destroy();
         }
-        ///then self
+        //then self
         drop(self);
     }
 
     ///Adds a child node to this node
-    pub fn add_child(&mut self,child: ContentTypes){
+    pub fn add_child(&mut self, child: Arc<NodeMember + Send + Sync>){
+
         //find out the right name
-        let mut name: String = String::from("no name");
-        //TODO there might be a faster way though
-        match child {
-            ContentTypes::StaticMesh(ref static_mesh) => {
-                let tmp_mesh_ref = static_mesh.clone();
-                name = (*tmp_mesh_ref).lock().expect("Failed to hold lock while adding child").name.clone();
-            },
-            ContentTypes::LightPoint(ref light_point) => {
-                let tmp_light_ref = light_point.clone();
-                name = (*tmp_light_ref).lock().expect("Failed to hold lock while adding child").name.clone();
-            },
-            ContentTypes::LightDir(ref light_dir) => {
-                let tmp_light_ref = light_dir.clone();
-                name = (*tmp_light_ref).lock().expect("Failed to hold lock while adding child").name.clone();
-            },
-            ContentTypes::LightSpot(ref light_spot) => {
-                let tmp_light_ref = light_spot.clone();
-                name = (*tmp_light_ref).lock().expect("Failed to hold lock while adding child").name.clone();
-            },
-            ContentTypes::Empty(ref empty) => {
-                let tmp_empty_ref = empty.clone();
-                name = (*tmp_empty_ref).lock().expect("Failed to hold lock while adding child").name.clone();
-            },
-        }
+        let mut name: String = child.get_name();
+
         let tmp_name: &str = &name.to_string();
         //deside how to add, based on type
         let tmp_child = GenericNode::new(tmp_name, child);
@@ -220,11 +235,25 @@ impl GenericNode{
         //first have a look if self's content is the searched one
         //NOTE if the searched value is somewhere in the tree, this should return
         //NOTE Some(value) once
-        match self.content{
-            ContentTypes::StaticMesh(ref mesh)=> {
-                let mesh_ref = mesh.clone();
-                if (*mesh_ref).lock().expect("Failed to hold lock while reading mesh name in: get_mesh()").name == String::from(name.clone()){
-                    result_value = Some(mesh.clone());
+
+        let content_type = self.content_tag.clone();
+
+        match content_type{
+            ContentTag::StaticMesh | ContentTag::DynamicMesh=> {
+                if self.content.get_name() == String::from(name.clone()){
+
+                    //Have a look for a dynamic mesh
+                    match self.content.get_static_mesh(){
+                        Some(mesh) => result_value = Some(mesh),
+                        None => {},
+                    }
+                    //if it wasnt a staic mesh, have a look for a dynamic one
+                    if result_value.is_none() {
+                        match self.content.get_dynamic_mesh(){
+                            Some(mesh) => result_value = Some(mesh),
+                            None => {},
+                        }
+                    }
                 }
             }
             //if not selfs content search in children
@@ -262,11 +291,20 @@ impl GenericNode{
         //first have a look if self's content is the searched one
         //NOTE if the searched value is somewhere in the tree, this should return
         //NOTE Some(value) once
-        match self.content{
-            ContentTypes::LightPoint(ref light_point)=> {
-                let tmp_light_point = light_point.clone();
-                if (*tmp_light_point).lock().expect("Failed to hold lock while reading name in: get_light_point()").name == String::from(name.clone()){
-                    result_value = Some(light_point.clone());
+
+        let content_type = self.content_tag.clone();
+
+
+        match content_type{
+            ContentTag::LightPoint => {
+                if self.content.get_name() == String::from(name.clone()){
+
+                    //Have a look for a light
+                    match self.content.get_light_point(){
+                        Some(light) => result_value = Some(light),
+                        None => {},
+                    }
+
                 }
             }
             //if not selfs content search in children
@@ -297,15 +335,70 @@ impl GenericNode{
         result_value
     }
 
+    ///Returns the first light directional with this name
+    pub fn get_light_directional(&mut self, name: &str) -> Option<Arc<Mutex<core::resources::light::LightDirectional>>>{
+        let mut result_value: Option<Arc<Mutex<core::resources::light::LightDirectional>>> = None;
+
+        //first have a look if self's content is the searched one
+        //NOTE if the searched value is somewhere in the tree, this should return
+        //NOTE Some(value) once
+
+        let content_type = self.content_tag.clone();
+
+
+        match content_type{
+            ContentTag::LightDirectional => {
+                if self.content.get_name() == String::from(name.clone()){
+
+                    //Have a look for a light
+                    match self.content.get_light_directional(){
+                        Some(light) => result_value = Some(light),
+                        None => {},
+                    }
+
+                }
+            }
+            //if not selfs content search in children
+            _=>{}
+        }
+
+        //Have a look if we found it in the content
+        //if not search in childs
+        match result_value{
+            //if we already found somthing, don't do anything
+            Some(_)=> {},
+            None=> {
+                //Cycling though the children till we got any Some(x)
+                for i in self.children.iter_mut(){
+                    //make sure we dont overwrite the right value with a none of the next value
+                    match result_value{
+                        None=> result_value = i.get_light_directional(name.clone()),
+                        //if tmp holds something overwerite the result_value
+                        //the early return makes sure we dont overwrite our found falue with another
+                        //none
+                        Some(value)=> return Some(value),
+                    }
+
+                }
+            }
+
+        }
+        result_value
+    }
+
+    //TODO get specific light spot
+
     ///Returns all meshes in view frustum
     pub fn get_meshes_in_frustum(&mut self, camera: &camera::DefaultCamera) -> Vec<Arc<Mutex<mesh::Mesh>>>{
 
         let camera_volume = camera.get_frustum_bound().clone();
 
         let mut return_vector = Vec::new();
-        //check self
-        match self.content{
-            ContentTypes::StaticMesh(ref static_mesh)=>{
+
+
+        match self.content.get_static_mesh(){
+            //if selfs content is a mesh, check the bound
+            Some(ref static_mesh) => {
                 //check if self is in bound
                 if self.bound.intersects(&camera_volume){
                     return_vector.push(static_mesh.clone());
@@ -314,9 +407,19 @@ impl GenericNode{
                     return return_vector;
                 }
             },
-            //if it's no mesh don't use it
-            _=>{},
+            //if self is no mesh, just check the bound
+            None => {
+                //check if self is in bound
+                if self.bound.intersects(&camera_volume){
+                    //go further down the tree
+                //if self is not in bound we can return as there won't be any lower mesh in there
+                }else{
+                    return return_vector;
+                }
+            }
         }
+
+
         //if not already return because the bound is too small, check the children
         for i in self.children.iter_mut(){
             return_vector.append(&mut i.get_meshes_in_volume(&camera_volume));
@@ -326,21 +429,35 @@ impl GenericNode{
 
     ///checks for bounds in a volume, view frustum or maybe for a locale collision check
     pub fn get_meshes_in_volume(&mut self, volume: &nc::bounding_volume::AABB<na::Point3<f32>>) -> Vec<Arc<Mutex<mesh::Mesh>>>{
+
         let mut return_vector = Vec::new();
-        //check self
-        match self.content{
-            ContentTypes::StaticMesh(ref static_mesh)=>{
-                //check if self is in bound TODO Might pass the frustum volume down for better performance
-                if self.bound.intersects(volume){
+
+
+
+        match self.content.get_static_mesh(){
+            //if selfs content is a mesh, check the bound
+            Some(ref static_mesh) => {
+                //check if self is in bound
+                if self.bound.intersects(&volume){
                     return_vector.push(static_mesh.clone());
                 //if self is not in bound we can return as there won't be any lower mesh in there
                 }else{
                     return return_vector;
                 }
             },
-            //if its no mesh don't use it
-            _=>{},
+            //if self is no mesh, just check the bound
+            None => {
+                //check if self is in bound
+                if self.bound.intersects(&volume){
+                    //go further down the tree
+                //if self is not in bound we can return as there won't be any lower mesh in there
+                }else{
+                    return return_vector;
+                }
+            }
         }
+
+
         //if not already return because the bound is too small, check the children
         for i in self.children.iter_mut(){
             return_vector.append(&mut i.get_meshes_in_volume(&volume));
@@ -351,11 +468,24 @@ impl GenericNode{
     ///Gets all meshes from this node down
     pub fn get_all_meshes(&mut self) -> Vec<Arc<Mutex<mesh::Mesh>>>{
         let mut return_vector = Vec::new();
-        //Check self
-        match self.content{
-            ContentTypes::StaticMesh(ref mesh)=> return_vector.push(mesh.clone()),
-            _=>{},
+
+
+
+        let opt_mesh = self.content.get_static_mesh();
+        let opt_dyn_mesh = self.content.get_static_mesh();
+
+        //Test self
+        match opt_mesh{
+            Some(mesh) => return_vector.push(mesh.clone()),
+            _ => {},
         }
+
+        match opt_dyn_mesh{
+            Some(mesh) => return_vector.push(mesh.clone()),
+            _ => {},
+        }
+
+        //Go down the tree
         for i in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_meshes());
         }
@@ -365,11 +495,14 @@ impl GenericNode{
     ///Gets all LightPoint from this node down
     pub fn get_all_light_points(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightPoint>>>{
         let mut return_vector = Vec::new();
+
         //Check self
-        match self.content{
-            ContentTypes::LightPoint(ref light_point)=> return_vector.push(light_point.clone()),
-            _=>{},
+        match self.content.get_light_point(){
+            Some(light) => return_vector.push(light.clone()),
+            _ => {},
         }
+
+        //Go down the tree
         for i in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_light_points());
         }
@@ -380,9 +513,9 @@ impl GenericNode{
     pub fn get_all_light_directionals(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightDirectional>>>{
         let mut return_vector = Vec::new();
         //Check self
-        match self.content{
-            ContentTypes::LightDir(ref light_dir)=> return_vector.push(light_dir.clone()),
-            _=>{},
+        match self.content.get_light_directional(){
+            Some(light) => return_vector.push(light.clone()),
+            _ => {},
         }
         for i in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_light_directionals());
@@ -394,9 +527,9 @@ impl GenericNode{
     pub fn get_all_light_spots(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightSpot>>>{
         let mut return_vector = Vec::new();
         //Check self
-        match self.content{
-            ContentTypes::LightSpot(ref light_spot)=> return_vector.push(light_spot.clone()),
-            _=>{},
+        match self.content.get_light_spot(){
+            Some(light) => return_vector.push(light.clone()),
+            _ => {},
         }
         for i in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_light_spots());

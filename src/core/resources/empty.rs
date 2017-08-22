@@ -1,4 +1,6 @@
+use core::simple_scene_system::node;
 use core::NodeMember;
+use core::ReturnBoundInfo;
 use na;
 use nc;
 
@@ -21,14 +23,14 @@ impl Empty{
     }
 }
 
-impl NodeMember for Empty{
+impl ReturnBoundInfo for Empty{
     ///return the max size of its bound
-    fn get_bound_max(&self)-> &na::Point3<f32>{
-        self.bound.maxs()
+    fn get_bound_max(&self)-> na::Point3<f32>{
+        self.bound.maxs().clone()
     }
     ///return the min size of its bound
-    fn get_bound_min(&self)-> &na::Point3<f32>{
-        self.bound.mins()
+    fn get_bound_min(&self)-> na::Point3<f32>{
+        self.bound.mins().clone()
     }
     ///Sets the bound to the new values (in mesh space)
     fn set_bound(&mut self, min: na::Point3<f32>, max: na::Point3<f32>){
@@ -48,7 +50,7 @@ impl NodeMember for Empty{
     }
 
     ///Returns the vertices of the bounding mesh, good for debuging
-    fn get_bound_points(&mut self)-> Vec<na::Vector3<f32>>{
+    fn get_bound_points(&self)-> Vec<na::Vector3<f32>>{
         let mut return_vector = Vec::new();
 
         let b_min = self.bound.mins().clone();
@@ -67,3 +69,19 @@ impl NodeMember for Empty{
         return_vector
     }
 }
+
+/*
+impl NodeMember for Empty{
+
+
+    ///Returns the name of this node
+    fn get_name(&self) -> String{
+        self.name.clone()
+    }
+
+    ///Returns the type of node this is
+    fn get_content_type(&mut self) -> node::ContentTag{
+        node::ContentTag::Empty
+    }
+}
+*/

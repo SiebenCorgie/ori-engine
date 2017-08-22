@@ -1,5 +1,5 @@
 //TODO Add command buffer creation per mesh
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 ///Defines a normal mesh along with its properties
 use na;
 use nc;
@@ -7,9 +7,13 @@ use nc;
 use vulkano;
 //use vulkano::impl_vertex;
 
+
 use core;
 use core::NodeMember;
+use core::ReturnBoundInfo;
+use core::simple_scene_system::node;
 use core::resources::material;
+use core::resources;
 use render::pipeline;
 
 ///Defines the information a Vertex should have
@@ -206,25 +210,17 @@ impl Mesh {
             ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), self.indices.iter().cloned())
             .expect("failed to create index buffer 02")
     }
-/*
-    ///Returns the current pipeline of this object
-    pub fn get_pipeline() -> Arc<vulkano::pipeline::GraphicsPipeline>{
-        self.pipeline.clone()
-    }
-*/
 
 }
 
-///NodeMember for Mesh
-impl NodeMember for Mesh{
-
+impl ReturnBoundInfo for Mesh{
     ///return the max size of its bound
-    fn get_bound_max(&self)-> &na::Point3<f32>{
-        self.bound.maxs()
+    fn get_bound_max(&self)-> na::Point3<f32>{
+        self.bound.maxs().clone()
     }
     ///return the min size of its bound
-    fn get_bound_min(&self)-> &na::Point3<f32>{
-        self.bound.mins()
+    fn get_bound_min(&self)-> na::Point3<f32>{
+        self.bound.mins().clone()
     }
     ///Sets the bound to the new values (in mesh space)
     fn set_bound(&mut self, min: na::Point3<f32>, max: na::Point3<f32>){
@@ -268,7 +264,7 @@ impl NodeMember for Mesh{
     }
     */
     ///Returns the vertices of the bounding mesh, good for debuging
-    fn get_bound_points(&mut self)-> Vec<na::Vector3<f32>>{
+    fn get_bound_points(&self)-> Vec<na::Vector3<f32>>{
         let mut return_vector = Vec::new();
 
         let b_min = self.bound.mins().clone();
@@ -287,3 +283,40 @@ impl NodeMember for Mesh{
         return_vector
     }
 }
+
+/*
+///NodeMember for Mesh
+impl NodeMember for Mesh{
+
+    ///Returns the name of this node
+    fn get_name(&self) -> String{
+        self.name.clone()
+    }
+
+    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as static
+    fn get_static_mesh(&self) -> Option<Arc<Mutex<Mesh>>>{
+        Some(self.clone())
+    }
+    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as dynamic
+    fn get_dynamic_mesh(&self) -> Option<Arc<Mutex<Mesh>>>{
+        Some(self.clone())
+    }
+    ///Returns `Some(Arc<Mutex<LightPoint>>)` if this NodeMember contains a light point
+    fn get_light_point(&self) -> Option<Arc<Mutex<resources::light::LightPoint>>>{
+        None
+    }
+    ///Returns `Some(Arc<Mutex<LightDirectional>>)` if this NodeMember contains a directional light
+    fn get_light_directional(&self) -> Option<Arc<Mutex<resources::light::LightDirectional>>>{
+        None
+    }
+    ///Returns `Some(Arc<Mutex<LightSpot>>)` if this NodeMember contains a light spot
+    fn get_light_spot(&self) -> Option<Arc<Mutex<resources::light::LightSpot>>>{
+        None
+    }
+
+    ///Returns the type of node this is
+    fn get_content_type(&mut self) -> node::ContentTag{
+        node::ContentTag::StaticMesh
+    }
+}
+*/

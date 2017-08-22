@@ -42,24 +42,31 @@ layout(set = 2, binding = 1) uniform TextureFactors {
 //definitions of the lights for the unsized arrays
 struct PointLight
 {
-  float intensity;
-  vec3 color;
+  vec4 color;
+  vec4 intensity;
+  //float intensity;
 };
 
 struct DirectionalLight
 {
-  float intensity;
-  vec3 color;
-  vec3 direction;
+  vec4 color;
+  vec4 direction;
+  vec4 intensity;
+  //float intensity;
+
+
 };
 
 struct SpotLight
 {
+  vec4 color;
+  vec4 direction;
+  vec4 int_outer_inner;
+  /*
   float intensity;
-  vec3 color;
-  vec3 direction;
   float outer_radius;
   float inner_radius;
+  */
 };
 
 //And the send bindings from rust/vulkano
@@ -90,12 +97,25 @@ const vec3 LIGHT = vec3(0.0, -1.0, 1.0);
 
 void main() {
     float brightness = dot(normalize(v_normal), normalize(LIGHT));
-    //f_color = vec4(texture(albedo, tex_coordinates).xyz * brightness, 1.0);
-    vec3 color = vec3(0.0);
+    //f_color = vec4(vec3(1.0).xyz * brightness, 1.0);
+    //vec3 color = u_tex_fac.albedo_factor.xyz;
+
+    /*
+    for (int i = 0; i < u_light_count.num_point_lights; i++){
+      color += u_point_light.p_light[i].color.xyz;
+    }
+
+    for (int i = 0; i < u_light_count.num_dir_lights; i++){
+      color += u_dir_light.d_light[i].color.xyz;
+    }
+    */
+
 
     if (u_tex_usage_info.b_albedo == 1){
       f_color = vec4(texture(albedo, tex_coordinates).xyz * brightness, 1.0) * u_tex_fac.albedo_factor;
     }else{
-      f_color = vec4(texture(albedo, tex_coordinates).xyz * vec3(1.0, 0.0, 0.0) * brightness, 1.0) * u_tex_fac.albedo_factor;
+      f_color = vec4(u_tex_fac.albedo_factor.xyz * brightness, 1.0);
     }
+
+    //f_color = vec4(color, 1.0);
 }

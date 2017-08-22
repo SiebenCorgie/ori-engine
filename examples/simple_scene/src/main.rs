@@ -1,8 +1,15 @@
 extern crate vulkano;
 extern crate ori_engine;
+extern crate nalgebra as na;
+
 use ori_engine::*;
+use ori_engine::core::simple_scene_system::node;
+use ori_engine::core::simple_scene_system::node_member;
+use ori_engine::core::resources::light;
 use std::sync::{Arc, Mutex};
 use std::time::{Instant, Duration};
+
+
 
 extern crate winit;
 
@@ -63,6 +70,9 @@ fn main() {
             Some(physical),
             None,
             asset_manager.get_texture_manager().get_none()
+        ).with_factors(
+            core::resources::material::MaterialFactors::new()
+            .with_factor_albedo([1.0, 1.0, 0.0, 1.0])
         );
 
         asset_manager.add_material_to_manager(new_material, "new_material").expect("failed to add new_material");
@@ -73,6 +83,36 @@ fn main() {
     let mut adding_status = false;
 
     let mut start_time = Instant::now();
+
+    let mut sun = light::LightDirectional::new("Sun");
+    sun.set_direction(na::Vector3::new(1.0, -0.5, 0.5));
+    sun.set_color(na::Vector3::new(1.0, 0.5, 0.5));
+
+    let sun_node = Arc::new(
+        node_member::SimpleNodeMember::from_light_directional(
+            Arc::new(
+                Mutex::new(sun)
+            )
+        )
+    );
+    asset_manager.get_active_scene().add_child(sun_node);
+
+
+    let mut point = light::LightPoint::new("Point");
+    point.set_color(na::Vector3::new(0.0, 0.5, 1.0));
+
+    let point_node = Arc::new(
+        node_member::SimpleNodeMember::from_light_point(
+            Arc::new(
+                Mutex::new(point)
+            )
+        )
+    );
+    asset_manager.get_active_scene().add_child(point_node);
+
+    asset_manager.get_active_scene().print_member(0);
+    println!("Start n stuff", );
+
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later
         if adding_status == false && asset_manager.has_scene("Ape") && asset_manager.has_scene("Ring"){

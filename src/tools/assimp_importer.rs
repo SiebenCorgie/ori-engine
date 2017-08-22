@@ -7,6 +7,7 @@ use vulkano;
 use rt_error;
 use tools::Importer;
 use core::NodeMember;
+use core::ReturnBoundInfo;
 use core::resources::mesh;
 use core::resources::mesh::Vertex;
 use tools;

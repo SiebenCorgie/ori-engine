@@ -131,11 +131,39 @@ impl AssetManager {
             view: self.get_camera().get_view_matrix().into(),
             proj: self.get_camera().get_perspective().into(),
         };
+
         //in scope to prevent dead lock while updating material manager
         //TODO get the lights from the light-pre-pass
         let all_point_lights = self.active_main_scene.get_all_light_points();
         let all_directional_lights = self.active_main_scene.get_all_light_directionals();
         let all_spot_lights = self.active_main_scene.get_all_light_spots();
+
+        for i in all_directional_lights.clone().iter(){
+            let light_inst = i.clone();
+            let mut light_lck = light_inst.lock().expect("failed to lock light");
+            let dir: [f32;3] = (*light_lck).get_direction().clone().into();
+            let col: [f32;3] = (*light_lck).get_color().clone().into();
+
+            println!(
+                "Found Light: {} with diregtion {:?} and color {:?}",
+                (*light_lck).name,
+                dir,
+                col,
+
+            );
+        }
+
+        for i in all_point_lights.clone().iter(){
+            let light_inst = i.clone();
+            let mut light_lck = light_inst.lock().expect("failed to lock light");
+            let col: [f32;3] = (*light_lck).get_color().clone().into();
+
+            println!(
+                "Found Light: {} with color {:?}",
+                (*light_lck).name,
+                col,
+            );
+        }
 
         //init the light count and fill it
         let light_count = pipeline_infos::LightCount{

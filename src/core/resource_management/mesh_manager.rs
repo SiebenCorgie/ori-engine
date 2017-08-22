@@ -1,3 +1,5 @@
+
+use core::simple_scene_system::node_member;
 use core::resources::mesh;
 use core::simple_scene_system::node;
 use tools::Importer;
@@ -69,9 +71,9 @@ impl MeshManager {
             }
 
 
-            //Now add the mesh[s] to the meshes vector and after that build a scene from it and at the scene to
+            //Now add the mesh[s] to the meshes vector in self
+            //after that build a scene from it and add the scene to
             //the scenes Vec
-
             {
                 let mut meshes_editor = (*meshes_instance).lock().expect("failed to lock meshes vec");
                 for mesh in arc_meshes.iter(){
@@ -83,8 +85,9 @@ impl MeshManager {
             //println!("STATUS: MESH_MANAGER: Adding scene with name: {}", &name_instance.clone());
             let mut root_node = node::GenericNode::new_empty(&name_instance.clone());
             for i in arc_meshes.iter(){
-                let mesh_node = node::ContentTypes::StaticMesh(i.clone());
-                root_node.add_child(mesh_node);
+                let mesh_node = node_member::SimpleNodeMember::from_static_mesh(i.clone());
+                //let mesh_node = node::ContentTypes::StaticMesh(i.clone());
+                root_node.add_child(Arc::new(mesh_node));
             }
 
             //now lock the scene reference and add the subscene

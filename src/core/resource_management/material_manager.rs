@@ -61,7 +61,7 @@ impl MaterialManager {
         };
 
         //finally create the material from the textures
-        ///this will serv as fallback for any unsuccessful `get_material()`
+        //this will serve as fallback for any unsuccessful `get_material()`
         let fallback_material = Arc::new(
             Mutex::new(
                 material::MaterialBuilder::new(
@@ -134,9 +134,17 @@ impl MaterialManager {
         }
     }
 
-    ///Adds a material to this manager
-    pub fn add_material(&mut self, material: material::Material){
-        self.material_vault.insert(material.get_name(), Arc::new(Mutex::new(material)));
+    ///Adds a material to this manager, returns an error if the material already exists
+    pub fn add_material(&mut self, material: material::Material) -> Result<(), &'static str>{
+        //check for the key TODO might be faster with a vector containing all keys
+        if self.material_vault.contains_key(&material.get_name()){
+            return Err("error, the material is already present in the material manager");
+        }else{
+            self.material_vault.insert(material.get_name(), Arc::new(Mutex::new(material)));
+            return Ok({});
+        }
+
+
     }
     ///Checks for a material
     pub fn is_available(&self, name: &str) -> bool{

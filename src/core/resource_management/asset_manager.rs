@@ -14,6 +14,8 @@ use core::resource_management::scene_manager;
 use core::resources::camera::Camera;
 use core::resources::camera::DefaultCamera;
 use core::engine_settings;
+use core::resources::texture;
+use core::resources::material;
 
 use rt_error;
 
@@ -56,7 +58,7 @@ pub struct AssetManager {
 
 }
 
-impl  AssetManager {
+impl AssetManager {
     ///Creates a new idependend scene manager
     pub fn new(
         renderer: Arc<Mutex<renderer::Renderer>>,
@@ -230,10 +232,11 @@ impl  AssetManager {
     ///Starts the asset thread, responsible for managing all assets
     ///Might be removed because not neccessary
     pub fn start_asset_thread(&mut self){
-        /// NOTE has to be implemented
+        // NOTE has to be implemented
         return
     }
 
+    //Returns a reference to the texture manager
     pub fn get_texture_manager(&mut self) -> &mut texture_manager::TextureManager{
         &mut self.texture_manager
     }
@@ -258,7 +261,7 @@ impl  AssetManager {
     pub fn import_scene(&mut self, name: &str, path: &str){
 
         let render_inst = self.renderer.clone();
-        ///Lock in scope to prevent dead lock while importing
+        //Lock in scope to prevent dead lock while importing
         let scene_ref_inst = self.scene_manager.get_scenes_reference();
 
         let device_inst = {
@@ -295,6 +298,58 @@ impl  AssetManager {
     ///Returns true if a scene with `name` as name exists in the local scene manager
     pub fn has_scene(&self, name: &str) -> bool{
         self.scene_manager.has_scene(name.clone())
+    }
+
+    ///Returns a texture builder for the specified image at `path`
+    pub fn create_texture(&mut self, path: &str) -> texture::TextureBuilder{
+
+        //lock the renderer
+        let render_inst = self.renderer.clone();
+        let  render_lck = render_inst.lock().expect("failed to hold renderer");
+
+        //Create a second material
+        //create new texture
+        let new_texture = texture::TextureBuilder::from_image(
+            path,
+            (*render_lck).get_device(),
+            (*render_lck).get_queue(),
+            self.settings.clone()
+        );
+        new_texture
+    }
+
+    ///Takes a `texture::TextureBuilder` and adds the texture by `name` to the texture manager.
+    ///builds the texture and adds it to the internal manager,
+    /// returns an error if the texture already exists
+    pub fn add_texture_to_manager(
+        &mut self, texture_builder: texture::TextureBuilder, tex_name: &str
+    ) -> Result<(), &'static str>
+    {
+
+        let final_texture = texture_builder.build_with_name(tex_name);
+        self.texture_manager.add_texture(final_texture)
+    }
+
+    ///Takes an `material::MaterialBuilder` as well as the `name` for the new material
+    ///and adds it to the internam manager
+    pub fn add_material_to_manager(&mut self, material: material::MaterialBuilder, name: &str)
+    -> Result<(), &'static str>
+    {
+        //lock the renderer
+        let render_inst = self.renderer.clone();
+        let  render_lck = render_inst.lock().expect("failed to hold renderer");
+        let (pipe, uni_man, device, queue) = (*render_lck).get_material_instances();
+
+        let final_material = material.build(
+            name,
+            pipe,
+            uni_man,
+            device,
+            queue,
+            self.settings.clone()
+        );
+
+        self.material_manager.add_material(final_material)
     }
 }
 

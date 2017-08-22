@@ -93,7 +93,7 @@ impl TextureManager{
         let normal_tex = self.get_texture("fallback_normal");
         let physical_tex = self.get_texture("fallback_physical");
 
-        
+
 
         (albedo_tex, normal_tex, physical_tex)
     }
@@ -129,7 +129,7 @@ impl TextureManager{
 
         for i in self.textures.iter(){
             if i.name == String::from(name.clone()){
-                return Err("This textuer is already in th manager")
+                return Err("This texture is already in th manager")
             }
         }
 

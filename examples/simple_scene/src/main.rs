@@ -47,41 +47,25 @@ fn main() {
     //asset_manager.import_scene("Ape_02", "Apes.fbx");
     //asset_manager.import_scene("Ape_03", "Apes.fbx");
 
+    let mut tex_builder = asset_manager.create_texture("/home/siebencorgie/Pictures/MyPictures/ben_mauro_01.jpg");
+    tex_builder = tex_builder.with_flipped_v();
+    asset_manager.add_texture_to_manager(tex_builder, "new_texture").expect("failed to add new_texture");
+
     //Creating a new material, currently a bit ugly
     {
-        let render_inst = render.clone();
-        let  render_lck = render_inst.lock().expect("failed to hold renderer");
-
-        //Create a second material
-        //create new texture
-        let new_texture = core::resources::texture::TextureBuilder::from_image(
-            "/home/siebencorgie/Pictures/MyPictures/ben_mauro_01.jpg",
-            (*render_lck).get_device(),
-            (*render_lck).get_queue(),
-            settings.clone()
-        ).build_with_name("new_texture");
-        asset_manager.get_texture_manager().add_texture(new_texture).expect("failed to add texture");
 
         let (_ , normal, physical) = asset_manager.get_texture_manager().get_fallback_textures();
         let texture_in_manager = asset_manager.get_texture_manager().get_texture("new_texture");
 
-        let (pipe, uni_man, device, queue) = (*render_lck).get_material_instances();
         let new_material = core::resources::material::MaterialBuilder::new(
             Some(texture_in_manager),
             Some(normal),
             Some(physical),
             None,
             asset_manager.get_texture_manager().get_none()
-        ).build(
-            "new_material",
-            pipe,
-            uni_man,
-            device,
-            queue,
-            settings.clone()
         );
-        //add to the manager
-        asset_manager.get_material_manager().add_material(new_material);
+
+        asset_manager.add_material_to_manager(new_material, "new_material").expect("failed to add new_material");
     }
 
     asset_manager.import_scene("Ring", "Ring.fbx");
@@ -89,7 +73,6 @@ fn main() {
     let mut adding_status = false;
 
     let mut start_time = Instant::now();
-    println!("starting loop", );
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later
         if adding_status == false && asset_manager.has_scene("Ape") && asset_manager.has_scene("Ring"){
@@ -124,7 +107,7 @@ fn main() {
         }
 
         let fps_time = start_time.elapsed().subsec_nanos();
-        //println!("STATUS: RENDER: FPS IN GAME: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+        println!("STATUS: RENDER: FPS IN GAME: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
         start_time = Instant::now();
         //asset_manager.get_material_manager().print_all_materials();
     }

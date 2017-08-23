@@ -10,6 +10,10 @@ use std;
 use std::boxed::Box;
 use core::resources::mesh;
 use render::pipeline_infos;
+use render::shader_impls::pbr_vertex;
+use render::shader_impls::pbr_fragment;
+
+
 ///Definition of a single pipeline together with its creation and deleting behavoir
 pub struct Pipeline {
     ///The main pipeline hold by this struct
@@ -36,8 +40,8 @@ impl Pipeline{
     {
 
         //Currently using a static shader from /data/test.vs/fs
-        let vs = vs::Shader::load(device.clone()).expect("failed to create shader module");
-        let fs = fs::Shader::load(device.clone()).expect("failed to create shader module");
+        let vs = pbr_vertex::Shader::load(device.clone()).expect("failed to create shader module");
+        let fs = pbr_fragment::Shader::load(device.clone()).expect("failed to create shader module");
 
         //Create a pipeline
         let vertex_buffer_definition = vulkano::pipeline::vertex::SingleBufferDefinition::<mesh::Vertex>::new();
@@ -53,7 +57,6 @@ impl Pipeline{
             .build(device.clone())
             .expect("failed to make pipe 01!"));
 
-
         //Create the Struct
         Pipeline{
             pipeline: tmp_pipeline,
@@ -68,21 +71,5 @@ impl Pipeline{
     {
         self.pipeline.clone()
     }
-}
 
-
-//Will be removed hopefully
-mod vs {
-    #[derive(VulkanoShader)]
-    #[ty = "vertex"]
-    #[path = "data/test.vs"]
-    struct Dummy;
-}
-
-mod fs {
-
-    #[derive(VulkanoShader)]
-    #[ty = "fragment"]
-    #[path = "data/test.fs"]
-    struct Dummy;
 }

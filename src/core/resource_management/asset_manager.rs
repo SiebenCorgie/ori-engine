@@ -23,6 +23,8 @@ use render::renderer;
 use render::pipeline;
 use render::pipeline_manager;
 use render::pipeline_infos;
+use render::shader_impls::pbr_vertex;
+use render::shader_impls::pbr_fragment;
 
 use input::KeyMap;
 
@@ -165,16 +167,6 @@ impl AssetManager {
             );
         }
 
-        //init the light count and fill it
-        let light_count = pipeline_infos::LightCount{
-            ///Sets number of currently used point lights
-            num_point_lights: all_spot_lights.len() as u32,
-            ///Sets number of currently used directional lights
-            num_directional_lights: all_directional_lights.len() as u32,
-            ///Sets number of currently used spot lights
-            num_spot_lights: all_spot_lights.len() as u32,
-        };
-
         //after getting all lights, create the shader-usable shader infos
         let point_shader_info = {
             let mut return_vec = Vec::new();
@@ -184,13 +176,33 @@ impl AssetManager {
                 let light_lck = light_inst.lock().expect("failed to lock light");
                 return_vec.push((*light_lck).as_shader_info());
             }
-
+            /*
             pipeline_infos::PointLightInfo{
                 l_point: return_vec
             }
+            */
+            let empty_light = pbr_fragment::ty::PointLight{
+                color: [1.0; 3],
+                intensity: 0.0,
+            };
+            let mut add_array = [empty_light.clone(); 6];
+
+            let mut index = 0;
+            //Todo make the bound configurable
+            //configure the array to hold the forst six lights
+            while (index < 6) & (index < return_vec.len()) {
+                add_array[index] = return_vec[index];
+                index += 1;
+            }
+
+            pbr_fragment::ty::point_lights{
+                p_light: add_array,
+            }
+
         };
 
         let directional_shader_info = {
+
             let mut return_vec = Vec::new();
             //transform into shader infos
             for light in all_directional_lights.iter(){
@@ -199,8 +211,24 @@ impl AssetManager {
                 return_vec.push((*light_lck).as_shader_info());
             }
 
-            pipeline_infos::DirectionlLightInfo{
-                l_directional: return_vec
+            let empty_light = pbr_fragment::ty::DirectionalLight{
+                color: [1.0; 3],
+                direction: [1.0; 3],
+                intensity: 0.0,
+                _dummy0: [0; 4],
+            };
+            let mut add_array = [empty_light.clone(); 6];
+
+            let mut index = 0;
+            //Todo make the bound configurable
+            //configure the array to hold the forst six lights
+            while (index < 6) & (index < return_vec.len()) {
+                add_array[index] = return_vec[index];
+                index += 1;
+            }
+
+            pbr_fragment::ty::directional_lights{
+                d_light: add_array,
             }
         };
 
@@ -212,8 +240,28 @@ impl AssetManager {
                 let light_lck = light_inst.lock().expect("failed to lock light");
                 return_vec.push((*light_lck).as_shader_info());
             }
-            pipeline_infos::SpotLightInfo{
-                l_spot: return_vec,
+
+            let empty_light = pbr_fragment::ty::SpotLight{
+                color: [1.0; 3],
+                direction: [1.0; 3],
+                intensity: 0.0,
+                outer_radius: 0.0,
+                inner_radius: 0.0,
+                _dummy0: [0; 4],
+                _dummy1: [0; 8],
+            };
+            let mut add_array = [empty_light.clone(); 6];
+
+            let mut index = 0;
+            //Todo make the bound configurable
+            //configure the array to hold the forst six lights
+            while (index < 6) & (index < return_vec.len()) {
+                add_array[index] = return_vec[index];
+                index += 1;
+            }
+
+            pbr_fragment::ty::spot_lights{
+                s_light: add_array,
             }
 
         };
@@ -223,7 +271,7 @@ impl AssetManager {
             let uniform_manager = (*render_lck).get_uniform_manager();
             let mut uniform_manager_lck = uniform_manager.lock().expect("failed to lock uniform_man.");
             (*uniform_manager_lck).update(
-                uniform_data, point_shader_info, directional_shader_info, spot_shader_info, light_count
+                uniform_data, point_shader_info, directional_shader_info, spot_shader_info
             );
         }
 

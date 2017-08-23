@@ -3,9 +3,9 @@ use na;
 use nc;
 use nc::shape::Cuboid;
 
-use render::pipeline_infos::LightPointShaderInfo;
-use render::pipeline_infos::LightDirectionalShaderInfo;
-use render::pipeline_infos::LightSpotShaderInfo;
+
+use render::shader_impls::pbr_vertex;
+use render::shader_impls::pbr_fragment;
 use core::NodeMember;
 use core::ReturnBoundInfo;
 use core::simple_scene_system::node;
@@ -73,12 +73,14 @@ impl LightPoint{
     }
 
     ///Returns this lught as its shader-useable instance
-    pub fn as_shader_info(&self) -> LightPointShaderInfo{
+    pub fn as_shader_info(&self) -> pbr_fragment::ty::PointLight{
         //convert to a Vec4 for 128 bit padding in the shader
+
+        /*
         let tmp_color: [f32; 3] = self.color.into();
         LightPointShaderInfo{
             color: [tmp_color[0], tmp_color[1], tmp_color[2], 1.0],
-            intensity: [self.intensity.clone(), 1.0, 1.0, 1.0, ]
+            //intensity: [self.intensity.clone(), 1.0, 1.0, 1.0, ]
             /*
             intensity: self.intensity.clone(),
             pad_01: 1.0,
@@ -86,6 +88,16 @@ impl LightPoint{
             pad_03: 1.0,
             */
         }
+        */
+
+        let color_type: [f32; 3] = self.color.into();
+        //Return a native vulkano struct
+        pbr_fragment::ty::PointLight{
+            color: color_type,
+            intensity: self.intensity,
+        }
+
+
     }
 
     ///sets the lights intensity
@@ -178,21 +190,30 @@ impl LightDirectional{
     }
 
     ///Returns this lught as its shader-useable instance
-    pub fn as_shader_info(&self) -> LightDirectionalShaderInfo{
+    pub fn as_shader_info(&self) -> pbr_fragment::ty::DirectionalLight{
 
         let tmp_color: [f32;3] = self.color.into();
         let tmp_direction: [f32;3] = self.direction.into();
 
+        /*
         LightDirectionalShaderInfo{
             color: [tmp_color[0], tmp_color[1], tmp_color[2], 1.0],
             direction: [tmp_direction[0], tmp_direction[1], tmp_direction[2], 1.0],
-            intensity: [self.intensity.clone(), 1.0, 1.0, 1.0, ]
-            /*
+            //intensity: [self.intensity.clone(), 1.0, 1.0, 1.0, ]
+
             intensity: self.intensity.clone(),
             pad_01: 1.0,
             pad_02: 1.0,
             pad_03: 1.0,
-            */
+
+        }
+        */
+        //Return a native vulkano struct
+        pbr_fragment::ty::DirectionalLight{
+            color: tmp_color,
+            direction: tmp_direction,
+            intensity: self.intensity,
+            _dummy0: [0; 4],
         }
     }
 
@@ -303,22 +324,33 @@ impl LightSpot{
     }
 
     ///Returns this lught as its shader-useable instance
-    pub fn as_shader_info(&self) -> LightSpotShaderInfo{
+    pub fn as_shader_info(&self) -> pbr_fragment::ty::SpotLight{
 
         let tmp_color: [f32;3] = self.color.into();
         let tmp_direction: [f32;3] = self.direction.into();
 
+        /*
         LightSpotShaderInfo{
             color: [tmp_color[0], tmp_color[1], tmp_color[2], 1.0],
             direction: [tmp_direction[0], tmp_direction[1], tmp_direction[2], 1.0],
 
-            int_outer_inner: [self.intensity.clone(), self.outer_radius.clone(), self.inner_radius.clone(), 1.0]
-            /*
+            //int_outer_inner: [self.intensity.clone(), self.outer_radius.clone(), self.inner_radius.clone(), 1.0]
+
             intensity: self.intensity.clone(),
             outer_radius: self.outer_radius.clone(),
             inner_radius: self.inner_radius.clone(),
             pad_01: 1.0,
-            */
+
+        }
+        */
+        pbr_fragment::ty::SpotLight{
+            color: tmp_color,
+            direction: tmp_direction,
+            intensity: self.intensity,
+            outer_radius: self.outer_radius,
+            inner_radius: self.inner_radius,
+            _dummy0: [0; 4],
+            _dummy1: [0; 8],
         }
     }
 

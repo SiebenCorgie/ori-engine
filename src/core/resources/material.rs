@@ -330,8 +330,6 @@ impl MaterialBuilder{
             .expect("Failed to create descriptor set")
             .add_buffer((*uniform_manager_lck).get_subbuffer_04())
             .expect("Failed to create descriptor set")
-            .add_buffer((*uniform_manager_lck).get_subbuffer_05())
-            .expect("Failed to create descriptor set")
             .build().expect("failed to build descriptor")
         );
 
@@ -558,8 +556,6 @@ impl Material {
             .add_buffer((*uniform_manager_lck).get_subbuffer_03())
             .expect("Failed to create descriptor set")
             .add_buffer((*uniform_manager_lck).get_subbuffer_04())
-            .expect("Failed to create descriptor set")
-            .add_buffer((*uniform_manager_lck).get_subbuffer_05())
             .expect("Failed to create descriptor set")
             .build().expect("failed to build descriptor")
         );

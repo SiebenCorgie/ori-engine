@@ -86,7 +86,7 @@ fn main() {
 
     let mut sun = light::LightDirectional::new("Sun");
     sun.set_direction(na::Vector3::new(1.0, -0.5, 0.5));
-    sun.set_color(na::Vector3::new(1.0, 0.5, 0.5));
+    sun.set_color(na::Vector3::new(1.0, 0.0, 0.0));
 
     let sun_node = Arc::new(
         node_member::SimpleNodeMember::from_light_directional(
@@ -99,7 +99,7 @@ fn main() {
 
 
     let mut point = light::LightPoint::new("Point");
-    point.set_color(na::Vector3::new(0.0, 0.5, 1.0));
+    point.set_color(na::Vector3::new(0.0, 1.0, 1.0));
 
     let point_node = Arc::new(
         node_member::SimpleNodeMember::from_light_point(

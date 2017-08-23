@@ -11,3 +11,7 @@ pub mod pipeline_infos;
 pub mod window;
 ///manages all universal accesible uniforms, like lights and world info
 pub mod uniform_manager;
+
+///An module which collects all the shader implementations, these are usually derived from
+///vulkano-shader-derive
+pub mod shader_impls;

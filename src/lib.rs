@@ -56,7 +56,7 @@ share one material ==> Using a String value for now. //NOTE DONE
     => Much smaller memory footprint compared to the pipeline/material aproach
     But its kinda messy at the moment ... TOO MUCH OF DEM GENERICS ~~~FIXED!~~~~
     //NOTE NOTE: Changed the Uniform System to be more dynamic, Can now create a Uniform from the
-    //pipeline_info mod and pass it directly to the pipeline_manager. The manager will rebuild the
+    //// mod and pass it directly to the pipeline_manager. The manager will rebuild the
     //Uniform buffer and set corresbonding set
     //TODO Might change the Sets to a Vec<Set> and the Unfiorm_pools as well (maybe a fixed [sets; n] vec)
 //TODO NOW (2017_07_19) Add material Parameters to make different colors to test material system

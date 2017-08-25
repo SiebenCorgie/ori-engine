@@ -35,7 +35,8 @@ fn main() {
         Mutex::new(
             render::renderer::Renderer::new(
                 input_handler.get_events_loop(),
-                settings.clone()
+                settings.clone(),
+                input_handler.get_key_map(),
             )
         )
     );
@@ -54,20 +55,29 @@ fn main() {
     //asset_manager.import_scene("Ape_02", "Apes.fbx");
     //asset_manager.import_scene("Ape_03", "Apes.fbx");
 
-    let mut tex_builder = asset_manager.create_texture("/home/siebencorgie/Pictures/MyPictures/ben_mauro_01.jpg");
-    tex_builder = tex_builder.with_flipped_v();
-    asset_manager.add_texture_to_manager(tex_builder, "new_texture").expect("failed to add new_texture");
-
+    //Albedo
+    let mut tex_builder_01 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_basecolor.png");
+    tex_builder_01 = tex_builder_01.with_flipped_v();
+    asset_manager.add_texture_to_manager(tex_builder_01, "metal_albedo").expect("failed to add new_texture");
+    //Normal
+    let mut tex_builder_02 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_normal.png");
+    tex_builder_02 = tex_builder_02.with_flipped_v();
+    asset_manager.add_texture_to_manager(tex_builder_02, "metal_normal").expect("failed to add new_texture");
+    //Physical
+    let mut tex_builder_03 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_physical.png");
+    tex_builder_03 = tex_builder_03.with_flipped_v();
+    asset_manager.add_texture_to_manager(tex_builder_03, "metal_physical").expect("failed to add new_texture");
     //Creating a new material, currently a bit ugly
     {
 
-        let (_ , normal, physical) = asset_manager.get_texture_manager().get_fallback_textures();
-        let texture_in_manager = asset_manager.get_texture_manager().get_texture("new_texture");
+        let albedo_in_manager = asset_manager.get_texture_manager().get_texture("metal_albedo");
+        let nrm_in_manager = asset_manager.get_texture_manager().get_texture("metal_normal");
+        let physical_in_manager = asset_manager.get_texture_manager().get_texture("metal_physical");
 
         let new_material = core::resources::material::MaterialBuilder::new(
-            Some(texture_in_manager),
-            Some(normal),
-            Some(physical),
+            Some(albedo_in_manager),
+            Some(nrm_in_manager),
+            Some(physical_in_manager),
             None,
             asset_manager.get_texture_manager().get_none()
         ).with_factors(
@@ -83,10 +93,10 @@ fn main() {
     let mut adding_status = false;
 
     let mut start_time = Instant::now();
-
+    /*
     let mut sun = light::LightDirectional::new("Sun");
-    sun.set_direction(na::Vector3::new(1.0, -0.5, 0.5));
-    sun.set_color(na::Vector3::new(1.0, 0.0, 0.0));
+    sun.set_direction(na::Vector3::new(1.0, 0.5, 0.5));
+    sun.set_color(na::Vector3::new(1.0, 0.75, 0.6));
 
     let sun_node = Arc::new(
         node_member::SimpleNodeMember::from_light_directional(
@@ -96,19 +106,66 @@ fn main() {
         )
     );
     asset_manager.get_active_scene().add_child(sun_node);
+    */
+    //POINT 01 ==================================================================
+    let mut point_01 = light::LightPoint::new("Point_01");
+    point_01.set_color(na::Vector3::new(150.0, 150.0, 150.0));
+    point_01.set_location(na::Vector3::new(-5.0, -5.0, 10.0));
 
-
-    let mut point = light::LightPoint::new("Point");
-    point.set_color(na::Vector3::new(0.0, 1.0, 1.0));
-
-    let point_node = Arc::new(
+    let point_node_01 = Arc::new(
         node_member::SimpleNodeMember::from_light_point(
             Arc::new(
-                Mutex::new(point)
+                Mutex::new(point_01)
             )
         )
     );
-    asset_manager.get_active_scene().add_child(point_node);
+    asset_manager.get_active_scene().add_child(point_node_01);
+    //POINT 01 ==================================================================
+
+    //POINT 02 ==================================================================
+    let mut point_02 = light::LightPoint::new("Point_02");
+    point_02.set_color(na::Vector3::new(150.0, 150.0, 150.0));
+    point_02.set_location(na::Vector3::new(-5.0, 5.0, 10.0));
+
+    let point_node_02 = Arc::new(
+        node_member::SimpleNodeMember::from_light_point(
+            Arc::new(
+                Mutex::new(point_02)
+            )
+        )
+    );
+    asset_manager.get_active_scene().add_child(point_node_02);
+    //POINT 02 ==================================================================
+
+    //POINT 03 ==================================================================
+    let mut point_03 = light::LightPoint::new("Point_03");
+    point_03.set_color(na::Vector3::new(150.0, 150.0, 150.0));
+    point_03.set_location(na::Vector3::new(5.0, -5.0, 10.0));
+
+    let point_node_03 = Arc::new(
+        node_member::SimpleNodeMember::from_light_point(
+            Arc::new(
+                Mutex::new(point_03)
+            )
+        )
+    );
+    asset_manager.get_active_scene().add_child(point_node_03);
+    //POINT 03 ==================================================================
+
+    //POINT 04 ==================================================================
+    let mut point_04 = light::LightPoint::new("Point_04");
+    point_04.set_color(na::Vector3::new(150.0, 150.0, 150.0));
+    point_04.set_location(na::Vector3::new(5.0, 5.0, 10.0));
+
+    let point_node_04 = Arc::new(
+        node_member::SimpleNodeMember::from_light_point(
+            Arc::new(
+                Mutex::new(point_04)
+            )
+        )
+    );
+    asset_manager.get_active_scene().add_child(point_node_04);
+    //POINT 04 ==================================================================
 
     asset_manager.get_active_scene().print_member(0);
     println!("Start n stuff", );

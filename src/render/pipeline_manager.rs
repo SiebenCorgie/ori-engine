@@ -1,16 +1,13 @@
 use std::collections::HashMap;
-use std::sync::{Mutex, Arc};
-use std;
 
 use rt_error;
 use render::pipeline;
-use render::pipeline_infos;
+
+use std::sync::Arc;
 
 use vulkano;
-use vulkano::image::swapchain::SwapchainImage;
 use vulkano::pipeline::GraphicsPipelineAbstract;
-use vulkano::descriptor::descriptor_set::PersistentDescriptorSet;
-use vulkano::descriptor::descriptor_set::PersistentDescriptorSetBuf;
+
 
 ///Manages all available pipeline
 pub struct PipelineManager {
@@ -21,14 +18,13 @@ impl PipelineManager{
 
     ///Creates a pipeline Manager with a default pipeline, have a look at the code to see the pipeline type
     pub fn new(
-        device: Arc<vulkano::device::Device>, queue: Arc<vulkano::device::Queue>,
+        device: Arc<vulkano::device::Device>,
         renderpass: Arc<vulkano::framebuffer::RenderPassAbstract + Send + Sync>,
-        images: Vec<Arc<SwapchainImage>>,
     ) -> Self
     {
         let mut hashmap = HashMap::new();
         //Creates a default pipeline from a default shader
-        let default_pipeline = pipeline::Pipeline::new(device, queue, renderpass, images, "src/defaults/shader/DefShader.vs", "src/defaults/shader/DefShader.fs");
+        let default_pipeline = pipeline::Pipeline::new(device, renderpass);
         hashmap.insert(String::from("DefaultPipeline"), default_pipeline);
 
         PipelineManager{
@@ -65,14 +61,10 @@ impl PipelineManager{
 
     ///Adds a pipeline made for the specified shader
     pub fn add_pipeline_from_shader(&mut self, name: &str,device: Arc<vulkano::device::Device>,
-        queue: Arc<vulkano::device::Queue>,
         renderpass: Arc<vulkano::framebuffer::RenderPassAbstract + Send + Sync>,
-        images: Vec<Arc<SwapchainImage>>,
-        uniform_buffer: pipeline_infos::Main,
-        vertex_shader: &str,
-        fragment_shader: &str)
+    )
     {
-        let tmp_pipeline = pipeline::Pipeline::new(device, queue, renderpass, images, vertex_shader, fragment_shader);
+        let tmp_pipeline = pipeline::Pipeline::new(device,renderpass);
         self.pipelines.insert(String::from(name), tmp_pipeline);
     }
 

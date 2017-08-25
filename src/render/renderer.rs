@@ -1,26 +1,22 @@
 use render::pipeline_manager;
-use render::pipeline_infos;
 use render::uniform_manager;
 use core::resource_management::asset_manager;
-use core::resources::camera::Camera;
 use render::window;
 use core::engine_settings;
+use input::KeyMap;
 
 use rt_error;
 
 use na;
 
 use vulkano;
-use vulkano::framebuffer::RenderPass;
 use vulkano::framebuffer::FramebufferAbstract;
 use vulkano::framebuffer::RenderPassAbstract;
 use vulkano::swapchain::SwapchainCreationError;
 use vulkano::swapchain::SwapchainAcquireFuture;
 use vulkano::swapchain::AcquireError;
-use vulkano::framebuffer;
 use vulkano::sync::GpuFuture;
 use vulkano_win;
-use vulkano_win::VkSurfaceBuild;
 use vulkano::instance::debug::{DebugCallback, MessageTypes};
 use vulkano::pipeline::GraphicsPipelineAbstract;
 
@@ -58,6 +54,8 @@ pub struct Renderer  {
 
     engine_settings: Arc<Mutex<engine_settings::EngineSettings>>,
     uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
+    //A reference to the keymap to create input dependent functions
+    key_map: Arc<Mutex<KeyMap>>,
 
 }
 
@@ -65,7 +63,8 @@ impl Renderer {
     ///Creates a new renderer with all subsystems
     pub fn new(
             events_loop: Arc<Mutex<winit::EventsLoop>>,
-            engine_settings: Arc<Mutex<engine_settings::EngineSettings>>
+            engine_settings: Arc<Mutex<engine_settings::EngineSettings>>,
+            key_map: Arc<Mutex<KeyMap>>,
         ) -> Self{
         //Init Vulkan
 
@@ -269,7 +268,7 @@ impl Renderer {
         let pipeline_manager = Arc::new(
             Mutex::new(
                 pipeline_manager::PipelineManager::new(
-                    device.clone(), queue.clone(), renderpass.clone(), images.clone(),
+                    device.clone(), renderpass.clone(),
                 )
             )
         );
@@ -298,6 +297,8 @@ impl Renderer {
 
             engine_settings: engine_settings.clone(),
             uniform_manager: Arc::new(Mutex::new(uniform_manager_tmp)),
+
+            key_map: key_map,
         }
     }
 
@@ -466,6 +467,7 @@ impl Renderer {
                 };
 
                 let set_01 = {
+                    //TODO Set the model-matrix from the mesh data
                     (*unlocked_material).get_set_01()
                 };
 

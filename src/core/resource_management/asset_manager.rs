@@ -22,7 +22,6 @@ use rt_error;
 use render::renderer;
 use render::pipeline;
 use render::pipeline_manager;
-use render::pipeline_infos;
 use render::shader_impls::pbr_vertex;
 use render::shader_impls::pbr_fragment;
 
@@ -125,10 +124,16 @@ impl AssetManager {
         let render_lck = render_int.lock().expect("failed to lock renderer");
 
         //Debug stuff which will be handled by the application later
-        let rotation = na::Rotation3::from_axis_angle(&na::Vector3::y_axis(), time::precise_time_ns() as f32 * 0.000000001);
-        let mat_4: na::Matrix4<f32> = na::convert(rotation);
+        //let rotation = na::Rotation3::from_axis_angle(&na::Vector3::z_axis(), time::precise_time_ns() as f32 * 0.000000001);
+        let mat_4: na::Matrix4<f32> = na::Matrix4::identity();
 
-        let uniform_data = pipeline_infos::Main {
+
+        let uniform_data = pbr_fragment::ty::Data {
+            //Updating camera from camera transform
+            camera_position: self.camera.cameraPos.clone().into(),
+            _dummy0: [0; 4],
+            //This is getting a dummy value which is updated right bevore set cretion via the new
+            //model provided transform matrix. There might be a better way though.
             model: mat_4.into(),
             view: self.get_camera().get_view_matrix().into(),
             proj: self.get_camera().get_perspective().into(),
@@ -177,13 +182,15 @@ impl AssetManager {
                 return_vec.push((*light_lck).as_shader_info());
             }
             /*
-            pipeline_infos::PointLightInfo{
+            //s::PointLightInfo{
                 l_point: return_vec
             }
             */
             let empty_light = pbr_fragment::ty::PointLight{
                 color: [1.0; 3],
+                location: [0.0; 3],
                 intensity: 0.0,
+                _dummy0: [0; 4],
             };
             let mut add_array = [empty_light.clone(); 6];
 
@@ -214,8 +221,10 @@ impl AssetManager {
             let empty_light = pbr_fragment::ty::DirectionalLight{
                 color: [1.0; 3],
                 direction: [1.0; 3],
+                location: [0.0; 3],
                 intensity: 0.0,
                 _dummy0: [0; 4],
+                _dummy1: [0; 4],
             };
             let mut add_array = [empty_light.clone(); 6];
 
@@ -244,12 +253,15 @@ impl AssetManager {
             let empty_light = pbr_fragment::ty::SpotLight{
                 color: [1.0; 3],
                 direction: [1.0; 3],
+                location: [0.0; 3],
                 intensity: 0.0,
                 outer_radius: 0.0,
                 inner_radius: 0.0,
                 _dummy0: [0; 4],
-                _dummy1: [0; 8],
+                _dummy1: [0; 4],
+                _dummy2: [0; 8],
             };
+
             let mut add_array = [empty_light.clone(); 6];
 
             let mut index = 0;

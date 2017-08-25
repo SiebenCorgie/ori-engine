@@ -7,18 +7,28 @@ layout(location = 3) in vec3 tangent;
 layout(location = 4) in vec3 color;
 
 layout(location = 0) out vec3 v_normal;
-layout(location = 1) out vec2 tex_coordinates;
+layout(location = 1) out vec3 FragmentPosition;
+layout(location = 2) out vec2 tex_coordinates;
+//layout(location = 3) out mat3 TBN;
 
 
+
+//Global uniforms
 layout(set = 0, binding = 0) uniform Data {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
+  vec3 camera_position;
+  mat4 model;
+  mat4 view;
+  mat4 proj;
 } u_main;
 
+
 void main() {
-    mat4 modelview = u_main.view * u_main.model;
-    v_normal = transpose(inverse(mat3(modelview))) * normal;
-    gl_Position = u_main.proj * modelview * vec4(position, 1.0);
-    tex_coordinates = tex_coord;
+
+  v_normal = mat3(u_main.model) * normal;
+  tex_coordinates = tex_coord;
+
+  //todo test if thats right
+  FragmentPosition = vec3(u_main.model * vec4(position, 1.0));
+
+  gl_Position = u_main.proj * u_main.view * u_main.model * vec4(position, 1.0);
 }

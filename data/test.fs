@@ -5,17 +5,30 @@
 #define MAX_POINT_LIGHTS 6
 #define MAX_SPOT_LIGHTS 6
 
+const float kPi = 3.14159265;
+
 
 ///INS FROM VERTEX
 //Vertex Shader Input
 layout(location = 0) in vec3 v_normal;
-layout(location = 1) in vec2 tex_coordinates;
+layout(location = 1) in vec3 FragmentPosition;
+layout(location = 2) in vec2 tex_coordinates;
+//layout(location = 3) in mat3 TBN;
+
+
+//Global uniforms
+layout(set = 0, binding = 0) uniform Data {
+  vec3 camera_position;
+  mat4 model;
+  mat4 view;
+  mat4 proj;
+} u_main;
 
 //TEXTURES
-layout(set = 1, binding = 0) uniform sampler2D albedo;
-layout(set = 1, binding = 1) uniform sampler2D normal;
-layout(set = 1, binding = 2) uniform sampler2D physical;
-layout(set = 1, binding = 3) uniform sampler2D emissive;
+layout(set = 1, binding = 0) uniform sampler2D t_Albedo;
+layout(set = 1, binding = 1) uniform sampler2D t_Normal;
+layout(set = 1, binding = 2) uniform sampler2D t_Physical;
+layout(set = 1, binding = 3) uniform sampler2D t_Emissive;
 //TEXTURE_USAGE
 //Texture usage infos (!= 1 is "not used" for now)
 layout(set = 2, binding = 0) uniform TextureUsageInfo {
@@ -43,6 +56,7 @@ layout(set = 2, binding = 1) uniform TextureFactors {
 struct PointLight
 {
   vec3 color;
+  vec3 location;
   //vec4 intensity;
   float intensity;
 };
@@ -51,6 +65,7 @@ struct DirectionalLight
 {
   vec3 color;
   vec3 direction;
+  vec3 location;
   float intensity;
 };
 
@@ -58,6 +73,7 @@ struct SpotLight
 {
   vec3 color;
   vec3 direction;
+  vec3 location;
 
   float intensity;
   float outer_radius;
@@ -83,32 +99,133 @@ layout(set = 3, binding = 2) uniform spot_lights{
 layout(location = 0) out vec4 f_color;
 
 
-const vec3 LIGHT = vec3(0.0, -1.0, 1.0);
+const float PI = 3.14159265359;
+// ----------------------------------------------------------------------------
+// Easy trick to get tangent-normals to world-space to keep PBR code simplified.
+// Don't worry if you don't get what's going on; you generally want to do normal
+// mapping the usual way for performance anways; I do plan make a note of this
+// technique somewhere later in the normal mapping tutorial.
+vec3 getNormalFromMap()
+{
+    vec3 tangentNormal = texture(t_Normal, tex_coordinates).xyz * 2.0 - 1.0;
 
-void main() {
-  //float brightness = dot(normalize(v_normal), normalize(LIGHT));
-  //float brightness = dot(normalize(v_normal), normalize(u_dir_light.d_light[0].direction.xyz));
-    //f_color = vec4(vec3(1.0).xyz * brightness, 1.0);
-    vec3 color = vec3(0.0);
+    vec3 Q1  = dFdx(FragmentPosition);
+    vec3 Q2  = dFdy(FragmentPosition);
+    vec2 st1 = dFdx(tex_coordinates);
+    vec2 st2 = dFdy(tex_coordinates);
 
+    vec3 N   = normalize(v_normal);
+    vec3 T  = normalize(Q1*st2.t - Q2*st1.t);
+    vec3 B  = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
 
-    for (int i = 0; i < MAX_POINT_LIGHTS; i++){
-      color += u_point_light.p_light[i].color * u_point_light.p_light[i].intensity;
+    return normalize(TBN * tangentNormal);
+}
+// ----------------------------------------------------------------------------
+float DistributionGGX(vec3 N, vec3 H, float roughness)
+{
+    float a = roughness*roughness;
+    float a2 = a*a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH*NdotH;
+
+    float nom   = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySchlickGGX(float NdotV, float roughness)
+{
+    float r = (roughness + 1.0);
+    float k = (r*r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+// ----------------------------------------------------------------------------
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
+{
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx1 = GeometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+// ----------------------------------------------------------------------------
+vec3 fresnelSchlick(float cosTheta, vec3 F0)
+{
+    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+// ----------------------------------------------------------------------------
+void main()
+{
+    vec3 albedo     = pow(texture(t_Albedo, tex_coordinates).rgb, vec3(2.2));
+    float metallic  = texture(t_Physical, tex_coordinates).g;
+    float roughness = texture(t_Physical, tex_coordinates).b;
+    float ao        = texture(t_Physical, tex_coordinates).r;
+
+    vec3 N = normalize(v_normal);
+    //vec3 N = getNormalFromMap();
+    vec3 V = normalize(u_main.camera_position - FragmentPosition);
+
+    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
+    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, albedo, metallic);
+
+    // reflectance equation
+    vec3 Lo = vec3(0.0);
+    for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
+    {
+        // calculate per-light radiance
+        vec3 L = normalize(u_point_light.p_light[i].location - FragmentPosition);
+        vec3 H = normalize(V + L);
+        float distance = length(u_point_light.p_light[i].location - FragmentPosition);
+        float attenuation = 1.0 / (distance * distance);
+        vec3 radiance = u_point_light.p_light[i].color * attenuation;
+
+        // Cook-Torrance BRDF
+        float NDF = DistributionGGX(N, H, roughness);
+        float G   = GeometrySmith(N, V, L, roughness);
+        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+        vec3 nominator    = NDF * G * F;
+        float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // 0.001 to prevent divide by zero.
+        vec3 specular = nominator / denominator;
+
+        // kS is equal to Fresnel
+        vec3 kS = F;
+        // for energy conservation, the diffuse and specular light can't
+        // be above 1.0 (unless the surface emits light); to preserve this
+        // relationship the diffuse component (kD) should equal 1.0 - kS.
+        vec3 kD = vec3(1.0) - kS;
+        // multiply kD by the inverse metalness such that only non-metals
+        // have diffuse lighting, or a linear blend if partly metal (pure metals
+        // have no diffuse light).
+        kD *= 1.0 - metallic;
+
+        // scale light by NdotL
+        float NdotL = max(dot(N, L), 0.0);
+
+        // add to outgoing radiance Lo
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
     }
 
+    // ambient lighting (note that the next IBL tutorial will replace
+    // this ambient lighting with environment lighting).
+    vec3 ambient = vec3(0.03) * albedo * ao;
 
+    vec3 color = ambient + Lo;
 
-    for (int i = 0; i < MAX_DIR_LIGHTS; i++){
-      color += u_dir_light.d_light[i].color * u_dir_light.d_light[i].intensity;
-    }
+    // HDR tonemapping
+    color = color / (color + vec3(1.0));
+    // gamma correct
+    color = pow(color, vec3(1.0/2.2));
 
-
-/*
-    if (u_tex_usage_info.b_albedo == 1){
-      f_color = vec4(texture(albedo, tex_coordinates).xyz * brightness, 1.0) * u_tex_fac.albedo_factor;
-    }else{
-      f_color = vec4(u_tex_fac.albedo_factor.xyz * brightness, 1.0);
-    }
-*/
-  f_color = vec4(color, 1.0);
+    f_color = vec4(color, 1.0);
 }

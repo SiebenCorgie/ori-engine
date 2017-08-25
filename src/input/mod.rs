@@ -351,5 +351,9 @@ impl Input{
         key_map
     }
 
+    pub fn get_key_map(&self) -> Arc<Mutex<KeyMap>>{
+        self.key_map.clone()
+    }
+
 
 }

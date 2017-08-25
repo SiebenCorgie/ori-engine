@@ -19,6 +19,7 @@ pub struct LightPoint {
     pub name: String,
     intensity: f32,
     color: na::Vector3<f32>,
+    location: na::Vector3<f32>,
 
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
 }
@@ -30,7 +31,7 @@ pub struct LightDirectional {
     pub name: String,
     intensity: f32,
     color: na::Vector3<f32>,
-
+    location: na::Vector3<f32>,
     direction: na::Vector3<f32>,
 
     bound: nc::bounding_volume::AABB<na::Point3<f32>>,
@@ -43,6 +44,7 @@ pub struct LightSpot {
     pub name: String,
     intensity: f32,
     color: na::Vector3<f32>,
+    location: na::Vector3<f32>,
 
     direction: na::Vector3<f32>,
 
@@ -67,6 +69,8 @@ impl LightPoint{
             name: String::from(name),
             intensity: 1.0,
             color: na::Vector3::new(1.0, 1.0, 1.0),
+            location: na::Vector3::new(1.0, 1.0, 1.0),
+
 
             bound: nc::bounding_volume::AABB::new(min, max),
         }
@@ -91,10 +95,13 @@ impl LightPoint{
         */
 
         let color_type: [f32; 3] = self.color.into();
+        let location_type: [f32; 3] = self.location.into();
         //Return a native vulkano struct
         pbr_fragment::ty::PointLight{
             color: color_type,
+            location: location_type,
             intensity: self.intensity,
+            _dummy0: [0; 4],
         }
 
 
@@ -108,6 +115,16 @@ impl LightPoint{
     ///returns the refernce to the intensity
     pub fn get_intensity(&mut self) -> &mut f32{
         &mut self.intensity
+    }
+
+    ///Returns the location reference
+    pub fn get_location(&mut self) -> &mut na::Vector3<f32>{
+        &mut self.location
+    }
+
+    ///Returns the location reference
+    pub fn set_location(&mut self, new_location: na::Vector3<f32>){
+        self.location = new_location
     }
 
     ///Sets its color, the value gets normalized, set the intensity via `set_intensity`
@@ -183,6 +200,8 @@ impl LightDirectional{
 
             intensity: 1.0,
             color: na::Vector3::new(1.0, 1.0, 1.0),
+            location: na::Vector3::new(1.0, 1.0, 1.0),
+
             direction: direction,
 
             bound: nc::bounding_volume::AABB::new(min, max),
@@ -194,6 +213,7 @@ impl LightDirectional{
 
         let tmp_color: [f32;3] = self.color.into();
         let tmp_direction: [f32;3] = self.direction.into();
+        let location_type: [f32; 3] = self.location.into();
 
         /*
         LightDirectionalShaderInfo{
@@ -212,8 +232,10 @@ impl LightDirectional{
         pbr_fragment::ty::DirectionalLight{
             color: tmp_color,
             direction: tmp_direction,
+            location: location_type,
             intensity: self.intensity,
             _dummy0: [0; 4],
+            _dummy1: [0; 4],
         }
     }
 
@@ -225,6 +247,16 @@ impl LightDirectional{
     ///Returns the direction reference
     pub fn get_direction(&mut self) -> &mut na::Vector3<f32>{
         &mut self.direction
+    }
+
+    ///Returns the location reference
+    pub fn get_location(&mut self) -> &mut na::Vector3<f32>{
+        &mut self.location
+    }
+
+    ///Returns the location reference
+    pub fn set_location(&mut self, new_location: na::Vector3<f32>){
+        self.location = new_location
     }
 
     ///set intensity
@@ -314,6 +346,8 @@ impl LightSpot{
             name: String::from(name),
             intensity: 1.0,
             color: na::Vector3::new(1.0, 1.0, 1.0),
+            location: na::Vector3::new(1.0, 1.0, 1.0),
+
             direction: direction,
 
             outer_radius: outer_radius,
@@ -328,6 +362,7 @@ impl LightSpot{
 
         let tmp_color: [f32;3] = self.color.into();
         let tmp_direction: [f32;3] = self.direction.into();
+        let location_type: [f32; 3] = self.location.into();
 
         /*
         LightSpotShaderInfo{
@@ -346,11 +381,13 @@ impl LightSpot{
         pbr_fragment::ty::SpotLight{
             color: tmp_color,
             direction: tmp_direction,
+            location: location_type,
             intensity: self.intensity,
             outer_radius: self.outer_radius,
             inner_radius: self.inner_radius,
             _dummy0: [0; 4],
-            _dummy1: [0; 8],
+            _dummy1: [0; 4],
+            _dummy2: [0; 8],
         }
     }
 
@@ -362,6 +399,16 @@ impl LightSpot{
     ///Returns the direction reference
     pub fn get_direction(&mut self) -> &mut na::Vector3<f32>{
         &mut self.direction
+    }
+
+    ///Returns the location reference
+    pub fn get_location(&mut self) -> &mut na::Vector3<f32>{
+        &mut self.location
+    }
+
+    ///Returns the location reference
+    pub fn set_location(&mut self, new_location: na::Vector3<f32>){
+        self.location = new_location
     }
 
     ///set intensity

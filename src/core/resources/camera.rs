@@ -66,7 +66,7 @@ impl Camera for DefaultCamera{
         //camera General
         let cameraPos = Vector3::new(0.0, 0.0, 0.0);
         let cameraFront = Vector3::new(0.0, 0.0, 1.0);
-        let cameraUp = Vector3::new(0.0, -1.0, 0.0);
+        let cameraUp = Vector3::new(0.0, 0.0, -1.0);
         //Camera Rotation
         let yaw: f32 = 0.0;
         let pitch: f32 = 0.0;
@@ -137,10 +137,10 @@ impl Camera for DefaultCamera{
                 self.cameraPos = self.cameraPos - (self.cameraFront.cross(&self.cameraUp).normalize()) * camera_speed;
             }
             if (key_map_inst.ctrl_l == true) | (key_map_inst.q == true) {
-                self.cameraPos = self.cameraPos - Vector3::new(0.0, camera_speed, 0.0);
+                self.cameraPos = self.cameraPos - Vector3::new(0.0, 0.0, camera_speed);
             }
             if (key_map_inst.shift_l == true) | (key_map_inst.e == true) {
-                self.cameraPos = self.cameraPos + Vector3::new(0.0, camera_speed, 0.0);
+                self.cameraPos = self.cameraPos + Vector3::new(0.0, 0.0, camera_speed);
             }
         }
 

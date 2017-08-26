@@ -433,8 +433,6 @@ impl AssetManager {
             pipe,
             uni_man,
             device,
-            queue,
-            self.settings.clone()
         );
 
         self.material_manager.add_material(final_material)

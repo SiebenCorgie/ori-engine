@@ -76,8 +76,6 @@ impl MaterialManager {
                     pipe,
                     uni_man,
                     device,
-                    queue,
-                    engine_settings
                 )
             )
         );

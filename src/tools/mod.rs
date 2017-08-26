@@ -3,7 +3,6 @@ use na;
 use std::sync::Arc;
 use vulkano;
 
-use render::pipeline;
 use core::resources::mesh;
 
 /// an importer via the assimp library

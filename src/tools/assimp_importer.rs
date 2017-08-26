@@ -6,7 +6,6 @@ use vulkano;
 
 use rt_error;
 use tools::Importer;
-use core::NodeMember;
 use core::ReturnBoundInfo;
 use core::resources::mesh;
 use core::resources::mesh::Vertex;
@@ -103,7 +102,7 @@ impl Importer for AssimpImporter {
                                 norm = na::Vector3::new(1.0, 1.0, 1.0).into();
                             },
                         }
-                        ///TANGENTS
+                        //TANGENTS
                         match mesh.get_tangent(index){
                             Some(tangent) => tang = tangent.into(),
                             None => {
@@ -150,7 +149,7 @@ impl Importer for AssimpImporter {
                             bound_info.min_z = pos[2].clone();
                         }
 
-                        ///Add the info to the vertex vector
+                        //Add the info to the vertex vector
                         tmp_vertices.push(Vertex::new(pos, tex, norm, tang, col));
 
 
@@ -171,7 +170,7 @@ impl Importer for AssimpImporter {
                     mesh_collection.push(tmp_mesh);
                 }
             },
-            Err(error)=> rt_error("ASSIMP_IMPORTER", "Loading scene failed"),
+            Err(_)=> rt_error("ASSIMP_IMPORTER", "Loading scene failed"),
 
         }
         //return the imported scene

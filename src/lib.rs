@@ -4,16 +4,14 @@ extern crate nalgebra as na;
 extern crate ncollide as nc;
 extern crate assimp;
 
+//All thrid party crates
 extern crate winit;
 #[macro_use]
 extern crate vulkano;
 #[macro_use]
 extern crate vulkano_shader_derive;
-#[macro_use]
 extern crate vulkano_win;
-#[macro_use]
 extern crate time;
-#[macro_use]
 extern crate image;
 
 ///The engine core defines most functions and
@@ -48,22 +46,6 @@ mod tests {
 
 
 /*TODO
-1st. create a assmip based importer who builds a own scene_tree from a file  //NOTE DONE
-2nd create a material structure indipendent from the meshes //NOTE DONE
-3rd pair the mesh struct with the material manager maybe with Arc<material> where different meshes
-share one material ==> Using a String value for now. //NOTE DONE
-//NOTE Currently using a pipeline manager as well, materials with the same shader share one pipeline
-    => Much smaller memory footprint compared to the pipeline/material aproach
-    But its kinda messy at the moment ... TOO MUCH OF DEM GENERICS ~~~FIXED!~~~~
-    //NOTE NOTE: Changed the Uniform System to be more dynamic, Can now create a Uniform from the
-    //// mod and pass it directly to the pipeline_manager. The manager will rebuild the
-    //Uniform buffer and set corresbonding set
-    //TODO Might change the Sets to a Vec<Set> and the Unfiorm_pools as well (maybe a fixed [sets; n] vec)
-//TODO NOW (2017_07_19) Add material Parameters to make different colors to test material system
-//NOTE moved the set Generation to the materials, this way we reuse most sets where possible
-//NOw Create a texture manager
-
-2nd Outsource Renderer from the example to the renderer mod DONE
 3rd Render on main thread, manage materials on event on different thread,
 manage objects on secondary thread, manage loading on n-threads (per object?)
 4th then continue

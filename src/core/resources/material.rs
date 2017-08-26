@@ -1,6 +1,6 @@
 use render::uniform_manager;
 use core::resources::texture;
-use core::engine_settings::EngineSettings;
+use render::shader_impls::pbr_fragment;
 
 use vulkano::descriptor::descriptor_set::PersistentDescriptorSet;
 use vulkano::descriptor::descriptor_set::DescriptorSet;
@@ -71,6 +71,53 @@ impl TextureUsageFlags{
         self.emissive = emissive;
         self
     }
+
+    pub fn to_shader_flags(self) -> pbr_fragment::ty::TextureUsageInfo{
+        pbr_fragment::ty::TextureUsageInfo{
+            b_albedo: {
+                if self.albedo != 0{
+                    1
+                }else{
+                    0
+                }
+            },
+            b_normal: {
+                if self.normal != 0{
+                    1
+                }else{
+                    0
+                }
+            },
+            b_metal: {
+                if self.metal != 0{
+                    1
+                }else{
+                    0
+                }
+            },
+            b_roughness: {
+                if self.roughness != 0{
+                    1
+                }else{
+                    0
+                }
+            },
+            b_occlusion: {
+                if self.occlusion != 0{
+                    1
+                }else{
+                    0
+                }
+            },
+            b_emissive: {
+                if self.emissive != 0{
+                    1
+                }else{
+                    0
+                }
+            },
+        }
+    }
 }
 
 ///A Struct defining the the material factors. They are used as Colors/factors if no textures
@@ -134,6 +181,17 @@ impl MaterialFactors{
     pub fn with_factor_emmissive(mut self, factor: [f32; 4]) -> Self{
         self.emissive_factor = factor;
         self
+    }
+
+    pub fn to_shader_factors(&self) -> pbr_fragment::ty::TextureFactors{
+        pbr_fragment::ty::TextureFactors{
+            albedo_factor: self.albedo_factor,
+            normal_factor: self.normal_factor,
+            emissive_factor: self.emissive_factor,
+            metal_factor: self.metal_factor,
+            roughness_factor: self.roughness_factor,
+            occlusion_factor: self.occlusion_factor,
+        }
     }
 }
 
@@ -201,7 +259,7 @@ impl MaterialBuilder{
             physical: physical,
             emissive: emissive,
             fallback_texture: fallback_texture,
-            //texture and material infos
+            //texture and material infos as shader usable struct
             texture_usage_info: usage_flags,
             //and default factors
             material_factors: MaterialFactors::new(),
@@ -228,8 +286,6 @@ impl MaterialBuilder{
         pipeline: Arc<GraphicsPipelineAbstract + Send + Sync>,
         uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
         device: Arc<vulkano::device::Device>,
-        queue: Arc<vulkano::device::Queue>,
-        engine_settings: Arc<Mutex<EngineSettings>>,
     ) -> Material{
 
         //find out if a texture was supplied per slot
@@ -266,11 +322,11 @@ impl MaterialBuilder{
         //The TextureUsageFlags and Factor Info comes from the builder, we create a pool for
         //them...
         //Create a pool to allocate from
-        let usage_info_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<TextureUsageFlags>
+        let usage_info_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<pbr_fragment::ty::TextureUsageInfo>
                                    ::new(device.clone(), vulkano::buffer::BufferUsage::all());
 
 
-        let material_factor_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<MaterialFactors>
+        let material_factor_pool = vulkano::buffer::cpu_pool::CpuBufferPool::<pbr_fragment::ty::TextureFactors>
                                    ::new(device.clone(), vulkano::buffer::BufferUsage::all());
 
 
@@ -311,11 +367,11 @@ impl MaterialBuilder{
             )
             .add_buffer(usage_info_pool.next(
                 //need to clone for storing in struct later
-                self.texture_usage_info.clone()
+                self.texture_usage_info.clone().to_shader_flags()
             ).clone()).expect("Failed to create descriptor set")
             .add_buffer(material_factor_pool.next(
                 //need to clone for storing in struct later
-                self.material_factors.clone()
+                self.material_factors.clone().to_shader_factors()
             ).clone()).expect("failed to create the first material factor pool")
             .build().expect("failed to build descriptor")
         );
@@ -347,8 +403,7 @@ impl MaterialBuilder{
 
             //All Unifrom infos
             pipeline: pipeline,
-            device: device,
-            queue: queue.clone(),
+
             uniform_manager: uniform_manager,
 
             set_01: set_01,
@@ -357,10 +412,10 @@ impl MaterialBuilder{
 
             set_03: set_03,
 
-            texture_usage_info: self.texture_usage_info,
+            texture_usage_info: self.texture_usage_info.to_shader_flags(),
             usage_info_pool: usage_info_pool,
 
-            material_factors: self.material_factors,
+            material_factors: self.material_factors.to_shader_factors(),
             material_factor_pool: material_factor_pool,
 
             set_04: set_04,
@@ -395,8 +450,6 @@ pub struct Material {
     //Technical implementation
     ///Reference to parent pipeline
     pipeline: Arc<GraphicsPipelineAbstract + Send + Sync>,
-    device: Arc<vulkano::device::Device>,
-    queue: Arc<vulkano::device::Queue>,
     ///A reference to the global uniform manager
     uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
 
@@ -408,11 +461,12 @@ pub struct Material {
 
     //Usage flags of the different buffers, stored in a seperate set as well as material factors buffer
     set_03: Arc<DescriptorSet + Send + Sync>,
-    texture_usage_info: TextureUsageFlags,
-    usage_info_pool: vulkano::buffer::cpu_pool::CpuBufferPool<TextureUsageFlags>,
+    //as shader usable struct
+    texture_usage_info: pbr_fragment::ty::TextureUsageInfo,
+    usage_info_pool: vulkano::buffer::cpu_pool::CpuBufferPool<pbr_fragment::ty::TextureUsageInfo>,
 
-    material_factors: MaterialFactors,
-    material_factor_pool: vulkano::buffer::cpu_pool::CpuBufferPool<MaterialFactors>,
+    material_factors: pbr_fragment::ty::TextureFactors,
+    material_factor_pool: vulkano::buffer::cpu_pool::CpuBufferPool<pbr_fragment::ty::TextureFactors>,
     //Responsible for lighting information
     set_04: Arc<DescriptorSet + Send + Sync>,
 }
@@ -422,13 +476,13 @@ impl Material {
     ///Adds a albedo texture to the material
     pub fn set_albedo_texture(&mut self, albedo: Arc<texture::Texture>){
         self.t_albedo = albedo;
-        self.texture_usage_info.albedo = 1;
+        self.texture_usage_info.b_albedo = 1;
     }
 
     ///Adds a normal Texture
     pub fn set_normal_texture(&mut self, normal: Arc<texture::Texture>){
         self.t_normal = normal;
-        self.texture_usage_info.normal = 1;
+        self.texture_usage_info.b_normal = 1;
     }
 
     ///Adds a physical texture
@@ -439,25 +493,21 @@ impl Material {
     ///Adds a emissive texture
     pub fn set_emissive_texture(&mut self, emissive: Arc<texture::Texture>){
         self.t_emissive = emissive;
-        self.texture_usage_info.emissive = 1;
+        self.texture_usage_info.b_emissive = 1;
     }
 
     pub fn set_texture_usage_info(&mut self, info: TextureUsageFlags){
-        self.texture_usage_info = info;
+        self.texture_usage_info = info.to_shader_flags();
     }
 
     ///Sets the material factors
     pub fn set_material_factor_info(&mut self, info: MaterialFactors){
-        self.material_factors = info;
+        self.material_factors = info.to_shader_factors();
     }
 
     ///Recreates set_02, set_03
     pub fn recreate_static_sets(&mut self){
         //println!("STATUS: MATERIAL: Recreation static sets", );
-
-        //Additionaly lock the uniformanager to get the first global information
-        let uniform_manager_isnt = self.uniform_manager.clone();
-        let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
 
 
         //Create the set 02
@@ -566,7 +616,7 @@ impl Material {
 
     ///Returns a subbuffer from the `usage_info_pool` to be used when adding a buffer to a set
     fn get_usage_info_subbuffer(&self) ->
-     vulkano::buffer::cpu_pool::CpuBufferPoolSubbuffer<TextureUsageFlags,
+     vulkano::buffer::cpu_pool::CpuBufferPoolSubbuffer<pbr_fragment::ty::TextureUsageInfo,
      Arc<vulkano::memory::pool::StdMemoryPool>>
      {
         self.usage_info_pool.next(self.texture_usage_info.clone())
@@ -574,7 +624,7 @@ impl Material {
 
     ///Returns a subbuffer from the material_factor_pool to be used with the 3rd set
     fn get_material_factor_subbuffer(&self) ->
-    vulkano::buffer::cpu_pool::CpuBufferPoolSubbuffer<MaterialFactors,
+    vulkano::buffer::cpu_pool::CpuBufferPoolSubbuffer<pbr_fragment::ty::TextureFactors,
     Arc<vulkano::memory::pool::StdMemoryPool>>
     {
         self.material_factor_pool.next(self.material_factors.clone())

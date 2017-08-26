@@ -32,12 +32,12 @@ layout(set = 1, binding = 3) uniform sampler2D t_Emissive;
 //TEXTURE_USAGE
 //Texture usage infos (!= 1 is "not used" for now)
 layout(set = 2, binding = 0) uniform TextureUsageInfo {
-  int b_albedo;
-  int b_normal;
-  int b_metal;
-  int b_roughness;
-  int b_occlusion;
-  int b_emissive;
+  bool b_albedo;
+  bool b_normal;
+  bool b_metal;
+  bool b_roughness;
+  bool b_occlusion;
+  bool b_emissive;
 } u_tex_usage_info;
 
 //TEXTURE_FACTORS
@@ -46,9 +46,9 @@ layout(set = 2, binding = 1) uniform TextureFactors {
   vec4 albedo_factor;
   vec4 normal_factor;
   vec4 emissive_factor;
-  int metal_factor;
-  int roughness_factor;
-  int occlusion_factor;
+  float metal_factor;
+  float roughness_factor;
+  float occlusion_factor;
 } u_tex_fac;
 
 //LIGHTS
@@ -57,7 +57,6 @@ struct PointLight
 {
   vec3 color;
   vec3 location;
-  //vec4 intensity;
   float intensity;
 };
 

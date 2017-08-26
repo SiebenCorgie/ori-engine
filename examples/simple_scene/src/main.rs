@@ -19,12 +19,12 @@ fn main() {
 
     //Settings
     let settings = Arc::new(Mutex::new(core::engine_settings::EngineSettings::new()
-    .with_dimensions(1200, 720)
-    .with_name("Teddy the bear")
+    .with_dimensions(1600, 900)
+    .with_name("Ori Instance")
     .set_vulkan_silent()
     .with_fullscreen_mode(false)
     .with_cursor_state(winit::CursorState::Grab)
-    .with_cursor_visibility(winit::MouseCursor::Arrow)
+    .with_cursor_visibility(winit::MouseCursor::NoneCursor)
     ));
 
     //Input
@@ -54,38 +54,39 @@ fn main() {
     asset_manager.import_scene("Ape", "Apes.fbx");
     //asset_manager.import_scene("Ape_02", "Apes.fbx");
     //asset_manager.import_scene("Ape_03", "Apes.fbx");
-
-    //Albedo
-    let mut tex_builder_01 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_basecolor.png");
-    tex_builder_01 = tex_builder_01.with_flipped_v();
-    asset_manager.add_texture_to_manager(tex_builder_01, "metal_albedo").expect("failed to add new_texture");
-    //Normal
-    let mut tex_builder_02 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_normal.png");
-    tex_builder_02 = tex_builder_02.with_flipped_v();
-    asset_manager.add_texture_to_manager(tex_builder_02, "metal_normal").expect("failed to add new_texture");
-    //Physical
-    let mut tex_builder_03 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_physical.png");
-    tex_builder_03 = tex_builder_03.with_flipped_v();
-    asset_manager.add_texture_to_manager(tex_builder_03, "metal_physical").expect("failed to add new_texture");
-    //Creating a new material, currently a bit ugly
     {
+        //Albedo
+        let mut tex_builder_01 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_basecolor.png");
+        tex_builder_01 = tex_builder_01.with_flipped_v();
+        asset_manager.add_texture_to_manager(tex_builder_01, "metal_albedo").expect("failed to add new_texture");
+        //Normal
+        let mut tex_builder_02 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_normal.png");
+        tex_builder_02 = tex_builder_02.with_flipped_v();
+        asset_manager.add_texture_to_manager(tex_builder_02, "metal_normal").expect("failed to add new_texture");
+        //Physical
+        let mut tex_builder_03 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_physical.png");
+        tex_builder_03 = tex_builder_03.with_flipped_v();
+        asset_manager.add_texture_to_manager(tex_builder_03, "metal_physical").expect("failed to add new_texture");
+        //Creating a new material, currently a bit ugly
+        {
 
-        let albedo_in_manager = asset_manager.get_texture_manager().get_texture("metal_albedo");
-        let nrm_in_manager = asset_manager.get_texture_manager().get_texture("metal_normal");
-        let physical_in_manager = asset_manager.get_texture_manager().get_texture("metal_physical");
+            let albedo_in_manager = asset_manager.get_texture_manager().get_texture("metal_albedo");
+            let nrm_in_manager = asset_manager.get_texture_manager().get_texture("metal_normal");
+            let physical_in_manager = asset_manager.get_texture_manager().get_texture("metal_physical");
 
-        let new_material = core::resources::material::MaterialBuilder::new(
-            Some(albedo_in_manager),
-            Some(nrm_in_manager),
-            Some(physical_in_manager),
-            None,
-            asset_manager.get_texture_manager().get_none()
-        ).with_factors(
-            core::resources::material::MaterialFactors::new()
-            .with_factor_albedo([1.0, 1.0, 0.0, 1.0])
-        );
+            let new_material = core::resources::material::MaterialBuilder::new(
+                Some(albedo_in_manager),
+                Some(nrm_in_manager),
+                Some(physical_in_manager),
+                None,
+                asset_manager.get_texture_manager().get_none()
+            ).with_factors(
+                core::resources::material::MaterialFactors::new()
+                .with_factor_albedo([1.0, 1.0, 0.0, 1.0])
+            );
 
-        asset_manager.add_material_to_manager(new_material, "new_material").expect("failed to add new_material");
+            asset_manager.add_material_to_manager(new_material, "new_material").expect("failed to add new_material");
+        }
     }
 
     asset_manager.import_scene("Ring", "Ring.fbx");
@@ -169,6 +170,8 @@ fn main() {
 
     asset_manager.get_active_scene().print_member(0);
     println!("Start n stuff", );
+
+    let adding_status_wall = false;
 
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later

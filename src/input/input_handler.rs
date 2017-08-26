@@ -98,6 +98,11 @@ impl InputHandler{
                     }
                 }
 
+                //Kill the axis motion for now
+                current_keys.mouse_delta_x = 0.0;
+                current_keys.mouse_delta_y = 0.0;
+
+
                 //Now do the events polling
                 events_loop.poll_events(|ev| {
                     match ev {
@@ -127,6 +132,12 @@ impl InputHandler{
                                 },
                                 DroppedFile(file_path) =>{
                                     //println!("Droped file with path: {:?}", file_path );
+                                },
+                                HoveredFile(file_path) => {
+
+                                },
+                                HoveredFileCancelled => {
+
                                 },
                                 ReceivedCharacter(character) =>{
 
@@ -299,6 +310,7 @@ impl InputHandler{
                                 MouseMoved {device_id, position} =>{
                                     println!("STATUS: MOUSE {:?} moved to: {} / {}", device_id, position.0, position.1);
 
+
                                 },
                                 MouseEntered{device_id} =>{
 
@@ -336,13 +348,17 @@ impl InputHandler{
                             //I think
                             match event{
                                 winit::DeviceEvent::Motion{axis, value} => {
-
-                                    /* waiting for winit 0.7.6 to land
+                                    //since winit 0.7.6
                                     match axis {
-                                        0 => current_keys.mouse_delta_x = value,
-                                        1 => current_keys.mouse_delta_y = value,
+                                        0 => current_keys.mouse_delta_x = value, //Mouse x
+                                        1 => current_keys.mouse_delta_y = value, //mouse y
+                                        2 => {}, //Currently doing nothing, I guess this is mouse wheel
+
+                                        _ => {
+                                            //don't do anything
+                                        },
                                     }
-                                    */
+
 
                                     println!("Mouse Motion: {:?} of value {}", axis, value);
                                 }
@@ -355,36 +371,6 @@ impl InputHandler{
 
                     }
                 });
-
-                //Have to fake mouse via errors till a fix lands in winit > 0.7.5
-                if current_keys.down{
-                    current_keys.mouse_delta_y = -1.0;
-                    println!("Down", );
-                }else{
-                    current_keys.mouse_delta_y = 0.0;
-                }
-                if current_keys.up{
-                    current_keys.mouse_delta_y = 1.0;
-                    println!("Up", );
-
-                }else{
-                    current_keys.mouse_delta_y = 0.0;
-                }
-                if current_keys.left{
-                    current_keys.mouse_delta_x = -1.0;
-                    println!("left", );
-
-                }else{
-                    current_keys.mouse_delta_x = 0.0;
-                }
-                if current_keys.right{
-                    current_keys.mouse_delta_x = 1.0;
-                    println!("right", );
-
-                }else{
-                    current_keys.mouse_delta_x = 0.0;
-                }
-                //FAKE END
 
                 //Overwrite the Arc<Mutex<KeyMap>> with the new capture
                 {

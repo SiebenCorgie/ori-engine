@@ -108,7 +108,7 @@ impl Camera for DefaultCamera{
         //println!("Delta_Seconds: {}", delta_time.clone() );
 
         //Corrected Camera Speed
-        let camera_speed = 50.0 * delta_time;
+        let camera_speed = 25.0 * delta_time;
 
         //copy us a easy key map
         let key_map_inst = {
@@ -144,16 +144,16 @@ impl Camera for DefaultCamera{
             }
         }
 
-        let sensitivity = 10.0;
+        let sensitivity = 25.0;
 
         //Fixed camera gittering by slowing down so one integer delta = movement of
         // delta * sensitvity * time_delta * slowdown (virtual speed up)
         let virtual_speedup = 1.0;
-        let x_offset: f32 = key_map_inst.mouse_delta_x as f32 * sensitivity * delta_time * virtual_speedup;
-        let y_offset: f32 = key_map_inst.mouse_delta_y as f32 * sensitivity * delta_time * virtual_speedup;
-
-        self.yaw += x_offset;
-        self.pitch += y_offset;
+        let x_offset: f32 = key_map_inst.mouse_delta_y as f32 * sensitivity * delta_time * virtual_speedup;
+        let y_offset: f32 = key_map_inst.mouse_delta_x as f32 * sensitivity * delta_time * virtual_speedup;
+        //needed to exchange these beacuse of the z-is-up system
+        self.yaw += y_offset;
+        self.pitch += x_offset;
 
         if self.pitch > 89.0 {
             self.pitch = 89.0;
@@ -164,8 +164,8 @@ impl Camera for DefaultCamera{
 
         let mut front = Vector3::new(0.0, 0.0, 0.0);
         front.x = to_radians(self.yaw).cos() * to_radians(self.pitch).cos();
-        front.y = to_radians(self.pitch).sin();
-        front.z =  to_radians(self.yaw).sin() * to_radians(self.pitch).cos();
+        front.z = to_radians(self.pitch).sin();
+        front.y =  to_radians(self.yaw).sin() * to_radians(self.pitch).cos();
         self.cameraFront = front.normalize();
 
     }
@@ -174,6 +174,7 @@ impl Camera for DefaultCamera{
     fn get_view_matrix(&self) -> Matrix4<f32> {
 
         let tmp_target = self.cameraPos - self.cameraFront;
+
         let view = Isometry3::look_at_rh(
             &Point3::new(self.cameraPos.x, self.cameraPos.y, self.cameraPos.z),
             &Point3::new(tmp_target.x, tmp_target.y, tmp_target.z),

@@ -570,20 +570,18 @@ impl Material {
     ///Updates all sets tied to this material
     pub fn update(&mut self){
         //println!("STATUS: MATERIAL: In material, updating now", );
-        //self.recreate_set_01(); Th first set is now recreted on request from a transform matrix
+        //The first set is now recreted on request from a transform matrix
         self.recreate_set_04();
-        //println!("STATUS: MATERIAL: Finished updating", );
         //if needed, update the static sets
     }
 
     ///Recreates set_01 based on the current unfiorm_manager information (mvp matrix)
     pub fn recreate_set_01(&mut self, transform_matrix: na::Matrix4<f32>){
 
-        //println!("STATUS: MATERIAL: Trying to locj uniform manager", );
+        //println!("STATUS: MATERIAL: Trying to lock uniform manager", );
         let uniform_manager_isnt = self.uniform_manager.clone();
         let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
         //println!("STATUS: MATERIAL: Generation new set_01", );
-        //TODO add set 02 for material information
         let new_set = Arc::new(PersistentDescriptorSet::start(
                 self.pipeline.clone(), 0
             )
@@ -594,7 +592,7 @@ impl Material {
         //return the new set
         self.set_01 = new_set;
     }
-    
+
     ///Recreates set_04 based on the current unfiorm_manager information (light)
     ///NOTE:
     /// - Binding 0 = point lights

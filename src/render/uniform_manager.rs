@@ -12,7 +12,7 @@ use std::sync::Arc;
 ///Handles the public uniforms and an uniform allocator
 pub struct UniformManager {
     ///Describes the universal world properties (see `render:://`)
-    u_world: pbr_fragment::ty::Data,
+    pub u_world: pbr_fragment::ty::Data,
 
     u_point_lights: pbr_fragment::ty::point_lights,
     u_directional_lights: pbr_fragment::ty::directional_lights,
@@ -157,9 +157,15 @@ impl UniformManager{
     }
 
     ///Returns a subbuffer of the u_world item, can be used to create a u_world_set
-    pub fn get_subbuffer_01 (&mut self) ->
+    pub fn get_subbuffer_01 (&mut self, transform_matrix: na::Matrix4<f32>) ->
     CpuBufferPoolSubbuffer<pbr_fragment::ty::Data, Arc<vulkano::memory::pool::StdMemoryPool>>{
-        self.buffer_pool_01_mvp.next(self.u_world.clone())
+
+        //prepare the Data struct
+        let mut tmp_data_struct = self.u_world.clone();
+
+        tmp_data_struct.model = transform_matrix.into();
+
+        self.buffer_pool_01_mvp.next(tmp_data_struct)
     }
 
     ///Returns a subbuffer of the u_point_light

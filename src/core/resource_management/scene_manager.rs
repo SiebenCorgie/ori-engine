@@ -4,43 +4,37 @@ use std::sync::{Arc, Mutex};
 
 ///has a list of all available scenes
 pub struct SceneManager {
-    scenes: Arc<Mutex<Vec<node::GenericNode>>>,
+    scenes: Vec<Arc<Mutex<node::GenericNode>>>,
 }
 
 impl SceneManager {
     pub fn new() -> Self{
         SceneManager{
-            scenes: Arc::new(Mutex::new(Vec::new())),
+            scenes: Vec::new(),
         }
     }
 
     //Adds a scene to the scene manager
-    pub fn add_scene(&self, scene: node::GenericNode){
-        //lock and add
-        let scenes_instance = self.scenes.clone();
-        {
-            (*scenes_instance).lock().expect("failed to hold lock while adding scene to scene manager").push(scene);
-        }
+    pub fn add_scene(&mut self, scene: node::GenericNode){
+        self.scenes.push(Arc::new(Mutex::new(scene)));
     }
 
     ///Returns Some(scene) by name from the `scenes` Vector
-    pub fn get_scene(&self, name: &str) -> Option<node::GenericNode>{
+    pub fn get_scene(&mut self, name: &str) -> Option<Arc<Mutex<node::GenericNode>>>{
 
-        //get a copy
-        let scenes_instance = self.scenes.clone();
+        for i in self.scenes.iter(){
 
-        for i in (*scenes_instance).lock().expect("could not lock scenes").iter(){
-            if i.name == String::from(name.clone()){
-                //should be save to clone this because the content in the scenes
-                //meshes light etc are Arc<Mutex<T>>
-                return Some(i.clone())
+            let scene_lck = i.lock().expect("failed to lock scene in scene Manager");
+
+            if (*scene_lck).name == String::from(name.clone()){
+                return Some(i.clone());
             }
         }
         None
     }
 
-    ///Returns the scenes vector
-    pub fn get_scenes_reference(&self) -> Arc<Mutex<Vec<node::GenericNode>>>{
+    ///Returns the scenes vector as a copy
+    pub fn get_scenes_copy(&self) -> Vec<Arc<Mutex<node::GenericNode>>>{
         self.scenes.clone()
     }
 
@@ -49,10 +43,9 @@ impl SceneManager {
 
         let mut return_value = false;
 
-        let local_scenes = self.scenes.clone();
-        for scene in (*local_scenes).lock().expect("Failed to hold lock while testing for a scene in the scene manager").iter(){
-
-            if scene.name == String::from(name.clone()){
+        for scene in  self.scenes.iter(){
+            let scene_lck = scene.lock().expect("failed to lock scene while testing");
+            if (*scene_lck).name == String::from(name.clone()){
                 return_value = true;
             }
 

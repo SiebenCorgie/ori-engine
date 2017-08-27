@@ -442,9 +442,12 @@ impl Renderer {
 
             //Draw
                 //get all meshes, later in view frustum based on camera
-            for i in asset_manager.get_all_meshes().iter(){
+            for mesh_transform in asset_manager.get_all_meshes().iter(){
 
-                let mesh_lck = i
+                let mesh = mesh_transform.0.clone();
+                let transform = mesh_transform.1.clone();
+
+                let mesh_lck = mesh
                 .lock()
                 .expect("could not lock mesh for building command buffer");
 
@@ -456,7 +459,7 @@ impl Renderer {
                 .get_material_manager()
                 .get_material(&(*mesh_lck).get_material_name());
 
-                let unlocked_material = material
+                let mut unlocked_material = material
                 .lock()
                 .expect("Failed to lock material");
 
@@ -468,7 +471,8 @@ impl Renderer {
 
                 let set_01 = {
                     //TODO Set the model-matrix from the mesh data
-                    (*unlocked_material).get_set_01()
+                    //aquirre the tranform matrix and generate the new set_01
+                    (*unlocked_material).get_set_01(transform)
                 };
 
 

@@ -35,16 +35,15 @@ pub enum ContentTag {
 }
 
 ///The normal Node of this Scene Tree
-///TODO implement some kind of state mode.
-///If a node is set to STATIC the node and all its children can't be changed, should speed up
-///as specially at big scenes
+///
+/// *Why a Vector and no HashMap?*
+/// I decided to use a Vector of Structs where the name is in the struct mainly because of
+/// performance reasons. With small datasets (5-100 entries) the HashMap is faster and provides
+/// some comfort (you can store the name as a String as key value). However, if you have bigger
+/// datasets (over 1,000,000) the vector is MUCH faster, as specially in `--release` mode.
 #[derive(Clone)]
 pub struct GenericNode {
-    /// Why a Vector and no HashMap?
-    /// I decided to use a Vector of Structs where the name is in the struct mainly because of
-    /// performance reasons. With small datasets (5-100 entries) the HashMap is faster and provides
-    /// some comfort (you can store the name as a String as key value). However, if you have bigger
-    /// datasets (over 1,000,000) the vector is MUCH faster, as specially in `--release` mode.
+
     children: Vec<GenericNode>,
     ///There is a difference between a `Node`'s name and its `content` name
     pub name: String,
@@ -94,10 +93,6 @@ impl GenericNode{
     ///Should return an node
     pub fn new(name: &str, content: Arc<NodeMember + Send + Sync>)->Self{
 
-        //Lock a copy of `content` to set the usage tag
-        //let content_inst = content.clone();
-        //let content_lck = content_inst.lock().expect("failed to lock content while adding to tree");
-
         let mut tmp_bound = nc::bounding_volume::AABB::new(na::Point3::new(0.0, 0.0, 0.0), na::Point3::new(1.0, 1.0, 1.0));
         //Building node bound from mesh
 
@@ -109,34 +104,6 @@ impl GenericNode{
                 content.get_bound_min().clone(), content.get_bound_max().clone()
             );
         }
-
-
-        /*
-        {
-            match (*content_lck).get_content_type() {
-                mesh::Mesh(ref mesh)=> {
-                    let tmp_mesh = mesh.lock().expect("Failed to hold mesh in node creation");
-                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_mesh).get_bound_min().clone(), (*tmp_mesh).get_bound_max().clone());
-                },
-                ContentTypes::LightPoint(ref light_point) => {
-                    let tmp_light = light_point.lock().expect("Failed to hold light_point in node creation");
-                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
-                },
-                ContentTypes::LightDir(ref light_dir) => {
-                    let tmp_light = light_dir.lock().expect("Failed to hold light_dir in node creation");
-                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
-                },
-                ContentTypes::LightSpot(ref light_spot) => {
-                    let tmp_light = light_spot.lock().expect("Failed to hold light_spot in node creation");
-                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
-                },
-                ContentTypes::Empty(ref empty) => {
-                    let tmp_light = empty.lock().expect("Failed to hold empty in node creation");
-                    tmp_bound = nc::bounding_volume::AABB::new((*tmp_light).get_bound_min().clone(), (*tmp_light).get_bound_max().clone());
-                },
-            }
-        }
-        */
 
         GenericNode{
             children: Vec::new(),
@@ -176,7 +143,7 @@ impl GenericNode{
     pub fn add_child(&mut self, child: Arc<NodeMember + Send + Sync>){
 
         //find out the right name
-        let mut name: String = child.get_name();
+        let name: String = child.get_name();
 
         let tmp_name: &str = &name.to_string();
         //deside how to add, based on type
@@ -226,6 +193,47 @@ impl GenericNode{
         //if the function comes here tmp_return will be `None`
         tmp_return
     }
+
+    ///Returns the transform matrix
+    pub fn get_transform_matrix(&self) -> na::Matrix4<f32>{
+
+        let translation = na::Translation::from_vector(self.location);
+        let mut isometry = na::Isometry3::identity();
+
+        isometry.append_translation_mut(&translation);
+
+    //    println!("Returning Matrix: {:?}", isometry.to_homogeneous());
+
+        isometry.to_homogeneous()
+
+    }
+
+    ///Translates this node by `translation` and all its children
+    pub fn translate(&mut self, translation: na::Vector3<f32>){
+        //for self
+        println!("OldSelfIs: {:?}", self.location);
+        self.location = translation;
+        //for all children
+        for child in self.children.iter_mut(){
+            child.translate(translation);
+        }
+        println!("Translated by {:?}", translation);
+        println!("New Self is: {:?}", self.location);
+    }
+
+    ///Sets the location to `location` and changes the location of all its children as well
+    pub fn set_location(&mut self, location: na::Vector3<f32>){
+        //get the difference of the current and the new position
+        let difference = self.location - location;
+        //Set it for self
+        self.translate(difference);
+        //And for all children
+        for child in self.children.iter_mut(){
+            child.translate(difference);
+        }
+    }
+
+
 
     ///Returns a mesh from childs with this name
     pub fn get_mesh(&mut self, name: &str)-> Option<Arc<Mutex<core::resources::mesh::Mesh>>>{
@@ -466,7 +474,7 @@ impl GenericNode{
     }
 
     ///Gets all meshes from this node down
-    pub fn get_all_meshes(&mut self) -> Vec<Arc<Mutex<mesh::Mesh>>>{
+    pub fn get_all_meshes(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, na::Matrix4<f32>)>{
         let mut return_vector = Vec::new();
 
 
@@ -476,14 +484,16 @@ impl GenericNode{
 
         //Test self
         match opt_mesh{
-            Some(mesh) => return_vector.push(mesh.clone()),
+            Some(mesh) => return_vector.push((mesh.clone(), self.get_transform_matrix())),
             _ => {},
         }
 
         match opt_dyn_mesh{
-            Some(mesh) => return_vector.push(mesh.clone()),
+            Some(mesh) => return_vector.push((mesh.clone(), self.get_transform_matrix())),
             _ => {},
         }
+
+        //println!("Returning tanslation of: {:?}", self.get_transform_matrix());
 
         //Go down the tree
         for i in self.children.iter_mut(){
@@ -616,7 +626,6 @@ impl GenericNode{
         self.bound = nc::bounding_volume::AABB::new(new_min, new_max);
     }
 
-
     ///prints a visual representation of the tree to the terminal
     pub fn print_member(&self, depth: u32){
         //add space
@@ -626,7 +635,7 @@ impl GenericNode{
         //print name behind space
         //as well as its bound for debug reason
         print!("NAME: {} BOUNDS: ", self.name);
-        print!("min: [{}, {}, {}]   max: [{}, {}, {}] \n",
+        print!("min: [{}, {}, {}]   max: [{}, {}, {}], Location: [{},{},{}] \n",
             self.bound.mins()[0],
             self.bound.mins()[1],
             self.bound.mins()[2],
@@ -634,6 +643,9 @@ impl GenericNode{
             self.bound.maxs()[0],
             self.bound.maxs()[1],
             self.bound.maxs()[2],
+            self.location.x,
+            self.location.y,
+            self.location.z,
         );
         for i in self.children.iter(){
             i.print_member(depth + 1);

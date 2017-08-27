@@ -1,11 +1,9 @@
 //TODO Add command buffer creation per mesh
 use std::sync::{Arc, Mutex};
-///Defines a normal mesh along with its properties
 use na;
 use nc;
 
 use vulkano;
-//use vulkano::impl_vertex;
 
 
 use core;
@@ -25,9 +23,6 @@ pub struct Vertex {
     tangent: [f32; 3],
     color: [f32; 3],
 }
-
-//unsafe impl Send for Vertex {}
-//unsafe impl Sync for Vertex {}
 
 //Implements the vulkano::vertex trait on Vertex
 impl_vertex!(Vertex, position, tex_coord, normal, tangent, color);

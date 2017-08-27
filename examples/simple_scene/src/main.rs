@@ -259,7 +259,7 @@ fn main() {
                 }
             };
             //Set the translation on this node
-            ape_scene.set_location(na::Vector3::new(0.0, 0.0, 0.0));
+            ape_scene.rotate_around_point(na::Rotation3::new(na::Vector3::new(0.05, 0.025, 0.0)), na::Point3::new(10.0, 10.0, 0.0));
             println!("Translated", );
             //input_handler.end();
             //break;

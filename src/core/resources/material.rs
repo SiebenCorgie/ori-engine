@@ -561,7 +561,6 @@ impl Material {
     }
 
 
-    //TODO Setup changes of the materials, maybe make possible to only insert colors for albedo etc
     ///Returns the name of the currently used pipeline
     pub fn get_pipeline(&self) -> Arc<GraphicsPipelineAbstract + Send + Sync>{
         self.pipeline.clone()

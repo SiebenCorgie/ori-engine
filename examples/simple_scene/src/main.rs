@@ -245,9 +245,26 @@ fn main() {
                 }
             };
             //Set the translation on this node
-            ape_scene.translate(na::Vector3::new(10.0, 10.0, 0.0));
+            ape_scene.translate(na::Vector3::new(-1.0, -1.0, 0.0));
             println!("Translated", );
         }
+
+        if input_handler.get_key_map_copy().z{
+            //Get the Ring scene and translate it by 10,10,0
+            let mut ape_scene ={
+                //Get the reference in the current active scene
+                match asset_manager.get_active_scene().get_node("Ape"){
+                    Some(scene) => scene,
+                    None => continue,
+                }
+            };
+            //Set the translation on this node
+            ape_scene.set_location(na::Vector3::new(0.0, 0.0, 0.0));
+            println!("Translated", );
+            //input_handler.end();
+            //break;
+        }
+
 
 
 

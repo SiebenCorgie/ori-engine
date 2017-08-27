@@ -211,26 +211,32 @@ impl GenericNode{
     ///Translates this node by `translation` and all its children
     pub fn translate(&mut self, translation: na::Vector3<f32>){
         //for self
-        println!("OldSelfIs: {:?}", self.location);
-        self.location = translation;
+        self.location = self.location + translation;
+        println!("new child location recieved: {:?}", self.location);
         //for all children
         for child in self.children.iter_mut(){
+            println!("PASSING: TRANSLATE", );
             child.translate(translation);
         }
-        println!("Translated by {:?}", translation);
-        println!("New Self is: {:?}", self.location);
     }
 
     ///Sets the location to `location` and changes the location of all its children as well
     pub fn set_location(&mut self, location: na::Vector3<f32>){
         //get the difference of the current and the new position
-        let difference = self.location - location;
+        let mut difference = location - self.location;
+        /*
+        if location < self.location{
+            difference = location - self.location;
+        }else{
+            difference = self.location - location;
+        }
+        */
+        println!("IS ON: {:?} WANTS TO: {:?} TRANSLATING BY: {:?}", self.location, location, difference);
+
+        //let difference = location - self.location;
         //Set it for self
         self.translate(difference);
-        //And for all children
-        for child in self.children.iter_mut(){
-            child.translate(difference);
-        }
+        println!("IS NOW ON: {:?}", self.location);
     }
 
 

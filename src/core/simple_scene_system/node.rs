@@ -198,9 +198,9 @@ impl GenericNode{
     pub fn get_transform_matrix(&self) -> na::Matrix4<f32>{
 
         let translation = na::Translation::from_vector(self.location);
-        let mut isometry = na::Isometry3::identity();
-
-        isometry.append_translation_mut(&translation);
+        let mut isometry = na::Isometry3::from_parts(
+            translation, na::UnitQuaternion::from_rotation_matrix(&self.rotation)
+        );
 
     //    println!("Returning Matrix: {:?}", isometry.to_homogeneous());
 
@@ -223,7 +223,7 @@ impl GenericNode{
     ///Sets the location to `location` and changes the location of all its children as well
     pub fn set_location(&mut self, location: na::Vector3<f32>){
         //get the difference of the current and the new position
-        let mut difference = location - self.location;
+        let difference = location - self.location;
         /*
         if location < self.location{
             difference = location - self.location;
@@ -237,6 +237,45 @@ impl GenericNode{
         //Set it for self
         self.translate(difference);
         println!("IS NOW ON: {:?}", self.location);
+    }
+
+    ///Rotates this node and all of its child by `rotation` around `point`
+    pub fn rotate_around_point(&mut self, rotation: na::Rotation3<f32>, point: na::Point3<f32>){
+        //To rotate around an point `p` we need to change the rotation as well as location
+        //of this node, there for we create a isometry from bot, rotate it around point p
+        //and decompose location and rotation back into the struct
+        //TODO Implement the "move, rotate move new" algorith for rotating around point
+        let translation = na::Translation3::from_vector(self.location);
+        //Create current isometry
+        let mut isometry = na::Isometry3::from_parts(
+            translation, na::UnitQuaternion::from_rotation_matrix(&self.rotation)
+        );
+        //append the rotation around point
+        isometry.append_rotation_wrt_point_mut(
+            &na::UnitQuaternion::from_rotation_matrix(&rotation), &point
+        );
+
+        //decompose to vector and rotation again from the new isometry
+        //location
+        let new_location_vector = na::Vector3::new(
+            isometry.translation.vector.x,
+            isometry.translation.vector.y,
+            isometry.translation.vector.z,
+        );
+        self.location = new_location_vector;
+        //rotation
+        let rotation_vector = na::Vector3::new(
+            isometry.rotation.coords.x,
+            isometry.rotation.coords.y,
+            isometry.rotation.coords.z,
+        );
+        self.rotation = na::Rotation3::new(rotation_vector);
+
+        //now do the same for all childs
+        for child in self.children.iter_mut(){
+            child.rotate_around_point(rotation, point);
+        }
+
     }
 
 

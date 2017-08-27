@@ -65,7 +65,6 @@ impl InputHandler{
         //Start the continues input polling
         let thread = thread::spawn(move ||{
 
-            println!("Started polling", );
             //Create a time which keeps track of the lst time to calculate the later
             // `thread::sleep() duartion to keep steady `self.max_polling_speed`
             let mut last_time = Instant::now();
@@ -123,7 +122,6 @@ impl InputHandler{
                                     //println!("Resized to {} / {}", width, height );
                                 },
                                 Moved(width, height) =>{
-                                    println!("STATUS: INPUT HANDLER: moved window: {} / {}", width, height );
 
                                 },
                                 Closed => {
@@ -308,8 +306,6 @@ impl InputHandler{
 
                                 },
                                 MouseMoved {device_id, position} =>{
-                                    println!("STATUS: MOUSE {:?} moved to: {} / {}", device_id, position.0, position.1);
-
 
                                 },
                                 MouseEntered{device_id} =>{
@@ -358,9 +354,6 @@ impl InputHandler{
                                             //don't do anything
                                         },
                                     }
-
-
-                                    println!("Mouse Motion: {:?} of value {}", axis, value);
                                 }
                                 //This could register raw device events, however, not used atm
                                 _ => {},

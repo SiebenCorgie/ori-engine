@@ -52,6 +52,8 @@ fn main() {
 
     //Import the ape
     asset_manager.import_scene("Ape", "Apes.fbx");
+    asset_manager.import_scene("Ring", "Ring.fbx");
+    asset_manager.import_scene("Helix", "Helix.fbx");
     //asset_manager.import_scene("Ape_02", "Apes.fbx");
     //asset_manager.import_scene("Ape_03", "Apes.fbx");
     {
@@ -88,8 +90,6 @@ fn main() {
             asset_manager.add_material_to_manager(new_material, "new_material").expect("failed to add new_material");
         }
     }
-
-    asset_manager.import_scene("Ring", "Ring.fbx");
 
     let mut adding_status = false;
 
@@ -171,32 +171,61 @@ fn main() {
     asset_manager.get_active_scene().print_member(0);
     println!("Start n stuff", );
 
-    let adding_status_wall = false;
+    let mut adding_status_helix = false;
 
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later
         if adding_status == false && asset_manager.has_scene("Ape") && asset_manager.has_scene("Ring"){
-            let mut ape_scene = asset_manager.get_scene_manager().get_scene("Ape").expect("no Apes :(");
-            //let mut Ring = asset_manager.get_scene_manager().get_scene("Ring").expect("no Rings :(");
+            println!("Adding ape", );
+            let mut ape_scene ={
+                //let scene_manager = asset_manager.get_scene_manager();
+                asset_manager.get_scene_manager().get_scene("Ape").expect("no Apes :(")
+            };
 
-            for i in ape_scene.get_all_meshes().iter(){
-                let mesh_inst = i.clone();
+            for i in (*ape_scene).lock().unwrap().get_all_meshes().iter(){
+                //Unwrap the mesh from the tubel
+                let mesh = i.0.clone();
+
+                let mesh_inst = mesh.clone();
                 let mut mesh_lck = mesh_inst.lock().expect("failed to change material");
                 (*mesh_lck).set_material("new_material");
             }
             asset_manager.add_scene_to_main_scene("Ape");
             asset_manager.add_scene_to_main_scene("Ring");
+
             adding_status = true;
-            //println!("STATUS: GAME: added all apes", );
+            println!("STATUS: GAME: added all apes", );
+
         }
-        //println!("STATUS: GAME: Starting loop in game", );
+
+        if !adding_status_helix && asset_manager.has_scene("Helix"){
+            println!("Adding helix", );
+
+            let helix_scene = asset_manager.get_scene_manager().get_scene("Helix").expect("no Helix :(");
+
+            println!("Set Helix lock", );
+            for i in (*helix_scene).lock().unwrap().get_all_meshes().iter(){
+                let mesh = i.0.clone();
+                println!("Cloned mesh", );
+                let mut mesh_lck = mesh.lock().expect("failed to lock helix");
+                println!("Locked mesh", );
+                (*mesh_lck).set_material("new_material");
+                println!("SetMaterial", );
+            }
+
+            asset_manager.add_scene_to_main_scene("Helix");
+
+            adding_status_helix = true;
+            println!("Finished helix", );
+        }
+        println!("STATUS: GAME: Starting loop in game", );
         //Update the content of the render_manager
         asset_manager.update();
-        //println!("STATUS: GAME: Updated all assets", );
+        println!("STATUS: GAME: Updated all assets", );
         (*render).lock().expect("Failed to lock renderer for rendering").render(&mut asset_manager);
         //Check if loop should close
         if input_handler.get_key_map_copy().closed{
-            //println!("STATUS: GAME: Shuting down", );
+            println!("STATUS: GAME: Shuting down", );
             input_handler.end();
             break;
         }
@@ -206,9 +235,27 @@ fn main() {
             break;
         }
 
+        if input_handler.get_key_map_copy().t{
+            //Get the Ring scene and translate it by 10,10,0
+            let mut ape_scene ={
+                //Get the reference in the current active scene
+                match asset_manager.get_active_scene().get_node("Ape"){
+                    Some(scene) => scene,
+                    None => continue,
+                }
+            };
+            //Set the translation on this node
+            ape_scene.translate(na::Vector3::new(10.0, 10.0, 0.0));
+            println!("Translated", );
+        }
+
+
+
+        asset_manager.get_active_scene().print_member(0);
+
         let fps_time = start_time.elapsed().subsec_nanos();
         println!("STATUS: RENDER: FPS IN GAME: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
         start_time = Instant::now();
-        //asset_manager.get_material_manager().print_all_materials();
+        asset_manager.get_material_manager().print_all_materials();
     }
 }

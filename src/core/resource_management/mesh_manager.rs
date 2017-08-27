@@ -45,12 +45,12 @@ impl MeshManager {
     /// different objects stays in one sub-scene
     pub fn import_mesh(&mut self, name: &str, path: &str, device: Arc<vulkano::device::Device>,
         queue: Arc<vulkano::device::Queue>,
-        scene_manager_scenes: Arc<Mutex<Vec<node::GenericNode>>>
+        scene_manager_scenes: Arc<Mutex<node::GenericNode>>
     )
     {
 
         let mut meshes_instance = self.meshes.clone();
-        let mut scene_manager_instance = scene_manager_scenes.clone();
+        let mut scene_instance = scene_manager_scenes.clone();
         let device_instance = device.clone();
         let queue_instance = queue.clone();
         let name_instance = name.to_owned();
@@ -81,20 +81,13 @@ impl MeshManager {
                 }
             }
 
-            //now lock the scene Vec and add a scene with an empty root with the name of this mesh
+            //now lock the scene and add all meshes to it
             //println!("STATUS: MESH_MANAGER: Adding scene with name: {}", &name_instance.clone());
-            let mut root_node = node::GenericNode::new_empty(&name_instance.clone());
+            let mut root_node = scene_instance.lock().expect("faield to lock scene while adding mehes");
             for i in arc_meshes.iter(){
                 let mesh_node = node_member::SimpleNodeMember::from_static_mesh(i.clone());
                 //let mesh_node = node::ContentTypes::StaticMesh(i.clone());
                 root_node.add_child(Arc::new(mesh_node));
-            }
-
-            //now lock the scene reference and add the subscene
-
-            {
-                (*scene_manager_instance).lock().expect("failed to lock the scene manager reference while importing")
-                .push(root_node);
             }
 
 

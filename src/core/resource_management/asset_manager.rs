@@ -44,7 +44,7 @@ pub struct AssetManager {
 
     mesh_manager: mesh_manager::MeshManager,
 
-    scene_manager: scene_manager::SceneManager,
+    scene_manager:scene_manager::SceneManager,
 
     ///Holds a reference to the renderer
     renderer: Arc<Mutex<renderer::Renderer>>,
@@ -299,6 +299,7 @@ impl AssetManager {
 
     ///Returns the scene manager
     pub fn get_scene_manager(&mut self) -> &mut scene_manager::SceneManager{
+
         &mut self.scene_manager
     }
 
@@ -335,7 +336,7 @@ impl AssetManager {
     }
 
     //Returns a raw copy of the meshes in the current active scene tree
-    pub fn get_all_meshes(&mut self) -> Vec<Arc<Mutex<mesh::Mesh>>>{
+    pub fn get_all_meshes(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, na::Matrix4<f32>)>{
         self.active_main_scene.get_all_meshes()
     }
 
@@ -350,7 +351,6 @@ impl AssetManager {
 
         let render_inst = self.renderer.clone();
         //Lock in scope to prevent dead lock while importing
-        let scene_ref_inst = self.scene_manager.get_scenes_reference();
 
         let device_inst = {
             (*render_inst).lock().expect("failed to hold renderer lock").get_device().clone()
@@ -359,33 +359,50 @@ impl AssetManager {
             (*render_inst).lock().expect("failed to hold renderer lock").get_queue().clone()
         };
 
+        //Create the topy scene via an empty which will be used to add all the meshe-nodes
+        let new_scene = node::GenericNode::new_empty(name.clone());
+        //Add the new scene to the manager
+        self.scene_manager.add_scene(new_scene);
+        //Now get the scene in the manager (as Arc<T>) and pass it for adding new meshes
+        let scene_in_manager = self.scene_manager.get_scene(
+            name.clone()
+        ).expect("could not find the just added scene, this should not happen");
 
         //Pass the import params an a scene manager instance to the mesh manager
         self.mesh_manager.import_mesh(
             name, path,
             device_inst, queue_inst,
-            scene_ref_inst
+            scene_in_manager
         );
 
     }
 
-    ///Adds a scene from the local scene manager to the local main scene
+    ///Adds a scene from the local scene manager (based on `name`) to the local main scene
     pub fn add_scene_to_main_scene(&mut self, name: &str){
 
-        let mut scene = self.scene_manager.get_scene(name);
+        //Get the scene
+        let scene ={
+            self.scene_manager.get_scene(name).clone()
+        };
 
         match scene{
             Some(sc) =>{
                 //TODO make this to an Arc<GenericNode>
-                self.active_main_scene.add_node(sc.clone());
+                let scene_lck = sc.lock().expect("failed to hold scene lock while adding");
+                //Create a copy and pass it to the main scene
+                self.active_main_scene.add_node((*scene_lck).clone());
             },
             None => rt_error("ASSET_MANAGER", &("Could not find scene with name".to_string() + name.clone()).to_string()),
         }
+
+        //finally rebuild bounds
+        self.get_active_scene().rebuild_bounds();
     }
 
     ///Returns true if a scene with `name` as name exists in the local scene manager
-    pub fn has_scene(&self, name: &str) -> bool{
-        self.scene_manager.has_scene(name.clone())
+    pub fn has_scene(&mut self, name: &str) -> bool{
+        let scene_manager = self.get_scene_manager();
+        scene_manager.has_scene(name.clone())
     }
 
     ///Returns a texture builder for the specified image at `path`

@@ -11,3 +11,6 @@ pub mod asset_manager;
 pub mod scene_manager;
 ///Manages all available textues and gives out `Arc<Texture>` copys on request
 pub mod texture_manager;
+//The lightmanager is mostly used to create the 4th descriptor set and copy it for every instance
+//of renderable things
+//pub mod light_manager;

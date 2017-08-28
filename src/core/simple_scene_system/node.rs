@@ -254,6 +254,11 @@ impl GenericNode{
         isometry.append_rotation_wrt_point_mut(
             &na::UnitQuaternion::from_rotation_matrix(&rotation), &point
         );
+        /*
+        isometry.append_rotation_wrt_center_mut(
+            &na::UnitQuaternion::from_rotation_matrix(&rotation)
+        );
+        */
 
         //decompose to vector and rotation again from the new isometry
         //location
@@ -262,18 +267,35 @@ impl GenericNode{
             isometry.translation.vector.y,
             isometry.translation.vector.z,
         );
+
         self.location = new_location_vector;
-        //rotation
-        let rotation_vector = na::Vector3::new(
-            isometry.rotation.coords.x,
-            isometry.rotation.coords.y,
-            isometry.rotation.coords.z,
-        );
-        self.rotation = na::Rotation3::new(rotation_vector);
+
+        self.rotation = isometry.rotation.to_rotation_matrix();
 
         //now do the same for all childs
         for child in self.children.iter_mut(){
             child.rotate_around_point(rotation, point);
+        }
+    }
+
+    ///Rotates this note and its children by `rotation`
+    pub fn rotate(&mut self, rotation: na::Rotation3<f32>){
+        //create a Isometry from the current location and rotation,
+        //then apply rotation
+        let translation = na::Translation3::from_vector(self.location);
+        //Create current isometry
+        let mut isometry = na::Isometry3::from_parts(
+            translation, na::UnitQuaternion::from_rotation_matrix(&self.rotation)
+        );
+
+        isometry.append_rotation_wrt_center_mut(
+            &na::UnitQuaternion::from_rotation_matrix(&rotation)
+        );
+
+        self.rotation = isometry.rotation.to_rotation_matrix();
+
+        for child in self.children.iter_mut(){
+            child.rotate_around_point(rotation, na::Point3::from_coordinates(self.location));
         }
 
     }

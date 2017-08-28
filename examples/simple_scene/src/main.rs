@@ -251,15 +251,33 @@ fn main() {
 
         if input_handler.get_key_map_copy().z{
             //Get the Ring scene and translate it by 10,10,0
-            let mut ape_scene ={
+            let mut helix_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Ape"){
+                match asset_manager.get_active_scene().get_node("Helix"){
                     Some(scene) => scene,
                     None => continue,
                 }
             };
             //Set the translation on this node
-            ape_scene.rotate_around_point(na::Rotation3::new(na::Vector3::new(0.05, 0.025, 0.0)), na::Point3::new(10.0, 10.0, 0.0));
+            helix_scene.rotate(na::Rotation3::new(na::Vector3::new(0.05, 0.0, 0.0)));
+            //ape_scene.rotate(na::Rotation3::from_euler_angles(0.0, 0.05, 0.0));
+            println!("Translated", );
+            //input_handler.end();
+            //break;
+        }
+
+        if input_handler.get_key_map_copy().u{
+            //Get the Ring scene and translate it by 10,10,0
+            let mut tree_scene ={
+                //Get the reference in the current active scene
+                match asset_manager.get_active_scene().get_node("Helix_0"){
+                    Some(scene) => scene,
+                    None => continue,
+                }
+            };
+            //Set the translation on this node
+            tree_scene.translate(na::Vector3::new(-0.05, -0.05, 0.0));
+            //ape_scene.rotate(na::Rotation3::from_euler_angles(0.0, 0.05, 0.0));
             println!("Translated", );
             //input_handler.end();
             //break;

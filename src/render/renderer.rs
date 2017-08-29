@@ -401,7 +401,7 @@ impl Renderer {
     ///Renders the scene with the parameters supplied by the asset_manager
     pub fn render(&mut self, asset_manager: &mut asset_manager::AssetManager){
 
-        //println!("STATUS: RENDER CORE: Starting render ", );
+        println!("STATUS: RENDER CORE: Starting render ", );
         //DEBUG
         let start_time = Instant::now();
 
@@ -434,12 +434,15 @@ impl Renderer {
 
         //TODO have to find a nicer way of doing this... later
         let command_buffer = {
-            let engine_settings_inst = self.engine_settings.clone();
-            let engine_settings_lck = engine_settings_inst
-            .lock()
-            .expect("Faield to lock settings");
 
-            let dimensions = engine_settings_lck.get_dimensions().clone();
+
+            let dimensions = {
+                let engine_settings_inst = self.engine_settings.clone();
+                let engine_settings_lck = engine_settings_inst
+                .lock()
+                .expect("Faield to lock settings");
+                (*engine_settings_lck).get_dimensions()
+            };
 
             let mut tmp_cmd_buffer = Some(
                 vulkano::command_buffer::AutoCommandBufferBuilder::new(
@@ -458,10 +461,13 @@ impl Renderer {
                     1f32.into()
                 ]).expect("failed to clear"));
 
-
+            println!("Trying to get meshes in frustum", );
             //Draw
                 //get all meshes, later in view frustum based on camera
-            for mesh_transform in asset_manager.get_all_meshes().iter(){
+            let meshes_in_frustum = asset_manager.get_meshes_in_frustum();
+            println!("Rendering {} meshes", meshes_in_frustum.len());
+
+            for mesh_transform in meshes_in_frustum.iter(){
 
                 let mesh = mesh_transform.0.clone();
                 let transform = mesh_transform.1.clone();

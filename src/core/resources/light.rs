@@ -277,7 +277,6 @@ impl ReturnBoundInfo for LightDirectional{
             max[1],
             max[2]
         );
-
         self.bound = nc::bounding_volume::AABB::new(min, max);
     }
 
@@ -288,7 +287,7 @@ impl ReturnBoundInfo for LightDirectional{
         let b_min = self.bound.mins().clone();
         let b_max = self.bound.maxs().clone();
 
-        ///low
+        //low
         return_vector.push(na::Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
         return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
         return_vector.push(na::Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y

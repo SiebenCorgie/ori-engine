@@ -13,7 +13,7 @@ const float kPi = 3.14159265;
 layout(location = 0) in vec3 v_normal;
 layout(location = 1) in vec3 FragmentPosition;
 layout(location = 2) in vec2 tex_coordinates;
-//layout(location = 3) in mat3 TBN;
+layout(location = 3) in mat3 TBN;
 
 
 //Global uniforms
@@ -290,7 +290,10 @@ void main()
     float roughness = texture(t_Physical, tex_coordinates).b;
     float ao        = texture(t_Physical, tex_coordinates).r;
 
-    vec3 N = normalize(v_normal);
+    vec3 N = texture(t_Normal, tex_coordinates).rgb;
+    N = normalize(N * 2.0 - 1.0);
+    N = normalize(TBN * N);
+    //vec3 N = normalize(v_normal);
     //vec3 N = getNormalFromMap();
     vec3 V = normalize(u_main.camera_position - FragmentPosition);
 
@@ -304,16 +307,27 @@ void main()
     //Point Lights
     for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
     {
-        Lo += calcPointLight(u_point_light.p_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+      if (u_point_light.p_light[i].intensity == 0.0){
+        continue;
+      }
+      Lo += calcPointLight(u_point_light.p_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
     }
+/*
     //Directional Lights
     for(int i = 0; i < MAX_DIR_LIGHTS; ++i){
+      if (u_dir_light.d_light[i].intensity == 0.0){
+        continue;
+      }
       Lo += calcDirectionalLight(u_dir_light.d_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
     }
     //Spot Lights
     for(int i = 0; i < MAX_SPOT_LIGHTS; ++i){
+      if (u_spot_light.s_light[i].intensity == 0.0){
+        continue;
+      }
       Lo += calcSpotLight(u_spot_light.s_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
     }
+*/
 
     // ambient lighting (note that the next IBL tutorial will replace
     // this ambient lighting with environment lighting).

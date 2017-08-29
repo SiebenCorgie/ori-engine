@@ -9,7 +9,7 @@ layout(location = 4) in vec3 color;
 layout(location = 0) out vec3 v_normal;
 layout(location = 1) out vec3 FragmentPosition;
 layout(location = 2) out vec2 tex_coordinates;
-//layout(location = 3) out mat3 TBN;
+layout(location = 3) out mat3 TBN;
 
 
 
@@ -26,6 +26,16 @@ void main() {
 
   v_normal = mat3(u_main.model) * normal;
   tex_coordinates = tex_coord;
+
+  //Create TBN
+  vec3 T = normalize(vec3(u_main.model * vec4(tangent, 0.0)));
+  vec3 N = normalize(vec3(u_main.model * vec4(normal, 0.0)));
+  // re-orthogonalize T with respect to N
+  T = normalize(T - dot(T, N) * N);
+  // then retrieve perpendicular vector B with the cross product of T and N
+  vec3 B = cross(N, T);
+
+  TBN = mat3(T, B, N);
 
   //todo test if thats right
   FragmentPosition = vec3(u_main.model * vec4(position, 1.0));

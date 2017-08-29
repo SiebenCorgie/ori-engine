@@ -5,6 +5,7 @@ extern crate nalgebra as na;
 use ori_engine::*;
 use ori_engine::core::simple_scene_system::node;
 use ori_engine::core::simple_scene_system::node_member;
+use ori_engine::core::resources::camera::Camera;
 use ori_engine::core::resources::light;
 use std::sync::{Arc, Mutex};
 use std::time::{Instant, Duration};
@@ -92,13 +93,12 @@ fn main() {
         }
     }
 
-    let mut adding_status = false;
-
-    let mut start_time = Instant::now();
+    //SUN========================================================================
     /*
     let mut sun = light::LightDirectional::new("Sun");
     sun.set_direction(na::Vector3::new(1.0, 0.5, 0.5));
-    sun.set_color(na::Vector3::new(1.0, 0.75, 0.6));
+    sun.set_color(na::Vector3::new(1.0, 0.75, 0.75));
+    sun.set_intensity(50.0);
 
     let sun_node = Arc::new(
         node_member::SimpleNodeMember::from_light_directional(
@@ -109,6 +109,46 @@ fn main() {
     );
     asset_manager.get_active_scene().add_child(sun_node);
     */
+    //SUN========================================================================
+
+    //SPOT 01 ===================================================================
+    let mut spot_01 = light::LightSpot::new("Spot_01");
+    spot_01.set_color(na::Vector3::new(1.0, 1.0, 1.0));
+    spot_01.set_intensity(100.0);
+    spot_01.set_location(na::Vector3::new(0.0, 0.0, 10.0));
+    spot_01.set_direction(na::Vector3::new(0.5, 0.0, -1.0));
+    spot_01.set_outer_radius(15.0);
+    spot_01.set_inner_radius(10.0);
+
+    let spot_node_01 = Arc::new(
+        node_member::SimpleNodeMember::from_light_spot(
+            Arc::new(
+                Mutex::new(spot_01)
+            )
+        )
+    );
+    asset_manager.get_active_scene().add_child(spot_node_01);
+    //SPOT 01 ===================================================================
+
+
+    //POINT 00 ==================================================================
+    /*
+    let mut point_00 = light::LightPoint::new("Point_00");
+    point_00.set_color(na::Vector3::new(1.0, 1.0, 1.0));
+    point_00.set_intensity(150.0);
+    point_00.set_location(na::Vector3::new(0.0, 0.0, 0.0));
+
+    let point_node_00 = Arc::new(
+        node_member::SimpleNodeMember::from_light_point(
+            Arc::new(
+                Mutex::new(point_00)
+            )
+        )
+    );
+    asset_manager.get_active_scene().add_child(point_node_00);
+    */
+    //POINT 00 ==================================================================
+/*
     //POINT 01 ==================================================================
     let mut point_01 = light::LightPoint::new("Point_01");
     point_01.set_color(na::Vector3::new(150.0, 150.0, 150.0));
@@ -168,11 +208,15 @@ fn main() {
     );
     asset_manager.get_active_scene().add_child(point_node_04);
     //POINT 04 ==================================================================
-
+*/
     asset_manager.get_active_scene().print_member(0);
-    println!("Start n stuff", );
 
     let mut adding_status_helix = false;
+    let mut adding_status = false;
+
+    let mut start_time = Instant::now();
+
+    let mut avg_fps = 60.0;
 
     loop {
         //Add the ape scene if finished loading. This will be managed by a defined loader later
@@ -219,10 +263,22 @@ fn main() {
             adding_status_helix = true;
             println!("Finished helix", );
         }
-        println!("STATUS: GAME: Starting loop in game", );
+        //println!("STATUS: GAME: Starting loop in game", );
         //Update the content of the render_manager
+
+        //Updating the light based on the camera position
+        let camera_inst = asset_manager.get_camera().clone();
+        {
+            let light_inst = asset_manager.get_active_scene().get_light_spot("Spot_01").unwrap();
+            let mut light_lock = light_inst.lock().expect("failed to lock light");
+            (*light_lock).set_location(camera_inst.get_position());
+            (*light_lock).set_direction(- camera_inst.get_direction());
+
+        }
+
+
         asset_manager.update();
-        println!("STATUS: GAME: Updated all assets", );
+        //println!("STATUS: GAME: Updated all assets", );
         (*render).lock().expect("Failed to lock renderer for rendering").render(&mut asset_manager);
         //Check if loop should close
         if input_handler.get_key_map_copy().closed{
@@ -247,7 +303,7 @@ fn main() {
             };
             //Set the translation on this node
             ape_scene.translate(na::Vector3::new(-1.0, -1.0, 0.0));
-            println!("Translated", );
+            //println!("Translated", );
         }
 
         if input_handler.get_key_map_copy().z{
@@ -261,10 +317,6 @@ fn main() {
             };
             //Set the translation on this node
             helix_scene.rotate(na::Rotation3::new(na::Vector3::new(0.05, 0.0, 0.0)));
-            //ape_scene.rotate(na::Rotation3::from_euler_angles(0.0, 0.05, 0.0));
-            println!("Translated", );
-            //input_handler.end();
-            //break;
         }
 
         if input_handler.get_key_map_copy().u{
@@ -278,20 +330,21 @@ fn main() {
             };
             //Set the translation on this node
             tree_scene.translate(na::Vector3::new(-0.05, -0.05, 0.0));
-            //ape_scene.rotate(na::Rotation3::from_euler_angles(0.0, 0.05, 0.0));
-            println!("Translated", );
-            //input_handler.end();
-            //break;
         }
 
 
-
-
-        asset_manager.get_active_scene().print_member(0);
+        //Prints all materials and the scene tree
+        //asset_manager.get_material_manager().print_all_materials();
+        //asset_manager.get_active_scene().print_member(0);
 
         let fps_time = start_time.elapsed().subsec_nanos();
-        println!("STATUS: RENDER: FPS IN GAME: {}", 1.0/ (fps_time as f32 / 1_000_000_000.0) );
+
+        let fps = 1.0/ (fps_time as f32 / 1_000_000_000.0);
+        avg_fps = (avg_fps + fps) / 2.0;
+        println!("STATUS: RENDER: AVG FPS IN GAME: {}", avg_fps);
+        println!("This Frame: {}", fps);
+
+
         start_time = Instant::now();
-        asset_manager.get_material_manager().print_all_materials();
     }
 }

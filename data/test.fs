@@ -160,6 +160,128 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
 }
+
+//Calculates a point ligh -----------------------------------------------------
+vec3 calcPointLight(PointLight light, vec3 FragmentPosition, vec3 albedo, float metallic, float roughness, vec3 V, vec3 N, vec3 F0)
+{
+  // calculate per-light radiance
+  vec3 L = normalize(light.location - FragmentPosition);
+  vec3 H = normalize(V + L);
+  float distance = length(light.location - FragmentPosition);
+  float attenuation = 1.0 / (distance * distance);
+  vec3 radiance = light.color * light.intensity * attenuation;
+
+  // Cook-Torrance BRDF
+  float NDF = DistributionGGX(N, H, roughness);
+  float G   = GeometrySmith(N, V, L, roughness);
+  vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+  vec3 nominator    = NDF * G * F;
+  float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // 0.001 to prevent divide by zero.
+  vec3 specular = nominator / denominator;
+
+  // kS is equal to Fresnel
+  vec3 kS = F;
+  // for energy conservation, the diffuse and specular light can't
+  // be above 1.0 (unless the surface emits light); to preserve this
+  // relationship the diffuse component (kD) should equal 1.0 - kS.
+  vec3 kD = vec3(1.0) - kS;
+  // multiply kD by the inverse metalness such that only non-metals
+  // have diffuse lighting, or a linear blend if partly metal (pure metals
+  // have no diffuse light).
+  kD *= 1.0 - metallic;
+
+  // scale light by NdotL
+  float NdotL = max(dot(N, L), 0.0);
+
+  // add to outgoing radiance Lo
+  return (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+}
+
+//Calculates a directional light and outputs the pixel contribution------------
+vec3 calcDirectionalLight(DirectionalLight light, vec3 FragmentPosition, vec3 albedo, float metallic, float roughness, vec3 V, vec3 N, vec3 F0)
+{
+  // calculate per-light radiance
+  //L is always the same vector (directional light)
+  vec3 L = normalize(-light.direction);
+  vec3 H = normalize(V + L);
+
+  vec3 radiance = light.color * light.intensity;
+
+  // Cook-Torrance BRDF
+  float NDF = DistributionGGX(N, H, roughness);
+  float G   = GeometrySmith(N, V, L, roughness);
+  vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+  vec3 nominator    = NDF * G * F;
+  float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // 0.001 to prevent divide by zero.
+  vec3 specular = nominator / denominator;
+
+  // kS is equal to Fresnel
+  vec3 kS = F;
+  // for energy conservation, the diffuse and specular light can't
+  // be above 1.0 (unless the surface emits light); to preserve this
+  // relationship the diffuse component (kD) should equal 1.0 - kS.
+  vec3 kD = vec3(1.0) - kS;
+  // multiply kD by the inverse metalness such that only non-metals
+  // have diffuse lighting, or a linear blend if partly metal (pure metals
+  // have no diffuse light).
+  kD *= 1.0 - metallic;
+
+  // scale light by NdotL
+  float NdotL = max(dot(N, L), 0.0);
+
+  // add to outgoing radiance Lo
+  return (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+}
+
+//Calculates a point ligh -----------------------------------------------------
+vec3 calcSpotLight(SpotLight light, vec3 FragmentPosition, vec3 albedo, float metallic, float roughness, vec3 V, vec3 N, vec3 F0)
+{
+  //because of spot character we first have a look if the light is in the
+  //spot and create a custom interpolation value based on it
+
+  //if the fragment is fully in the inner circle, calculate like a spot light
+  vec3 lightDir = normalize(light.location - FragmentPosition);
+  float theta     = dot(lightDir, normalize(-light.direction));
+  float epsilon   = light.inner_radius - light.outer_radius;
+  float spot_intensity = clamp((theta - light.outer_radius) / epsilon, 0.0, 1.0);
+
+
+  // calculate per-light radiance
+  vec3 L = normalize(light.location - FragmentPosition);
+  vec3 H = normalize(V + L);
+  float distance = length(light.location - FragmentPosition);
+  float attenuation = 1.0 / (distance * distance);
+  vec3 radiance = light.color * light.intensity * attenuation;
+
+  // Cook-Torrance BRDF
+  float NDF = DistributionGGX(N, H, roughness);
+  float G   = GeometrySmith(N, V, L, roughness);
+  vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+  vec3 nominator    = NDF * G * F;
+  float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // 0.001 to prevent divide by zero.
+  vec3 specular = nominator / denominator;
+
+  // kS is equal to Fresnel
+  vec3 kS = F;
+  // for energy conservation, the diffuse and specular light can't
+  // be above 1.0 (unless the surface emits light); to preserve this
+  // relationship the diffuse component (kD) should equal 1.0 - kS.
+  vec3 kD = vec3(1.0) - kS;
+  // multiply kD by the inverse metalness such that only non-metals
+  // have diffuse lighting, or a linear blend if partly metal (pure metals
+  // have no diffuse light).
+  kD *= 1.0 - metallic;
+
+  // scale light by NdotL
+  float NdotL = max(dot(N, L), 0.0);
+
+  // add to outgoing radiance Lo
+  return ((kD * albedo / PI + specular) * radiance * NdotL) * spot_intensity;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+}
+
 // ----------------------------------------------------------------------------
 void main()
 {
@@ -179,40 +301,18 @@ void main()
 
     // reflectance equation
     vec3 Lo = vec3(0.0);
+    //Point Lights
     for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
     {
-        // calculate per-light radiance
-        vec3 L = normalize(u_point_light.p_light[i].location - FragmentPosition);
-        vec3 H = normalize(V + L);
-        float distance = length(u_point_light.p_light[i].location - FragmentPosition);
-        float attenuation = 1.0 / (distance * distance);
-        vec3 radiance = u_point_light.p_light[i].color * attenuation;
-
-        // Cook-Torrance BRDF
-        float NDF = DistributionGGX(N, H, roughness);
-        float G   = GeometrySmith(N, V, L, roughness);
-        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-        vec3 nominator    = NDF * G * F;
-        float denominator = 4 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001; // 0.001 to prevent divide by zero.
-        vec3 specular = nominator / denominator;
-
-        // kS is equal to Fresnel
-        vec3 kS = F;
-        // for energy conservation, the diffuse and specular light can't
-        // be above 1.0 (unless the surface emits light); to preserve this
-        // relationship the diffuse component (kD) should equal 1.0 - kS.
-        vec3 kD = vec3(1.0) - kS;
-        // multiply kD by the inverse metalness such that only non-metals
-        // have diffuse lighting, or a linear blend if partly metal (pure metals
-        // have no diffuse light).
-        kD *= 1.0 - metallic;
-
-        // scale light by NdotL
-        float NdotL = max(dot(N, L), 0.0);
-
-        // add to outgoing radiance Lo
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;  // note that we already multiplied the BRDF by the Fresnel (kS) so we won't multiply by kS again
+        Lo += calcPointLight(u_point_light.p_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+    }
+    //Directional Lights
+    for(int i = 0; i < MAX_DIR_LIGHTS; ++i){
+      Lo += calcDirectionalLight(u_dir_light.d_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+    }
+    //Spot Lights
+    for(int i = 0; i < MAX_SPOT_LIGHTS; ++i){
+      Lo += calcSpotLight(u_spot_light.s_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
     }
 
     // ambient lighting (note that the next IBL tutorial will replace

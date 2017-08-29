@@ -314,7 +314,8 @@ impl AssetManager {
     }
 
     ///Returns all meshes in the view frustum of the currently active camera
-    pub fn get_meshes_in_frustum(&mut self) -> Vec<Arc<Mutex<mesh::Mesh>>>{
+    pub fn get_meshes_in_frustum(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, na::Matrix4<f32>)>{
+        println!("Sending request to node tree", );
         self.active_main_scene.get_meshes_in_frustum(&self.camera)
     }
 

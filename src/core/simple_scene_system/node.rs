@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::ops::Deref;
 
-use na;
+use na::*;
 use nc;
 use nc::bounding_volume::BoundingVolume;
 
@@ -48,12 +48,12 @@ pub struct GenericNode {
     ///There is a difference between a `Node`'s name and its `content` name
     pub name: String,
     ///Location of this node in world space
-    location: na::Vector3<f32>,
-    rotation: na::Rotation3<f32>,
-    scale: na::Vector3<f32>,
+    location: Vector3<f32>,
+    rotation: Rotation3<f32>,
+    scale: Vector3<f32>,
     ///The bounds of this note, takes the own `content` bound as well as the max and min values of
     ///all its children into consideration
-    bound: nc::bounding_volume::AABB<na::Point3<f32>>,
+    bound: nc::bounding_volume::AABB<Point3<f32>>,
     ///The content is a contaier from the `ContentTypes` type which can hold any implemented
     ///Enum value
     content: Arc<NodeMember + Send + Sync>,
@@ -65,14 +65,14 @@ impl GenericNode{
     ///Creates a new, empty node
     pub fn new_empty(name: &str)-> Self{
 
-        let mut tmp_bound = nc::bounding_volume::AABB::new(na::Point3::new(0.0, 0.0, 0.0), na::Point3::new(1.0, 1.0, 1.0));
+        let mut tmp_bound = nc::bounding_volume::AABB::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
 
         GenericNode{
             children: Vec::new(),
             name: String::from(name),
-            location: na::Vector3::new(0.0, 0.0, 0.0),
-            rotation: na::Rotation3::from_axis_angle(&na::Vector3::x_axis(),0.0),
-            scale: na::Vector3::new(0.0, 0.0, 0.0),
+            location: Vector3::new(0.0, 0.0, 0.0),
+            rotation: Rotation3::from_axis_angle(&Vector3::x_axis(),0.0),
+            scale: Vector3::new(0.0, 0.0, 0.0),
 
             bound: tmp_bound,
 
@@ -93,7 +93,7 @@ impl GenericNode{
     ///Should return an node
     pub fn new(name: &str, content: Arc<NodeMember + Send + Sync>)->Self{
 
-        let mut tmp_bound = nc::bounding_volume::AABB::new(na::Point3::new(0.0, 0.0, 0.0), na::Point3::new(1.0, 1.0, 1.0));
+        let mut tmp_bound = nc::bounding_volume::AABB::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
         //Building node bound from mesh
 
         let mut imported_content_tag = content.get_content_type().clone();
@@ -108,9 +108,9 @@ impl GenericNode{
         GenericNode{
             children: Vec::new(),
             name: String::from(name),
-            location: na::Vector3::new(0.0, 0.0, 0.0),
-            rotation: na::Rotation3::from_axis_angle(&na::Vector3::x_axis(),0.0),
-            scale: na::Vector3::new(0.0, 0.0, 0.0),
+            location: Vector3::new(0.0, 0.0, 0.0),
+            rotation: Rotation3::from_axis_angle(&Vector3::x_axis(),0.0),
+            scale: Vector3::new(0.0, 0.0, 0.0),
 
             bound: tmp_bound,
 
@@ -195,11 +195,11 @@ impl GenericNode{
     }
 
     ///Returns the transform matrix
-    pub fn get_transform_matrix(&self) -> na::Matrix4<f32>{
+    pub fn get_transform_matrix(&self) -> Matrix4<f32>{
 
-        let translation = na::Translation::from_vector(self.location);
-        let mut isometry = na::Isometry3::from_parts(
-            translation, na::UnitQuaternion::from_rotation_matrix(&self.rotation)
+        let translation = Translation::from_vector(self.location);
+        let mut isometry = Isometry3::from_parts(
+            translation, UnitQuaternion::from_rotation_matrix(&self.rotation)
         );
 
     //    println!("Returning Matrix: {:?}", isometry.to_homogeneous());
@@ -209,7 +209,7 @@ impl GenericNode{
     }
 
     ///Translates this node by `translation` and all its children
-    pub fn translate(&mut self, translation: na::Vector3<f32>){
+    pub fn translate(&mut self, translation: Vector3<f32>){
         //for self
         self.location = self.location + translation;
         //for all children
@@ -219,7 +219,7 @@ impl GenericNode{
     }
 
     ///Sets the location to `location` and changes the location of all its children as well
-    pub fn set_location(&mut self, location: na::Vector3<f32>){
+    pub fn set_location(&mut self, location: Vector3<f32>){
         //get the difference of the current and the new position
         let difference = location - self.location;
         //Set it for self
@@ -227,24 +227,24 @@ impl GenericNode{
     }
 
     ///Rotates this node and all of its child by `rotation` around `point`
-    pub fn rotate_around_point(&mut self, rotation: na::Rotation3<f32>, point: na::Point3<f32>){
+    pub fn rotate_around_point(&mut self, rotation: Rotation3<f32>, point: Point3<f32>){
         //To rotate around an point `p` we need to change the rotation as well as location
         //of this node, there for we create a isometry from bot, rotate it around point p
         //and decompose location and rotation back into the struct
         //TODO Implement the "move, rotate move new" algorith for rotating around point
-        let translation = na::Translation3::from_vector(self.location);
+        let translation = Translation3::from_vector(self.location);
         //Create current isometry
-        let mut isometry = na::Isometry3::from_parts(
-            translation, na::UnitQuaternion::from_rotation_matrix(&self.rotation)
+        let mut isometry = Isometry3::from_parts(
+            translation, UnitQuaternion::from_rotation_matrix(&self.rotation)
         );
         //append the rotation around point
         isometry.append_rotation_wrt_point_mut(
-            &na::UnitQuaternion::from_rotation_matrix(&rotation), &point
+            &UnitQuaternion::from_rotation_matrix(&rotation), &point
         );
 
         //decompose to vector and rotation again from the new isometry
         //location
-        let new_location_vector = na::Vector3::new(
+        let new_location_vector = Vector3::new(
             isometry.translation.vector.x,
             isometry.translation.vector.y,
             isometry.translation.vector.z,
@@ -261,23 +261,23 @@ impl GenericNode{
     }
 
     ///Rotates this note and its children by `rotation`
-    pub fn rotate(&mut self, rotation: na::Rotation3<f32>){
+    pub fn rotate(&mut self, rotation: Rotation3<f32>){
         //create a Isometry from the current location and rotation,
         //then apply rotation
-        let translation = na::Translation3::from_vector(self.location);
+        let translation = Translation3::from_vector(self.location);
         //Create current isometry
-        let mut isometry = na::Isometry3::from_parts(
-            translation, na::UnitQuaternion::from_rotation_matrix(&self.rotation)
+        let mut isometry = Isometry3::from_parts(
+            translation, UnitQuaternion::from_rotation_matrix(&self.rotation)
         );
 
         isometry.append_rotation_wrt_center_mut(
-            &na::UnitQuaternion::from_rotation_matrix(&rotation)
+            &UnitQuaternion::from_rotation_matrix(&rotation)
         );
 
         self.rotation = isometry.rotation.to_rotation_matrix();
 
         for child in self.children.iter_mut(){
-            child.rotate_around_point(rotation, na::Point3::from_coordinates(self.location));
+            child.rotate_around_point(rotation, Point3::from_coordinates(self.location));
         }
 
     }
@@ -493,20 +493,37 @@ impl GenericNode{
         result_value
     }
 
-    ///Returns all meshes in view frustum
-    pub fn get_meshes_in_frustum(&mut self, camera: &camera::DefaultCamera) -> Vec<Arc<Mutex<mesh::Mesh>>>{
+
+    ///Returns all meshes in view frustum as well as their transform
+    pub fn get_meshes_in_frustum(&mut self, camera: &camera::DefaultCamera) -> Vec<(Arc<Mutex<mesh::Mesh>>, Matrix4<f32>)>{
 
         let camera_volume = camera.get_frustum_bound().clone();
-
         let mut return_vector = Vec::new();
 
+        //Create a cuboid from the bounding volume of self
+        let bound_cube = nc::shape::Cuboid3::new(self.bound.half_extents());
+        let self_location = Isometry3::from_parts(
+            Translation::from_vector(self.location), UnitQuaternion::identity()
+        );
+        let camera_location = Isometry3::from_parts(
+            Translation::from_vector(camera.get_position()), UnitQuaternion::identity()
+        );
 
+        //FIXME also add the dynamic meshse
         match self.content.get_static_mesh(){
             //if selfs content is a mesh, check the bound
             Some(ref static_mesh) => {
                 //check if self is in bound
-                if self.bound.intersects(&camera_volume){
-                    return_vector.push(static_mesh.clone());
+
+                let test = {
+                    nc::query::proximity(
+                        &self_location, &bound_cube,
+                        &camera_location, &camera_volume,
+                        1.0,
+                    )
+                };
+                if (test == nc::query::Proximity::Intersecting) || (test == nc::query::Proximity::WithinMargin) {
+                    return_vector.push((static_mesh.clone(), self.get_transform_matrix()));
                 //if self is not in bound we can return as there won't be any lower mesh in there
                 }else{
                     return return_vector;
@@ -514,9 +531,15 @@ impl GenericNode{
             },
             //if self is no mesh, just check the bound
             None => {
-                //check if self is in bound
-                if self.bound.intersects(&camera_volume){
-                    //go further down the tree
+                let test = {
+                    nc::query::proximity(
+                        &self_location, &bound_cube,
+                        &camera_location, &camera_volume,
+                        1.0,
+                    )
+                };
+                if (test == nc::query::Proximity::Intersecting) || (test == nc::query::Proximity::WithinMargin) {
+
                 //if self is not in bound we can return as there won't be any lower mesh in there
                 }else{
                     return return_vector;
@@ -527,24 +550,40 @@ impl GenericNode{
 
         //if not already return because the bound is too small, check the children
         for i in self.children.iter_mut(){
-            return_vector.append(&mut i.get_meshes_in_volume(&camera_volume));
+            return_vector.append(&mut i.get_meshes_in_volume(&camera_volume, camera.get_position()));
         }
         return_vector
     }
 
     ///checks for bounds in a volume, view frustum or maybe for a locale collision check
-    pub fn get_meshes_in_volume(&mut self, volume: &nc::bounding_volume::AABB<na::Point3<f32>>) -> Vec<Arc<Mutex<mesh::Mesh>>>{
+    pub fn get_meshes_in_volume(
+        &mut self, volume: &nc::shape::ConvexHull<Point3<f32>>, location: Vector3<f32>
+    ) -> Vec<(Arc<Mutex<mesh::Mesh>>, Matrix4<f32>)>{
 
         let mut return_vector = Vec::new();
 
-
-
+        //created needed structures for test
+        //Create a cuboid from the bounding volume of self
+        let bound_cube = nc::shape::Cuboid3::new(self.bound.half_extents());
+        let self_location = Isometry3::from_parts(
+            Translation::from_vector(self.location), UnitQuaternion::identity()
+        );
+        let volume_location = Isometry3::from_parts(
+            Translation::from_vector(location), UnitQuaternion::identity()
+        );
         match self.content.get_static_mesh(){
             //if selfs content is a mesh, check the bound
             Some(ref static_mesh) => {
                 //check if self is in bound
-                if self.bound.intersects(&volume){
-                    return_vector.push(static_mesh.clone());
+                let test = {
+                    nc::query::proximity(
+                        &self_location, &bound_cube,
+                        &volume_location, volume,
+                        1.0,
+                    )
+                };
+                if (test == nc::query::Proximity::Intersecting) || (test == nc::query::Proximity::WithinMargin) {
+                    return_vector.push((static_mesh.clone(), self.get_transform_matrix()));
                 //if self is not in bound we can return as there won't be any lower mesh in there
                 }else{
                     return return_vector;
@@ -553,10 +592,17 @@ impl GenericNode{
             //if self is no mesh, just check the bound
             None => {
                 //check if self is in bound
-                if self.bound.intersects(&volume){
-                    //go further down the tree
+                let test = {
+                    nc::query::proximity(
+                        &self_location, &bound_cube,
+                        &volume_location, volume,
+                        1.0,
+                    )
+                };
+                if (test == nc::query::Proximity::Intersecting) || (test == nc::query::Proximity::WithinMargin) {
+                }
                 //if self is not in bound we can return as there won't be any lower mesh in there
-                }else{
+                else{
                     return return_vector;
                 }
             }
@@ -565,13 +611,13 @@ impl GenericNode{
 
         //if not already return because the bound is too small, check the children
         for i in self.children.iter_mut(){
-            return_vector.append(&mut i.get_meshes_in_volume(&volume));
+            return_vector.append(&mut i.get_meshes_in_volume(&volume, location));
         }
         return_vector
     }
 
     ///Gets all meshes from this node down
-    pub fn get_all_meshes(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, na::Matrix4<f32>)>{
+    pub fn get_all_meshes(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, Matrix4<f32>)>{
         let mut return_vector = Vec::new();
 
 
@@ -645,12 +691,12 @@ impl GenericNode{
     }
 
     ///Returns the bound of `content` in self as mutable reference
-    pub fn get_bound(&mut self) -> &mut nc::bounding_volume::AABB<na::Point3<f32>>{
+    pub fn get_bound(&mut self) -> &mut nc::bounding_volume::AABB<Point3<f32>>{
         &mut self.bound
     }
 
     ///Returns the maximum bound values from this node down
-    pub fn get_bound_max(&mut self) -> na::Point3<f32>{
+    pub fn get_bound_max(&mut self) -> Point3<f32>{
 
         let mut return_max = self.bound.maxs().clone();
 
@@ -680,7 +726,7 @@ impl GenericNode{
 
     ///Returns the min bound values from this node down
     ///Compares per axis
-    pub fn get_bound_min(&mut self) -> na::Point3<f32>{
+    pub fn get_bound_min(&mut self) -> Point3<f32>{
 
         let mut return_min = self.bound.mins().clone();
 

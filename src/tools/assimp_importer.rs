@@ -56,6 +56,10 @@ impl Importer for AssimpImporter {
                     let mut tmp_vertices: Vec<Vertex> = Vec::new();
                     let mut tmp_indices: Vec<u32> = Vec::new();
                     let mut bound_info: tools::BoundCreateInfo = tools::BoundCreateInfo::new();
+
+                    //used to create first time actions;
+                    let first_vertice = true;
+
                     //The vertices
                     for index in 0..mesh.num_vertices()
                     {
@@ -75,6 +79,16 @@ impl Importer for AssimpImporter {
                                 //fallback
                                 pos = na::Vector3::new(1.0, 1.0, 1.0).into();
                             },
+                        }
+                        //if this was the first vertice, generate the bound from this starting location
+                        if first_vertice{
+                            bound_info.max_x = pos[0];
+                            bound_info.max_y = pos[1];
+                            bound_info.max_z = pos[2];
+
+                            bound_info.min_x = pos[0];
+                            bound_info.min_y = pos[1];
+                            bound_info.min_z = pos[2];
                         }
 
                         //UVs

@@ -22,11 +22,11 @@ pub struct EngineSettings {
 
 
     //Debug settings:
-    silent_vulkan: bool,
+    pub silent_vulkan: bool,
 
     //Graphics settings
-    anisotropic_filtering: f32,
-    msaa: u32,
+    pub anisotropic_filtering: f32,
+    pub msaa: u32,
 
 }
 

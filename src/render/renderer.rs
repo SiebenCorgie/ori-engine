@@ -224,6 +224,7 @@ impl Renderer {
         //TODO, create custom renderpass with different stages (light computing, final shading (how to loop?),
         //postprogress) => Dig through docs.
         //Create a simple renderpass
+        /*
         let renderpass = Arc::new(
             single_pass_renderpass!(device.clone(),
                 attachments: {
@@ -245,6 +246,38 @@ impl Renderer {
                     depth_stencil: {depth}
                 }
             ).expect("failed to !")
+        );
+        */
+
+        //Get the settings needed to create the render pass
+        let msaa = {
+            engine_settings.lock().expect("failed to lock settings for msaa").msaa.clone()
+        };
+
+        let renderpass = Arc::new(
+            ordered_passes_renderpass!(queue.device().clone(),
+            attachments: {
+                color: {
+                    load: Clear,
+                    store: Store,
+                    format: swapchain.format(),
+                    samples: msaa, //msaa samples based on settings
+                },
+                depth: {
+                    load: Clear,
+                    store: DontCare,
+                    format: vulkano::format::Format::D16Unorm,
+                    samples: msaa,
+                }
+            },
+            passes:[
+                {
+                    color: [color],
+                    depth_stencil: {depth},
+                    input: []   //has no input, might get the light vec as input and the pre rendered light depth infos
+                }
+            ]
+        ).expect("failed to create render_pass")
         );
 
         //Create the frame buffers from all images

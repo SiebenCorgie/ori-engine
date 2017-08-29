@@ -212,10 +212,8 @@ impl GenericNode{
     pub fn translate(&mut self, translation: na::Vector3<f32>){
         //for self
         self.location = self.location + translation;
-        println!("new child location recieved: {:?}", self.location);
         //for all children
         for child in self.children.iter_mut(){
-            println!("PASSING: TRANSLATE", );
             child.translate(translation);
         }
     }
@@ -224,19 +222,8 @@ impl GenericNode{
     pub fn set_location(&mut self, location: na::Vector3<f32>){
         //get the difference of the current and the new position
         let difference = location - self.location;
-        /*
-        if location < self.location{
-            difference = location - self.location;
-        }else{
-            difference = self.location - location;
-        }
-        */
-        println!("IS ON: {:?} WANTS TO: {:?} TRANSLATING BY: {:?}", self.location, location, difference);
-
-        //let difference = location - self.location;
         //Set it for self
         self.translate(difference);
-        println!("IS NOW ON: {:?}", self.location);
     }
 
     ///Rotates this node and all of its child by `rotation` around `point`
@@ -254,11 +241,6 @@ impl GenericNode{
         isometry.append_rotation_wrt_point_mut(
             &na::UnitQuaternion::from_rotation_matrix(&rotation), &point
         );
-        /*
-        isometry.append_rotation_wrt_center_mut(
-            &na::UnitQuaternion::from_rotation_matrix(&rotation)
-        );
-        */
 
         //decompose to vector and rotation again from the new isometry
         //location
@@ -310,7 +292,6 @@ impl GenericNode{
         //first have a look if self's content is the searched one
         //NOTE if the searched value is somewhere in the tree, this should return
         //NOTE Some(value) once
-
         let content_type = self.content_tag.clone();
 
         match content_type{
@@ -461,7 +442,56 @@ impl GenericNode{
         result_value
     }
 
-    //TODO get specific light spot
+    ///Returns the first light spot with this name
+    pub fn get_light_spot(&mut self, name: &str) -> Option<Arc<Mutex<core::resources::light::LightSpot>>>{
+        let mut result_value: Option<Arc<Mutex<core::resources::light::LightSpot>>> = None;
+
+        //first have a look if self's content is the searched one
+        //NOTE if the searched value is somewhere in the tree, this should return
+        //NOTE Some(value) once
+
+        let content_type = self.content_tag.clone();
+
+
+        match content_type{
+            ContentTag::LightSpot => {
+                if self.content.get_name() == String::from(name.clone()){
+
+                    //Have a look for a light
+                    match self.content.get_light_spot(){
+                        Some(light) => result_value = Some(light),
+                        None => {},
+                    }
+
+                }
+            }
+            //if not selfs content search in children
+            _=>{}
+        }
+
+        //Have a look if we found it in the content
+        //if not search in childs
+        match result_value{
+            //if we already found somthing, don't do anything
+            Some(_)=> {},
+            None=> {
+                //Cycling though the children till we got any Some(x)
+                for i in self.children.iter_mut(){
+                    //make sure we dont overwrite the right value with a none of the next value
+                    match result_value{
+                        None=> result_value = i.get_light_spot(name.clone()),
+                        //if tmp holds something overwerite the result_value
+                        //the early return makes sure we dont overwrite our found falue with another
+                        //none
+                        Some(value)=> return Some(value),
+                    }
+
+                }
+            }
+
+        }
+        result_value
+    }
 
     ///Returns all meshes in view frustum
     pub fn get_meshes_in_frustum(&mut self, camera: &camera::DefaultCamera) -> Vec<Arc<Mutex<mesh::Mesh>>>{

@@ -37,6 +37,7 @@ pub trait Camera {
 }
 
 ///An example implementation
+#[derive(Clone)]
 pub struct DefaultCamera {
     //camera General
     pub cameraPos: Vector3<f32>,
@@ -144,7 +145,7 @@ impl Camera for DefaultCamera{
             }
         }
 
-        let sensitivity = 25.0;
+        let sensitivity = 20.0;
 
         //Fixed camera gittering by slowing down so one integer delta = movement of
         // delta * sensitvity * time_delta * slowdown (virtual speed up)

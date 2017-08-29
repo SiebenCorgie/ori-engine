@@ -201,13 +201,26 @@ impl Renderer {
             let format = caps.supported_formats[0].0;
 
             vulkano::swapchain::Swapchain::new(
-                device.clone(), window.surface().clone(), caps.min_image_count, format, dimensions, 1,
-                usage, &queue, vulkano::swapchain::SurfaceTransform::Identity,
+                device.clone(),
+                window.surface().clone(),
+                caps.min_image_count,
+                format,
+                dimensions,
+                1,
+                usage,
+                &queue,
+                vulkano::swapchain::SurfaceTransform::Identity,
                 vulkano::swapchain::CompositeAlpha::Opaque,
-                vulkano::swapchain::PresentMode::Fifo, true, None
+                vulkano::swapchain::PresentMode::Fifo,
+                true,
+                None
             )
             .expect("failed to create swapchain")
         };
+        for i in images.iter(){
+            use vulkano::image::ImageAccess;
+            println!("Images have samples: {}", i.samples());
+        }
 
         //Create a depth buffer
         let depth_buffer = vulkano::image::attachment::AttachmentImage::transient(
@@ -224,36 +237,7 @@ impl Renderer {
         //TODO, create custom renderpass with different stages (light computing, final shading (how to loop?),
         //postprogress) => Dig through docs.
         //Create a simple renderpass
-        /*
-        let renderpass = Arc::new(
-            single_pass_renderpass!(device.clone(),
-                attachments: {
-                    color: {
-                        load: Clear,
-                        store: Store,
-                        format: swapchain.format(),
-                        samples: 1,
-                    },
-                    depth: {
-                        load: Clear,
-                        store: DontCare,
-                        format: vulkano::format::Format::D16Unorm,
-                        samples: 1,
-                    }
-                },
-                pass: {
-                    color: [color],
-                    depth_stencil: {depth}
-                }
-            ).expect("failed to !")
-        );
-        */
-
-        //Get the settings needed to create the render pass
-        let msaa = {
-            engine_settings.lock().expect("failed to lock settings for msaa").msaa.clone()
-        };
-
+        println!("Createing Render Pass", );
         let renderpass = Arc::new(
             ordered_passes_renderpass!(queue.device().clone(),
             attachments: {
@@ -261,13 +245,13 @@ impl Renderer {
                     load: Clear,
                     store: Store,
                     format: swapchain.format(),
-                    samples: msaa, //msaa samples based on settings
+                    samples: 1, //TODO msaa samples based on settings
                 },
                 depth: {
                     load: Clear,
                     store: DontCare,
                     format: vulkano::format::Format::D16Unorm,
-                    samples: msaa,
+                    samples: 1,
                 }
             },
             passes:[
@@ -279,6 +263,7 @@ impl Renderer {
             ]
         ).expect("failed to create render_pass")
         );
+        println!("Finished renderpass", );
 
         //Create the frame buffers from all images
         let framebuffers = images.iter().map(|image| {
@@ -305,7 +290,7 @@ impl Renderer {
                 )
             )
         );
-
+        println!("Finished Render Setup", );
         //Pas everthing to the struct
         Renderer{
             pipeline_manager: pipeline_manager,
@@ -403,6 +388,7 @@ impl Renderer {
     ///Returns the image if the image state is outdated
     ///Panics if another error occures while pulling a new image
     pub fn check_image_state(&self) -> Result<(usize, SwapchainAcquireFuture), AcquireError>{
+
         match vulkano::swapchain::acquire_next_image(self.swapchain.clone(), None) {
             Ok(r) => return Ok(r),
             Err(vulkano::swapchain::AcquireError::OutOfDate) => {

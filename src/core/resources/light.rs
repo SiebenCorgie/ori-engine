@@ -11,6 +11,7 @@ use core::ReturnBoundInfo;
 use core::simple_scene_system::node;
 
 use std::sync::{Arc,Mutex};
+use std::f64::consts;
 
 use core::resources;
 
@@ -79,21 +80,6 @@ impl LightPoint{
     ///Returns this lught as its shader-useable instance
     pub fn as_shader_info(&self) -> pbr_fragment::ty::PointLight{
         //convert to a Vec4 for 128 bit padding in the shader
-
-        /*
-        let tmp_color: [f32; 3] = self.color.into();
-        LightPointShaderInfo{
-            color: [tmp_color[0], tmp_color[1], tmp_color[2], 1.0],
-            //intensity: [self.intensity.clone(), 1.0, 1.0, 1.0, ]
-            /*
-            intensity: self.intensity.clone(),
-            pad_01: 1.0,
-            pad_02: 1.0,
-            pad_03: 1.0,
-            */
-        }
-        */
-
         let color_type: [f32; 3] = self.color.into();
         let location_type: [f32; 3] = self.location.into();
         //Return a native vulkano struct
@@ -215,19 +201,6 @@ impl LightDirectional{
         let tmp_direction: [f32;3] = self.direction.into();
         let location_type: [f32; 3] = self.location.into();
 
-        /*
-        LightDirectionalShaderInfo{
-            color: [tmp_color[0], tmp_color[1], tmp_color[2], 1.0],
-            direction: [tmp_direction[0], tmp_direction[1], tmp_direction[2], 1.0],
-            //intensity: [self.intensity.clone(), 1.0, 1.0, 1.0, ]
-
-            intensity: self.intensity.clone(),
-            pad_01: 1.0,
-            pad_02: 1.0,
-            pad_03: 1.0,
-
-        }
-        */
         //Return a native vulkano struct
         pbr_fragment::ty::DirectionalLight{
             color: tmp_color,
@@ -364,27 +337,15 @@ impl LightSpot{
         let tmp_direction: [f32;3] = self.direction.into();
         let location_type: [f32; 3] = self.location.into();
 
-        /*
-        LightSpotShaderInfo{
-            color: [tmp_color[0], tmp_color[1], tmp_color[2], 1.0],
-            direction: [tmp_direction[0], tmp_direction[1], tmp_direction[2], 1.0],
-
-            //int_outer_inner: [self.intensity.clone(), self.outer_radius.clone(), self.inner_radius.clone(), 1.0]
-
-            intensity: self.intensity.clone(),
-            outer_radius: self.outer_radius.clone(),
-            inner_radius: self.inner_radius.clone(),
-            pad_01: 1.0,
-
-        }
-        */
         pbr_fragment::ty::SpotLight{
             color: tmp_color,
             direction: tmp_direction,
             location: location_type,
             intensity: self.intensity,
-            outer_radius: self.outer_radius,
-            inner_radius: self.inner_radius,
+            //to save some graphics power calculating the cosin directly and using it in the shader
+
+            outer_radius: to_radians(self.outer_radius).cos(),
+            inner_radius: to_radians(self.inner_radius).cos(),
             _dummy0: [0; 4],
             _dummy1: [0; 4],
             _dummy2: [0; 8],
@@ -499,117 +460,7 @@ impl ReturnBoundInfo for LightSpot{
     }
 
 }
-
-/*
-///NodeMember for LightPoint
-impl NodeMember for LightPoint{
-
-
-    ///Returns the name of this node
-    fn get_name(&self) -> String{
-        self.name.clone()
-    }
-
-    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as static
-    fn get_static_mesh(&self) -> Option<Arc<Mutex<resources::mesh::Mesh>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as dynamic
-    fn get_dynamic_mesh(&self) -> Option<Arc<Mutex<resources::mesh::Mesh>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<LightPoint>>)` if this NodeMember contains a light point
-    fn get_light_point(&self) -> Option<Arc<Mutex<resources::light::LightPoint>>>{
-        Some(self.clone())
-    }
-    ///Returns `Some(Arc<Mutex<LightDirectional>>)` if this NodeMember contains a directional light
-    fn get_light_directional(&self) -> Option<Arc<Mutex<resources::light::LightDirectional>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<LightSpot>>)` if this NodeMember contains a light spot
-    fn get_light_spot(&self) -> Option<Arc<Mutex<resources::light::LightSpot>>>{
-        None
-    }
-
-    ///Returns the type of node this is
-    fn get_content_type(&mut self) -> node::ContentTag{
-        node::ContentTag::LightPoint
-    }
+//Helper function for calculating the view
+fn to_radians(degree: f32) -> f32 {
+    degree * (consts::PI / 180.0) as f32
 }
-*/
-
-/*
-///NodeMember for LightDirectional
-impl NodeMember for LightDirectional{
-
-    ///Returns the name of this node
-    fn get_name(&self) -> String{
-        self.name.clone()
-    }
-
-    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as static
-    fn get_static_mesh(&self) -> Option<Arc<Mutex<resources::mesh::Mesh>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as dynamic
-    fn get_dynamic_mesh(&self) -> Option<Arc<Mutex<resources::mesh::Mesh>>>{
-
-    }
-    ///Returns `Some(Arc<Mutex<LightPoint>>)` if this NodeMember contains a light point
-    fn get_light_point(&self) -> Option<Arc<Mutex<resources::light::LightPoint>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<LightDirectional>>)` if this NodeMember contains a directional light
-    fn get_light_directional(&self) -> Option<Arc<Mutex<resources::light::LightDirectional>>>{
-        Some(self.clone())
-    }
-    ///Returns `Some(Arc<Mutex<LightSpot>>)` if this NodeMember contains a light spot
-    fn get_light_spot(&self) -> Option<Arc<Mutex<resources::light::LightSpot>>>{
-        None
-    }
-
-    ///Returns the type of node this is
-    fn get_content_type(&mut self) -> node::ContentTag{
-        node::ContentTag::LightDirectional
-    }
-}
-*/
-
-
-/*
-///NodeMember for the LightSpot
-impl NodeMember for LightSpot{
-
-
-    ///Returns the name of this node
-    fn get_name(&self) -> String{
-        self.name.clone()
-    }
-
-    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as static
-    fn get_static_mesh(&self) -> Option<Arc<Mutex<resources::mesh::Mesh>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as dynamic
-    fn get_dynamic_mesh(&self) -> Option<Arc<Mutex<resources::mesh::Mesh>>>{
-
-    }
-    ///Returns `Some(Arc<Mutex<LightPoint>>)` if this NodeMember contains a light point
-    fn get_light_point(&self) -> Option<Arc<Mutex<resources::light::LightPoint>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<LightDirectional>>)` if this NodeMember contains a directional light
-    fn get_light_directional(&self) -> Option<Arc<Mutex<resources::light::LightDirectional>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<LightSpot>>)` if this NodeMember contains a light spot
-    fn get_light_spot(&self) -> Option<Arc<Mutex<resources::light::LightSpot>>>{
-        Some(self.clone())
-    }
-
-    ///Returns the type of node this is
-    fn get_content_type(&mut self) -> node::ContentTag{
-        node::ContentTag::LightSpot
-    }
-}
-*/

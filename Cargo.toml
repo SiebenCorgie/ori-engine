@@ -10,9 +10,8 @@ vulkano-shader-derive = { path = "lib/vulkano/vulkano-shader-derive" }
 vulkano-win = { path = "lib/vulkano/vulkano-win" }
 
 image = "0.15.0"
-nalgebra = "0.13.0"
-nphysics3d = "0.7.1"
-ncollide = "0.13.0"
+cgmath = "0.15.0"
+collision = { path = "lib/collision-rs" }
 assimp = "0.2.1"
 time = "0.1.37"
 

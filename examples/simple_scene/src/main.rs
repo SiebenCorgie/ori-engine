@@ -1,6 +1,8 @@
 extern crate vulkano;
 extern crate ori_engine;
-extern crate nalgebra as na;
+extern crate cgmath;
+
+use cgmath::*;
 
 use ori_engine::*;
 use ori_engine::core::simple_scene_system::node;
@@ -95,8 +97,8 @@ fn main() {
 /*
     //SUN========================================================================
     let mut sun = light::LightDirectional::new("Sun");
-    sun.set_direction(na::Vector3::new(1.0, 0.5, 0.5));
-    sun.set_color(na::Vector3::new(1.0, 0.75, 0.75));
+    sun.set_direction(Vector3::new(1.0, 0.5, 0.5));
+    sun.set_color(Vector3::new(1.0, 0.75, 0.75));
     sun.set_intensity(50.0);
 
     let sun_node = Arc::new(
@@ -112,10 +114,10 @@ fn main() {
 /*
     //SPOT 01 ===================================================================
     let mut spot_01 = light::LightSpot::new("Spot_01");
-    spot_01.set_color(na::Vector3::new(1.0, 1.0, 1.0));
+    spot_01.set_color(Vector3::new(1.0, 1.0, 1.0));
     spot_01.set_intensity(100.0);
-    spot_01.set_location(na::Vector3::new(0.0, 0.0, 10.0));
-    spot_01.set_direction(na::Vector3::new(0.5, 0.0, -1.0));
+    spot_01.set_location(Vector3::new(0.0, 0.0, 10.0));
+    spot_01.set_direction(Vector3::new(0.5, 0.0, -1.0));
     spot_01.set_outer_radius(15.0);
     spot_01.set_inner_radius(10.0);
 
@@ -132,9 +134,9 @@ fn main() {
 /*
     //POINT 00 ==================================================================
     let mut point_00 = light::LightPoint::new("Point_00");
-    point_00.set_color(na::Vector3::new(1.0, 1.0, 1.0));
+    point_00.set_color(Vector3::new(1.0, 1.0, 1.0));
     point_00.set_intensity(150.0);
-    point_00.set_location(na::Vector3::new(0.0, 0.0, 0.0));
+    point_00.set_location(Vector3::new(0.0, 0.0, 0.0));
 
     let point_node_00 = Arc::new(
         node_member::SimpleNodeMember::from_light_point(
@@ -148,8 +150,8 @@ fn main() {
 */
     //POINT 01 ==================================================================
     let mut point_01 = light::LightPoint::new("Point_01");
-    point_01.set_color(na::Vector3::new(150.0, 150.0, 150.0));
-    point_01.set_location(na::Vector3::new(-5.0, -5.0, 10.0));
+    point_01.set_color(Vector3::new(150.0, 150.0, 150.0));
+    point_01.set_location(Vector3::new(-5.0, -5.0, 10.0));
 
     let point_node_01 = Arc::new(
         node_member::SimpleNodeMember::from_light_point(
@@ -163,8 +165,8 @@ fn main() {
 
     //POINT 02 ==================================================================
     let mut point_02 = light::LightPoint::new("Point_02");
-    point_02.set_color(na::Vector3::new(150.0, 150.0, 150.0));
-    point_02.set_location(na::Vector3::new(-5.0, 5.0, 10.0));
+    point_02.set_color(Vector3::new(150.0, 150.0, 150.0));
+    point_02.set_location(Vector3::new(-5.0, 5.0, 10.0));
 
     let point_node_02 = Arc::new(
         node_member::SimpleNodeMember::from_light_point(
@@ -178,8 +180,8 @@ fn main() {
 
     //POINT 03 ==================================================================
     let mut point_03 = light::LightPoint::new("Point_03");
-    point_03.set_color(na::Vector3::new(150.0, 150.0, 150.0));
-    point_03.set_location(na::Vector3::new(5.0, -5.0, 10.0));
+    point_03.set_color(Vector3::new(150.0, 150.0, 150.0));
+    point_03.set_location(Vector3::new(5.0, -5.0, 10.0));
 
     let point_node_03 = Arc::new(
         node_member::SimpleNodeMember::from_light_point(
@@ -193,8 +195,8 @@ fn main() {
 
     //POINT 04 ==================================================================
     let mut point_04 = light::LightPoint::new("Point_04");
-    point_04.set_color(na::Vector3::new(150.0, 150.0, 150.0));
-    point_04.set_location(na::Vector3::new(5.0, 5.0, 10.0));
+    point_04.set_color(Vector3::new(150.0, 150.0, 150.0));
+    point_04.set_location(Vector3::new(5.0, 5.0, 10.0));
 
     let point_node_04 = Arc::new(
         node_member::SimpleNodeMember::from_light_point(
@@ -305,7 +307,7 @@ fn main() {
                 }
             };
             //Set the translation on this node
-            ape_scene.translate(na::Vector3::new(-1.0, -1.0, 0.0));
+            ape_scene.translate(Vector3::new(-1.0, -1.0, 0.0));
             //println!("Translated", );
         }
 
@@ -319,7 +321,7 @@ fn main() {
                 }
             };
             //Set the translation on this node
-            helix_scene.rotate(na::Rotation3::new(na::Vector3::new(0.05, 0.0, 0.0)));
+            helix_scene.rotate(Vector3::new(0.05, 0.0, 0.0));
         }
 
         if input_handler.get_key_map_copy().u{
@@ -332,7 +334,7 @@ fn main() {
                 }
             };
             //Set the translation on this node
-            tree_scene.translate(na::Vector3::new(-0.05, -0.05, 0.0));
+            tree_scene.translate(Vector3::new(-0.05, -0.05, 0.0));
         }
 
 

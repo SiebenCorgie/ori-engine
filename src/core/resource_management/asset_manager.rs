@@ -27,7 +27,7 @@ use render::shader_impls::pbr_fragment;
 
 use input::KeyMap;
 
-use na;
+use cgmath::*;
 use vulkano;
 
 ///The main struct for the scene manager
@@ -124,8 +124,8 @@ impl AssetManager {
         let render_lck = render_int.lock().expect("failed to lock renderer");
 
         //Debug stuff which will be handled by the application later
-        //let rotation = na::Rotation3::from_axis_angle(&na::Vector3::z_axis(), time::precise_time_ns() as f32 * 0.000000001);
-        let mat_4: na::Matrix4<f32> = na::Matrix4::identity();
+        //let rotation = Rotation3::from_axis_angle(&Vector3::unit_z(), time::precise_time_ns() as f32 * 0.000000001);
+        let mat_4: Matrix4<f32> = Matrix4::identity();
 
 
         let uniform_data = pbr_fragment::ty::Data {
@@ -309,12 +309,12 @@ impl AssetManager {
     }
 
     //Returns a raw copy of the meshes in the current active scene tree
-    pub fn get_all_meshes(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, na::Matrix4<f32>)>{
+    pub fn get_all_meshes(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, Matrix4<f32>)>{
         self.active_main_scene.get_all_meshes()
     }
 
     ///Returns all meshes in the view frustum of the currently active camera
-    pub fn get_meshes_in_frustum(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, na::Matrix4<f32>)>{
+    pub fn get_meshes_in_frustum(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, Matrix4<f32>)>{
         println!("Sending request to node tree", );
         self.active_main_scene.get_meshes_in_frustum(&self.camera)
     }

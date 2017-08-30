@@ -1,7 +1,6 @@
 
-use na;
-use nc;
-use nc::shape::Cuboid;
+use cgmath::*;
+use collision;
 
 
 use render::shader_impls::pbr_vertex;
@@ -19,10 +18,10 @@ use core::resources;
 pub struct LightPoint {
     pub name: String,
     intensity: f32,
-    color: na::Vector3<f32>,
-    location: na::Vector3<f32>,
+    color: Vector3<f32>,
+    location: Vector3<f32>,
 
-    bound: nc::bounding_volume::AABB<na::Point3<f32>>,
+    bound: collision::Aabb3<f32>,
 }
 
 
@@ -31,11 +30,11 @@ pub struct LightPoint {
 pub struct LightDirectional {
     pub name: String,
     intensity: f32,
-    color: na::Vector3<f32>,
-    location: na::Vector3<f32>,
-    direction: na::Vector3<f32>,
+    color: Vector3<f32>,
+    location: Vector3<f32>,
+    direction: Vector3<f32>,
 
-    bound: nc::bounding_volume::AABB<na::Point3<f32>>,
+    bound: collision::Aabb3<f32>,
 }
 
 
@@ -44,15 +43,15 @@ pub struct LightDirectional {
 pub struct LightSpot {
     pub name: String,
     intensity: f32,
-    color: na::Vector3<f32>,
-    location: na::Vector3<f32>,
+    color: Vector3<f32>,
+    location: Vector3<f32>,
 
-    direction: na::Vector3<f32>,
+    direction: Vector3<f32>,
 
     outer_radius: f32,
     inner_radius: f32,
 
-    bound: nc::bounding_volume::AABB<na::Point3<f32>>,
+    bound: collision::Aabb3<f32>,
 }
 
 
@@ -63,17 +62,17 @@ impl LightPoint{
     ///Special parameters light radius or color will have to be set later
     pub fn new(name: &str)->Self{
         //Creating the box extend from the location, there might be a better way
-        let min = na::Point3::new(-0.5, -0.5, -0.5, );
-        let max = na::Point3::new(0.5, 0.5, 0.5, );
+        let min = Point3::new(-0.5, -0.5, -0.5, );
+        let max = Point3::new(0.5, 0.5, 0.5, );
 
         LightPoint{
             name: String::from(name),
             intensity: 1.0,
-            color: na::Vector3::new(1.0, 1.0, 1.0),
-            location: na::Vector3::new(1.0, 1.0, 1.0),
+            color: Vector3::new(1.0, 1.0, 1.0),
+            location: Vector3::new(1.0, 1.0, 1.0),
 
 
-            bound: nc::bounding_volume::AABB::new(min, max),
+            bound: collision::Aabb3::new(min, max),
         }
     }
 
@@ -104,68 +103,68 @@ impl LightPoint{
     }
 
     ///Returns the location reference
-    pub fn get_location(&mut self) -> &mut na::Vector3<f32>{
+    pub fn get_location(&mut self) -> &mut Vector3<f32>{
         &mut self.location
     }
 
     ///Returns the location reference
-    pub fn set_location(&mut self, new_location: na::Vector3<f32>){
+    pub fn set_location(&mut self, new_location: Vector3<f32>){
         self.location = new_location
     }
 
     ///Sets its color, the value gets normalized, set the intensity via `set_intensity`
-    pub fn set_color(&mut self, new_color: na::Vector3<f32>){
+    pub fn set_color(&mut self, new_color: Vector3<f32>){
         self.color = new_color;
     }
 
     ///Returns the reference to its color
-    pub fn get_color(&mut self) -> &mut na::Vector3<f32>{
+    pub fn get_color(&mut self) -> &mut Vector3<f32>{
         &mut self.color
     }
 }
 
 impl ReturnBoundInfo for LightPoint{
     ///return the max size of its bound
-    fn get_bound_max(&self)-> na::Point3<f32>{
-        self.bound.maxs().clone()
+    fn get_bound_max(&self)-> Point3<f32>{
+        self.bound.max.clone()
     }
     ///return the min size of its bound
-    fn get_bound_min(&self)-> na::Point3<f32>{
-        self.bound.mins().clone()
+    fn get_bound_min(&self)-> Point3<f32>{
+        self.bound.min.clone()
     }
     ///Sets the bound to the new values (in mesh space)
-    fn set_bound(&mut self, min: na::Point3<f32>, max: na::Point3<f32>){
-        let min = na::Point3::new(
+    fn set_bound(&mut self, min: Point3<f32>, max: Point3<f32>){
+        let min = Point3::new(
             min[0],
             min[1],
             min[2]
         );
 
-        let max = na::Point3::new(
+        let max = Point3::new(
             max[0],
             max[1],
             max[2]
         );
 
-        self.bound = nc::bounding_volume::AABB::new(min, max);
+        self.bound = collision::Aabb3::new(min, max);
     }
 
     ///Returns the vertices of the bounding mesh, good for debuging
-    fn get_bound_points(&self)-> Vec<na::Vector3<f32>>{
+    fn get_bound_points(&self)-> Vec<Vector3<f32>>{
         let mut return_vector = Vec::new();
 
-        let b_min = self.bound.mins().clone();
-        let b_max = self.bound.maxs().clone();
+        let b_min = self.bound.min.clone();
+        let b_max = self.bound.max.clone();
 
         //low
-        return_vector.push(na::Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
-        return_vector.push(na::Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y
-        return_vector.push(na::Vector3::new(b_min[0],  b_min[1], b_min[2] + b_max[2])); // +z
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2])); //+xy
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2] + b_max[2])); //+xz
-        return_vector.push(na::Vector3::new(b_min[0] , b_min[1] + b_max[1], b_min[2] + b_max[1])); //+yz
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2] + b_max[2])); //+xyz
+        return_vector.push(Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
+        return_vector.push(Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y
+        return_vector.push(Vector3::new(b_min[0],  b_min[1], b_min[2] + b_max[2])); // +z
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2])); //+xy
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2] + b_max[2])); //+xz
+        return_vector.push(Vector3::new(b_min[0] , b_min[1] + b_max[1], b_min[2] + b_max[1])); //+yz
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2] + b_max[2])); //+xyz
 
         return_vector
     }
@@ -177,20 +176,20 @@ impl LightDirectional{
     ///Special parameters light radius or color will have to be set later
     pub fn new(name: &str)->Self{
         //Creating the box extend from the location, there might be a better way
-        let min = na::Point3::new(-0.5, -0.5, -0.5, );
-        let max = na::Point3::new(0.5, 0.5, 0.5, );
-        let direction = na::Vector3::new(1.0, 1.0, 1.0);
+        let min = Point3::new(-0.5, -0.5, -0.5, );
+        let max = Point3::new(0.5, 0.5, 0.5, );
+        let direction = Vector3::new(1.0, 1.0, 1.0);
 
         LightDirectional{
             name: String::from(name),
 
             intensity: 1.0,
-            color: na::Vector3::new(1.0, 1.0, 1.0),
-            location: na::Vector3::new(1.0, 1.0, 1.0),
+            color: Vector3::new(1.0, 1.0, 1.0),
+            location: Vector3::new(1.0, 1.0, 1.0),
 
             direction: direction,
 
-            bound: nc::bounding_volume::AABB::new(min, max),
+            bound: collision::Aabb3::new(min, max),
         }
     }
 
@@ -213,22 +212,22 @@ impl LightDirectional{
     }
 
     ///Change the direction
-    pub fn set_direction(&mut self, new_direction: na::Vector3<f32>){
+    pub fn set_direction(&mut self, new_direction: Vector3<f32>){
         self.direction = new_direction;
     }
 
     ///Returns the direction reference
-    pub fn get_direction(&mut self) -> &mut na::Vector3<f32>{
+    pub fn get_direction(&mut self) -> &mut Vector3<f32>{
         &mut self.direction
     }
 
     ///Returns the location reference
-    pub fn get_location(&mut self) -> &mut na::Vector3<f32>{
+    pub fn get_location(&mut self) -> &mut Vector3<f32>{
         &mut self.location
     }
 
     ///Returns the location reference
-    pub fn set_location(&mut self, new_location: na::Vector3<f32>){
+    pub fn set_location(&mut self, new_location: Vector3<f32>){
         self.location = new_location
     }
 
@@ -243,12 +242,12 @@ impl LightDirectional{
     }
 
     ///Sets its color, the value gets normalized, set the intensity via `set_intensity`
-    pub fn set_color(&mut self, new_color: na::Vector3<f32>){
+    pub fn set_color(&mut self, new_color: Vector3<f32>){
         self.color = new_color;
     }
 
     ///Returns the reference to its color
-    pub fn get_color(&mut self) -> &mut na::Vector3<f32>{
+    pub fn get_color(&mut self) -> &mut Vector3<f32>{
         &mut self.color
     }
 
@@ -257,45 +256,45 @@ impl LightDirectional{
 
 impl ReturnBoundInfo for LightDirectional{
     ///return the max size of its bound
-    fn get_bound_max(&self)-> na::Point3<f32>{
-        self.bound.maxs().clone()
+    fn get_bound_max(&self)-> Point3<f32>{
+        self.bound.max.clone()
     }
     ///return the min size of its bound
-    fn get_bound_min(&self)-> na::Point3<f32>{
-        self.bound.mins().clone()
+    fn get_bound_min(&self)-> Point3<f32>{
+        self.bound.min.clone()
     }
     ///Sets the bound to the new values (in mesh space)
-    fn set_bound(&mut self, min: na::Point3<f32>, max: na::Point3<f32>){
-        let min = na::Point3::new(
+    fn set_bound(&mut self, min: Point3<f32>, max: Point3<f32>){
+        let min = Point3::new(
             min[0],
             min[1],
             min[2]
         );
 
-        let max = na::Point3::new(
+        let max = Point3::new(
             max[0],
             max[1],
             max[2]
         );
-        self.bound = nc::bounding_volume::AABB::new(min, max);
+        self.bound = collision::Aabb3::new(min, max);
     }
 
     ///Returns the vertices of the bounding mesh, good for debuging
-    fn get_bound_points(& self)-> Vec<na::Vector3<f32>>{
+    fn get_bound_points(& self)-> Vec<Vector3<f32>>{
         let mut return_vector = Vec::new();
 
-        let b_min = self.bound.mins().clone();
-        let b_max = self.bound.maxs().clone();
+        let b_min = self.bound.min.clone();
+        let b_max = self.bound.max.clone();
 
         //low
-        return_vector.push(na::Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
-        return_vector.push(na::Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y
-        return_vector.push(na::Vector3::new(b_min[0],  b_min[1], b_min[2] + b_max[2])); // +z
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2])); //+xy
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2] + b_max[2])); //+xz
-        return_vector.push(na::Vector3::new(b_min[0] , b_min[1] + b_max[1], b_min[2] + b_max[1])); //+yz
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2] + b_max[2])); //+xyz
+        return_vector.push(Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
+        return_vector.push(Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y
+        return_vector.push(Vector3::new(b_min[0],  b_min[1], b_min[2] + b_max[2])); // +z
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2])); //+xy
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2] + b_max[2])); //+xz
+        return_vector.push(Vector3::new(b_min[0] , b_min[1] + b_max[1], b_min[2] + b_max[1])); //+yz
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2] + b_max[2])); //+xyz
 
         return_vector
     }
@@ -307,25 +306,25 @@ impl LightSpot{
     ///Special parameters light radius or color will have to be set later
     pub fn new(name: &str)->Self{
         //Creating the box extend from the location, there might be a better way
-        let min = na::Point3::new(-0.5, -0.5, -0.5, );
-        let max = na::Point3::new(0.5, 0.5, 0.5, );
+        let min = Point3::new(-0.5, -0.5, -0.5, );
+        let max = Point3::new(0.5, 0.5, 0.5, );
 
-        let direction = na::Vector3::new(1.0, 1.0, 1.0);
+        let direction = Vector3::new(1.0, 1.0, 1.0);
         let outer_radius = 50.0;
         let inner_radius = 40.0;
 
         LightSpot{
             name: String::from(name),
             intensity: 1.0,
-            color: na::Vector3::new(1.0, 1.0, 1.0),
-            location: na::Vector3::new(1.0, 1.0, 1.0),
+            color: Vector3::new(1.0, 1.0, 1.0),
+            location: Vector3::new(1.0, 1.0, 1.0),
 
             direction: direction,
 
             outer_radius: outer_radius,
             inner_radius: inner_radius,
 
-            bound: nc::bounding_volume::AABB::new(min, max),
+            bound: collision::Aabb3::new(min, max),
         }
     }
 
@@ -352,22 +351,22 @@ impl LightSpot{
     }
 
     ///Change the direction
-    pub fn set_direction(&mut self, new_direction: na::Vector3<f32>){
+    pub fn set_direction(&mut self, new_direction: Vector3<f32>){
         self.direction = new_direction;
     }
 
     ///Returns the direction reference
-    pub fn get_direction(&mut self) -> &mut na::Vector3<f32>{
+    pub fn get_direction(&mut self) -> &mut Vector3<f32>{
         &mut self.direction
     }
 
     ///Returns the location reference
-    pub fn get_location(&mut self) -> &mut na::Vector3<f32>{
+    pub fn get_location(&mut self) -> &mut Vector3<f32>{
         &mut self.location
     }
 
     ///Returns the location reference
-    pub fn set_location(&mut self, new_location: na::Vector3<f32>){
+    pub fn set_location(&mut self, new_location: Vector3<f32>){
         self.location = new_location
     }
 
@@ -382,12 +381,12 @@ impl LightSpot{
     }
 
     ///Sets its color, the value gets normalized, set the intensity via `set_intensity`
-    pub fn set_color(&mut self, new_color: na::Vector3<f32>){
+    pub fn set_color(&mut self, new_color: Vector3<f32>){
         self.color = new_color;
     }
 
     ///Returns the reference to its color
-    pub fn get_color(&mut self) -> &mut na::Vector3<f32>{
+    pub fn get_color(&mut self) -> &mut Vector3<f32>{
         &mut self.color
     }
 
@@ -414,46 +413,46 @@ impl LightSpot{
 
 impl ReturnBoundInfo for LightSpot{
     ///return the max size of its bound
-    fn get_bound_max(&self)-> na::Point3<f32>{
-        self.bound.maxs().clone()
+    fn get_bound_max(&self)-> Point3<f32>{
+        self.bound.max.clone()
     }
     ///return the min size of its bound
-    fn get_bound_min(&self)-> na::Point3<f32>{
-        self.bound.mins().clone()
+    fn get_bound_min(&self)-> Point3<f32>{
+        self.bound.min.clone()
     }
     ///Sets the bound to the new values (in mesh space)
-    fn set_bound(&mut self, min: na::Point3<f32>, max: na::Point3<f32>){
-        let min = na::Point3::new(
+    fn set_bound(&mut self, min: Point3<f32>, max: Point3<f32>){
+        let min = Point3::new(
             min[0],
             min[1],
             min[2]
         );
 
-        let max = na::Point3::new(
+        let max = Point3::new(
             max[0],
             max[1],
             max[2]
         );
 
-        self.bound = nc::bounding_volume::AABB::new(min, max);
+        self.bound = collision::Aabb3::new(min, max);
     }
 
     ///Returns the vertices of the bounding mesh, good for debuging
-    fn get_bound_points(&self)-> Vec<na::Vector3<f32>>{
+    fn get_bound_points(&self)-> Vec<Vector3<f32>>{
         let mut return_vector = Vec::new();
 
-        let b_min = self.bound.mins().clone();
-        let b_max = self.bound.maxs().clone();
+        let b_min = self.bound.min.clone();
+        let b_max = self.bound.max.clone();
 
         ///low
-        return_vector.push(na::Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
-        return_vector.push(na::Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y
-        return_vector.push(na::Vector3::new(b_min[0],  b_min[1], b_min[2] + b_max[2])); // +z
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2])); //+xy
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2] + b_max[2])); //+xz
-        return_vector.push(na::Vector3::new(b_min[0] , b_min[1] + b_max[1], b_min[2] + b_max[1])); //+yz
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2] + b_max[2])); //+xyz
+        return_vector.push(Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
+        return_vector.push(Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y
+        return_vector.push(Vector3::new(b_min[0],  b_min[1], b_min[2] + b_max[2])); // +z
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2])); //+xy
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2] + b_max[2])); //+xz
+        return_vector.push(Vector3::new(b_min[0] , b_min[1] + b_max[1], b_min[2] + b_max[1])); //+yz
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2] + b_max[2])); //+xyz
 
         return_vector
     }

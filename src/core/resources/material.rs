@@ -8,7 +8,7 @@ use vulkano::descriptor::descriptor_set::DescriptorSet;
 use vulkano::pipeline::GraphicsPipelineAbstract;
 use vulkano;
 
-use na;
+use cgmath::*;
 
 use std::sync::{Mutex,Arc};
 
@@ -339,7 +339,7 @@ impl MaterialBuilder{
 
         //TODO add set 02 for material information
         //println!("STATUS: MATERIAL: Creating set 01 for the first time", );
-        let ident_mat_4: na::Matrix4<f32> = na::Matrix4::identity();
+        let ident_mat_4: Matrix4<f32> = Matrix4::identity();
         let set_01 = Arc::new(PersistentDescriptorSet::start(
                 pipeline.clone(), 0
             )
@@ -575,7 +575,7 @@ impl Material {
     }
 
     ///Recreates set_01 based on the current unfiorm_manager information (mvp matrix)
-    pub fn recreate_set_01(&mut self, transform_matrix: na::Matrix4<f32>){
+    pub fn recreate_set_01(&mut self, transform_matrix: Matrix4<f32>){
 
         //println!("STATUS: MATERIAL: Trying to lock uniform manager", );
         let uniform_manager_isnt = self.uniform_manager.clone();
@@ -640,7 +640,7 @@ impl Material {
 
     ///Returns the u_world_set generated from a model specific `transform_matrix` as well as the
     ///global view and projection matrix
-    pub fn get_set_01(&mut self, transform_matrix: na::Matrix4<f32>) -> Arc<DescriptorSet + Send + Sync>{
+    pub fn get_set_01(&mut self, transform_matrix: Matrix4<f32>) -> Arc<DescriptorSet + Send + Sync>{
 
         self.recreate_set_01(transform_matrix);
         self.set_01.clone()

@@ -1,7 +1,3 @@
-
-extern crate nalgebra as na;
-extern crate ncollide as nc;
-
 ///The base Node mod from which a tree can be build
 pub mod node;
 ///A Example "Simple" Implementation of the `NodeMember` Trait

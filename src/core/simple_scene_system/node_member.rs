@@ -7,7 +7,7 @@ use core::NodeMember;
 use core::ReturnBoundInfo;
 use core::simple_scene_system::node::ContentTag;
 
-use na;
+use cgmath::*;
 
 ///An internal type which stores a node member and can return the original type which might
 ///be managed by a different manager
@@ -78,7 +78,7 @@ impl SimpleNodeMember{
 
 impl NodeMember for SimpleNodeMember{
     ///return the max size of its bound
-    fn get_bound_max(&self)-> na::Point3<f32>{
+    fn get_bound_max(&self)-> Point3<f32>{
         //match inner to return the right
         match self.inner{
             NodeMemberTypes::StaticMesh(ref mesh) => {
@@ -119,7 +119,7 @@ impl NodeMember for SimpleNodeMember{
         }
     }
     ///return the min size of its bound
-    fn get_bound_min(&self)-> na::Point3<f32>{
+    fn get_bound_min(&self)-> Point3<f32>{
         //match inner to return the right
         match self.inner{
             NodeMemberTypes::StaticMesh(ref mesh) => {
@@ -160,11 +160,11 @@ impl NodeMember for SimpleNodeMember{
         }
     }
     ///Sets the bound to the new values (in mesh space)
-    fn set_bound(&mut self, min: na::Point3<f32>, max: na::Point3<f32>){
+    fn set_bound(&mut self, min: Point3<f32>, max: Point3<f32>){
 
     }
     ///Returns the vertices of the bounding mesh, good for debuging
-    fn get_bound_points(&self)-> Vec<na::Vector3<f32>>{
+    fn get_bound_points(&self)-> Vec<Vector3<f32>>{
         //match inner to return the right
         match self.inner{
             NodeMemberTypes::StaticMesh(ref mesh) => {

@@ -1,6 +1,6 @@
 
 use assimp;
-use na;
+use cgmath::*;
 use std::sync::Arc;
 use vulkano;
 
@@ -58,7 +58,7 @@ impl Importer for AssimpImporter {
                     let mut bound_info: tools::BoundCreateInfo = tools::BoundCreateInfo::new();
 
                     //used to create first time actions;
-                    let first_vertice = true;
+                    let mut first_vertice = true;
 
                     //The vertices
                     for index in 0..mesh.num_vertices()
@@ -77,7 +77,7 @@ impl Importer for AssimpImporter {
                             None => {
                                 //println!("Failed to find position on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
-                                pos = na::Vector3::new(1.0, 1.0, 1.0).into();
+                                pos = Vector3::new(1.0, 1.0, 1.0).into();
                             },
                         }
                         //if this was the first vertice, generate the bound from this starting location
@@ -90,6 +90,7 @@ impl Importer for AssimpImporter {
                             bound_info.min_y = pos[1];
                             bound_info.min_z = pos[2];
                         }
+                        first_vertice = false;
 
                         //UVs
                         //Search on channel 0 by default
@@ -103,7 +104,7 @@ impl Importer for AssimpImporter {
                             None =>{
                                 //println!("Failed to find uv_coords on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
-                                tex = na::Vector2::new(1.0, 1.0).into();
+                                tex = Vector2::new(1.0, 1.0).into();
                             }
                         }
 
@@ -113,7 +114,7 @@ impl Importer for AssimpImporter {
                             None => {
                                 //println!("Failed to find normals on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
-                                norm = na::Vector3::new(1.0, 1.0, 1.0).into();
+                                norm = Vector3::new(1.0, 1.0, 1.0).into();
                             },
                         }
                         //TANGENTS
@@ -122,7 +123,7 @@ impl Importer for AssimpImporter {
                             None => {
                                 //println!("Failed to find tangent on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
-                                tang = na::Vector3::new(1.0, 1.0, 1.0).into();
+                                tang = Vector3::new(1.0, 1.0, 1.0).into();
                             },
                         }
 

@@ -7,8 +7,6 @@ use input::KeyMap;
 
 use rt_error;
 
-use na;
-
 use vulkano;
 use vulkano::framebuffer::FramebufferAbstract;
 use vulkano::framebuffer::RenderPassAbstract;

@@ -1,7 +1,6 @@
 
-use na::*;
-use nc;
-use nc::bounding_volume::HasBoundingVolume;
+use cgmath::*;
+use collision;
 use std::f64::consts;
 use std::sync::{Arc, Mutex};
 
@@ -33,7 +32,7 @@ pub trait Camera {
     ///Returns the perspective matrix based on the window settings
     fn get_perspective(&self) -> Matrix4<f32>;
     ///Returns the bound of the view frustum
-    fn get_frustum_bound(&self) -> nc::shape::ConvexHull<Point3<f32>>;
+    fn get_frustum_bound(&self) -> collision::Frustum<f32>;
 }
 
 ///An example implementation
@@ -126,7 +125,7 @@ impl Camera for DefaultCamera{
         //Input processing
         {
             if key_map_inst.a == true {
-                self.cameraPos = self.cameraPos + (self.cameraFront.cross(&self.cameraUp).normalize()) * camera_speed;
+                self.cameraPos = self.cameraPos + (self.cameraFront.cross(self.cameraUp).normalize()) * camera_speed;
             }
             if key_map_inst.w == true {
                 self.cameraPos = self.cameraPos - self.cameraFront * camera_speed;
@@ -135,7 +134,7 @@ impl Camera for DefaultCamera{
                 self.cameraPos = self.cameraPos + self.cameraFront * camera_speed;
             }
             if key_map_inst.d == true {
-                self.cameraPos = self.cameraPos - (self.cameraFront.cross(&self.cameraUp).normalize()) * camera_speed;
+                self.cameraPos = self.cameraPos - (self.cameraFront.cross(self.cameraUp).normalize()) * camera_speed;
             }
             if (key_map_inst.ctrl_l == true) | (key_map_inst.q == true) {
                 self.cameraPos = self.cameraPos - Vector3::new(0.0, 0.0, camera_speed);
@@ -176,11 +175,11 @@ impl Camera for DefaultCamera{
 
         let tmp_target = self.cameraPos - self.cameraFront;
 
-        let view = Isometry3::look_at_rh(
-            &Point3::new(self.cameraPos.x, self.cameraPos.y, self.cameraPos.z),
-            &Point3::new(tmp_target.x, tmp_target.y, tmp_target.z),
-            &Vector3::new(self.cameraUp.x, self.cameraUp.y, self.cameraUp.z)
-        ).to_homogeneous();
+        let view = Matrix4::look_at(
+            Point3::new(self.cameraPos.x, self.cameraPos.y, self.cameraPos.z),
+            Point3::new(tmp_target.x, tmp_target.y, tmp_target.z),
+            self.cameraUp
+        );
         view
     }
 
@@ -218,95 +217,33 @@ impl Camera for DefaultCamera{
     //Calculates the perspective based on the engine and camera settings
     fn get_perspective(&self) -> Matrix4<f32>{
         //TODO update the perspective to use current engine settings
-        let (mut width, mut height) = (800, 600);
-        {
+        let (mut width, mut height) = {
             let engine_settings_inst = self.settings.clone();
             let mut engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
 
-            width = (*engine_settings_lck).get_dimensions()[0];
-            height = (*engine_settings_lck).get_dimensions()[1];
-        }
+            (
+                (*engine_settings_lck).get_dimensions()[0],
+                (*engine_settings_lck).get_dimensions()[1]
+            )
+        };
 
-
+        perspective(Deg(self.fov),
+        (width as f32 / height as f32),
+        self.near_plane, self.far_plane)
+/*
         Perspective3::new(
             (width as f32 / height as f32), //Aspect
             to_radians(self.fov),   //fov
             self.near_plane,
             self.far_plane
         ).to_homogeneous()
+        */
     }
 
     ///Returns the frustum bound of this camera as a AABB
-    fn get_frustum_bound(&self) -> nc::shape::ConvexHull<Point3<f32>>{
-
-        println!("Starting frustum calc", );
-        let (mut width, mut height) = {
-            let engine_settings_inst = self.settings.clone();
-            let mut engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
-
-            ((*engine_settings_lck).get_dimensions()[0], (*engine_settings_lck).get_dimensions()[1])
-        };
-        println!("Got settings for frustum", );
-
-        //Reference: http://www.lighthouse3d.com/tutorials/view-frustum-culling/geometric-approach-extracting-the-planes/
-        //NOTE see commend for computing width/height of far/near
-
-        let camera_right = self.cameraUp.cross(&self.cameraFront);
-        //follows: Wnear/2 = tan(fov/2)*nd; // tan – is sin/cos
-        let width_near = ((to_radians(self.fov/2.0)).tan() * self.near_plane) * 2.0;
-        //follows Wfar/2 = tan((ALPHA / aspect ratio)/2)*nd; // tan – is sin/cos
-        let height_near = ((to_radians(((self.fov/(width as f32/height as f32))/2.0))).tan() * self.near_plane) * 2.0;
-        //follows: Wnear/2 = tan(fov/2)*nd; // tan – is sin/cos
-        let width_far = ((to_radians(self.fov/2.0)).tan() * self.far_plane) * 2.0;
-        //follows Wfar/2 = tan((ALPHA / aspect ratio)/2)*nd; // tan – is sin/cos
-        let height_far = ((to_radians(((self.fov/(width as f32/height as f32))/2.0))).tan() * self.far_plane) * 2.0;
-
-        let p = self.cameraPos.clone();
-        let d = self.cameraFront.clone();
-        let up = self.cameraUp.clone();
-
-        //compute the points of this frustum
-        let fc = p + d * self.far_plane;
-
-        let ftl = fc + (up * height_far/2.0) - (camera_right * width_far/2.0);
-        let ftr = fc + (up * height_far/2.0) + (camera_right * width_far/2.0);
-        let fbl = fc - (up * height_far/2.0) - (camera_right * width_far/2.0);
-        let fbr = fc - (up * height_far/2.0) + (camera_right * width_far/2.0);
-
-        let nc = p + d * self.near_plane;
-
-        let ntl = nc + (up * height_near/2.0) - (camera_right * width_near/2.0);
-        let ntr = nc + (up * height_near/2.0) + (camera_right * width_near/2.0);
-        let nbl = nc - (up * height_near/2.0) - (camera_right * width_near/2.0);
-        let nbr = nc - (up * height_near/2.0) + (camera_right * width_near/2.0);
-        println!("Got all coords", );
-        //Convert to points in 3d space
-        let p_ftl = Point3::new(ftl.x, ftl.y, ftl.z);
-        let p_ftr = Point3::new(ftr.x, ftr.y, ftr.z);
-        let p_fbl = Point3::new(fbl.x, fbl.y, fbl.z);
-        let p_fbr = Point3::new(fbr.x, fbr.y, fbr.z);
-
-        let p_ntl = Point3::new(ntl.x, ntl.y, ntl.z);
-        let p_ntr = Point3::new(ntr.x, ntr.y, ntr.z);
-        let p_nbl = Point3::new(nbl.x, nbl.y, nbl.z);
-        let p_nbr = Point3::new(nbr.x, nbr.y, nbr.z);
-
-        let point_groupe = vec!(p_ftl,p_ftr,p_fbl,p_fbr,p_ntl,p_ntr,p_nbl,p_nbr);
-
-        let frustum_shape = nc::shape::ConvexHull::new(point_groupe);
-        /*
-        //hope that it works o.o
-        println!("Returning camera frustum", );
-
-        let rot_vec_4: Vector4<f32> = Vector4::new(self.cameraFront.x, self.cameraFront.y, self.cameraFront.z, 1.0);
-        let camera_rotation = UnitQuaternion::from_quaternion(Quaternion::from_vector(rot_vec_4));
-        let translation = Translation3::from_vector(self.cameraPos);
-        let transform = Isometry3::from_parts(translation, camera_rotation);
-
-        //transform.translation =
-        frustum_shape.bounding_volume(&transform)
-        */
-        frustum_shape
+    fn get_frustum_bound(&self) -> collision::Frustum<f32>{
+        let matrix = self.get_perspective() * self.get_view_matrix();
+        collision::Frustum::from_matrix4(matrix).expect("failed to create frustum")
     }
 }
 

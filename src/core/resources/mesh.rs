@@ -1,7 +1,7 @@
 //TODO Add command buffer creation per mesh
 use std::sync::{Arc, Mutex};
-use na;
-use nc;
+use cgmath::*;
+use collision;
 
 use vulkano;
 
@@ -64,7 +64,7 @@ pub struct Mesh {
 
     material: String,
 
-    bound: nc::bounding_volume::AABB<na::Point3<f32>>,
+    bound: collision::Aabb3<f32>,
 }
 
 impl Mesh {
@@ -74,8 +74,8 @@ impl Mesh {
         queue: Arc<vulkano::device::Queue>)
         ->Self{
         //Creating the box extend from the location, there might be a better way
-        let min = na::Point3::new(0.5, 0.5, 0.5);
-        let max = na::Point3::new(0.5, 0.5, 0.5);
+        let min = Point3::new(0.5, 0.5, 0.5);
+        let max = Point3::new(0.5, 0.5, 0.5);
 
         let mut vertices: Vec<Vertex> = Vec::new();
         vertices.push(Vertex::new([0.0; 3], [0.0; 2], [0.0; 3], [0.0; 3], [0.0; 3]));
@@ -95,7 +95,7 @@ impl Mesh {
 
             material: String::from("fallback"),
 
-            bound: nc::bounding_volume::AABB::new(min, max),
+            bound: collision::Aabb3::new(min, max),
         }
     }
 
@@ -210,32 +210,32 @@ impl Mesh {
 
 impl ReturnBoundInfo for Mesh{
     ///return the max size of its bound
-    fn get_bound_max(&self)-> na::Point3<f32>{
-        self.bound.maxs().clone()
+    fn get_bound_max(&self)-> Point3<f32>{
+        self.bound.max.clone()
     }
     ///return the min size of its bound
-    fn get_bound_min(&self)-> na::Point3<f32>{
-        self.bound.mins().clone()
+    fn get_bound_min(&self)-> Point3<f32>{
+        self.bound.min.clone()
     }
     ///Sets the bound to the new values (in mesh space)
-    fn set_bound(&mut self, min: na::Point3<f32>, max: na::Point3<f32>){
-        self.bound = nc::bounding_volume::AABB::new(min, max);
+    fn set_bound(&mut self, min: Point3<f32>, max: Point3<f32>){
+        self.bound = collision::Aabb3::new(min, max);
     }
 
     /*
     ///Set the location of this type and rebuild it
-    fn set_location(&mut self, new_location: na::Vector3<f32>){
-        let bound_min = self.bound.mins().clone();
-        let bound_max = self.bound.maxs().clone();
+    fn set_location(&mut self, new_location: Vector3<f32>){
+        let bound_min = self.bound.min.clone();
+        let bound_max = self.bound.max.clone();
         let old_location = self.location.clone();
 
-        let obj_space_min = na::Point3::new(
+        let obj_space_min = Point3::new(
             bound_min[0] - old_location[0],
             bound_min[1] - old_location[1],
             bound_min[2] - old_location[2]
         );
 
-        let obj_space_max = na::Point3::new(
+        let obj_space_max = Point3::new(
             bound_max[0] - old_location[0],
             bound_max[1] - old_location[1],
             bound_max[2] - old_location[2],
@@ -244,13 +244,13 @@ impl ReturnBoundInfo for Mesh{
         self.location = new_location;
         self.bound = nc::bounding_volume::AABB::new(
             //min
-            na::Point3::new(
+            Point3::new(
                 obj_space_min[0] + new_location[0],
                 obj_space_min[1] + new_location[1],
                 obj_space_min[2] + new_location[2],
             ),
             //max
-            na::Point3::new(
+            Point3::new(
                 obj_space_max[0] + new_location[0],
                 obj_space_max[1] + new_location[1],
                 obj_space_max[2] + new_location[2],
@@ -259,59 +259,22 @@ impl ReturnBoundInfo for Mesh{
     }
     */
     ///Returns the vertices of the bounding mesh, good for debuging
-    fn get_bound_points(&self)-> Vec<na::Vector3<f32>>{
+    fn get_bound_points(&self)-> Vec<Vector3<f32>>{
         let mut return_vector = Vec::new();
 
-        let b_min = self.bound.mins().clone();
-        let b_max = self.bound.maxs().clone();
+        let b_min = self.bound.min.clone();
+        let b_max = self.bound.max.clone();
 
         ///low
-        return_vector.push(na::Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
-        return_vector.push(na::Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y
-        return_vector.push(na::Vector3::new(b_min[0],  b_min[1], b_min[2] + b_max[2])); // +z
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2])); //+xy
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2] + b_max[2])); //+xz
-        return_vector.push(na::Vector3::new(b_min[0] , b_min[1] + b_max[1], b_min[2] + b_max[1])); //+yz
-        return_vector.push(na::Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2] + b_max[2])); //+xyz
+        return_vector.push(Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
+        return_vector.push(Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y
+        return_vector.push(Vector3::new(b_min[0],  b_min[1], b_min[2] + b_max[2])); // +z
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2])); //+xy
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2] + b_max[2])); //+xz
+        return_vector.push(Vector3::new(b_min[0] , b_min[1] + b_max[1], b_min[2] + b_max[1])); //+yz
+        return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1] + b_max[1], b_min[2] + b_max[2])); //+xyz
 
         return_vector
     }
 }
-
-/*
-///NodeMember for Mesh
-impl NodeMember for Mesh{
-
-    ///Returns the name of this node
-    fn get_name(&self) -> String{
-        self.name.clone()
-    }
-
-    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as static
-    fn get_static_mesh(&self) -> Option<Arc<Mutex<Mesh>>>{
-        Some(self.clone())
-    }
-    ///Returns `Some(Arc<Mutex<mesh>>)` if this NodeMember contains a mesh tagged as dynamic
-    fn get_dynamic_mesh(&self) -> Option<Arc<Mutex<Mesh>>>{
-        Some(self.clone())
-    }
-    ///Returns `Some(Arc<Mutex<LightPoint>>)` if this NodeMember contains a light point
-    fn get_light_point(&self) -> Option<Arc<Mutex<resources::light::LightPoint>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<LightDirectional>>)` if this NodeMember contains a directional light
-    fn get_light_directional(&self) -> Option<Arc<Mutex<resources::light::LightDirectional>>>{
-        None
-    }
-    ///Returns `Some(Arc<Mutex<LightSpot>>)` if this NodeMember contains a light spot
-    fn get_light_spot(&self) -> Option<Arc<Mutex<resources::light::LightSpot>>>{
-        None
-    }
-
-    ///Returns the type of node this is
-    fn get_content_type(&mut self) -> node::ContentTag{
-        node::ContentTag::StaticMesh
-    }
-}
-*/

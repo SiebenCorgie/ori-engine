@@ -5,7 +5,7 @@ use vulkano::buffer::cpu_pool::CpuBufferPoolSubbuffer;
 use vulkano::buffer::cpu_pool::CpuBufferPool;
 use vulkano;
 
-use na;
+use cgmath::*;
 
 use std::sync::Arc;
 
@@ -42,9 +42,9 @@ impl UniformManager{
         let world = pbr_fragment::ty::Data {
             camera_position: [0.0; 3],
             _dummy0: [0; 4],
-            model : <na::Matrix4<f32>>::identity().into(),
-            view : <na::Matrix4<f32>>::identity().into(),
-            proj : <na::Matrix4<f32>>::identity().into(),
+            model : <Matrix4<f32>>::identity().into(),
+            view : <Matrix4<f32>>::identity().into(),
+            proj : <Matrix4<f32>>::identity().into(),
         };
 
 
@@ -157,7 +157,7 @@ impl UniformManager{
     }
 
     ///Returns a subbuffer of the u_world item, can be used to create a u_world_set
-    pub fn get_subbuffer_01 (&mut self, transform_matrix: na::Matrix4<f32>) ->
+    pub fn get_subbuffer_01 (&mut self, transform_matrix: Matrix4<f32>) ->
     CpuBufferPoolSubbuffer<pbr_fragment::ty::Data, Arc<vulkano::memory::pool::StdMemoryPool>>{
 
         //prepare the Data struct

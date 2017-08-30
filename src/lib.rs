@@ -1,7 +1,7 @@
 ///The engines top level
 
-extern crate nalgebra as na;
-extern crate ncollide as nc;
+extern crate cgmath;
+extern crate collision;
 extern crate assimp;
 
 //All thrid party crates

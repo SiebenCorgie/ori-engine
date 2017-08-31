@@ -6,7 +6,6 @@ use cgmath::*;
 
 use ori_engine::*;
 use ori_engine::core::simple_scene_system::node;
-use ori_engine::core::simple_scene_system::node_member;
 use ori_engine::core::resources::camera::Camera;
 use ori_engine::core::resources::light;
 use std::sync::{Arc, Mutex};
@@ -153,13 +152,7 @@ fn main() {
     point_01.set_color(Vector3::new(150.0, 150.0, 150.0));
     point_01.set_location(Vector3::new(-5.0, -5.0, 10.0));
 
-    let point_node_01 = Arc::new(
-        node_member::SimpleNodeMember::from_light_point(
-            Arc::new(
-                Mutex::new(point_01)
-            )
-        )
-    );
+    let point_node_01 = node::ContentType::Light(node::LightsContent::PointLight(point_01));
     asset_manager.get_active_scene().add_child(point_node_01);
     //POINT 01 ==================================================================
 
@@ -168,13 +161,7 @@ fn main() {
     point_02.set_color(Vector3::new(150.0, 150.0, 150.0));
     point_02.set_location(Vector3::new(-5.0, 5.0, 10.0));
 
-    let point_node_02 = Arc::new(
-        node_member::SimpleNodeMember::from_light_point(
-            Arc::new(
-                Mutex::new(point_02)
-            )
-        )
-    );
+    let point_node_02 = node::ContentType::Light(node::LightsContent::PointLight(point_02));
     asset_manager.get_active_scene().add_child(point_node_02);
     //POINT 02 ==================================================================
 
@@ -183,13 +170,7 @@ fn main() {
     point_03.set_color(Vector3::new(150.0, 150.0, 150.0));
     point_03.set_location(Vector3::new(5.0, -5.0, 10.0));
 
-    let point_node_03 = Arc::new(
-        node_member::SimpleNodeMember::from_light_point(
-            Arc::new(
-                Mutex::new(point_03)
-            )
-        )
-    );
+    let point_node_03 = node::ContentType::Light(node::LightsContent::PointLight(point_03));
     asset_manager.get_active_scene().add_child(point_node_03);
     //POINT 03 ==================================================================
 
@@ -198,13 +179,7 @@ fn main() {
     point_04.set_color(Vector3::new(150.0, 150.0, 150.0));
     point_04.set_location(Vector3::new(5.0, 5.0, 10.0));
 
-    let point_node_04 = Arc::new(
-        node_member::SimpleNodeMember::from_light_point(
-            Arc::new(
-                Mutex::new(point_04)
-            )
-        )
-    );
+    let point_node_04 = node::ContentType::Light(node::LightsContent::PointLight(point_04));
     asset_manager.get_active_scene().add_child(point_node_04);
     //POINT 04 ==================================================================
 
@@ -301,13 +276,13 @@ fn main() {
             //Get the Ring scene and translate it by 10,10,0
             let mut ape_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Ape"){
+                match asset_manager.get_active_scene().get_node("Helix"){
                     Some(scene) => scene,
                     None => continue,
                 }
             };
             //Set the translation on this node
-            ape_scene.translate(Vector3::new(-1.0, -1.0, 0.0));
+            ape_scene.translate(Vector3::new(-1.0, 0.0, 0.0));
             //println!("Translated", );
         }
 
@@ -315,26 +290,26 @@ fn main() {
             //Get the Ring scene and translate it by 10,10,0
             let mut helix_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Helix"){
-                    Some(scene) => scene,
-                    None => continue,
-                }
-            };
-            //Set the translation on this node
-            helix_scene.rotate(Vector3::new(0.05, 0.0, 0.0));
-        }
-
-        if input_handler.get_key_map_copy().u{
-            //Get the Ring scene and translate it by 10,10,0
-            let mut tree_scene ={
-                //Get the reference in the current active scene
                 match asset_manager.get_active_scene().get_node("Helix_0"){
                     Some(scene) => scene,
                     None => continue,
                 }
             };
             //Set the translation on this node
-            tree_scene.translate(Vector3::new(-0.05, -0.05, 0.0));
+            helix_scene.rotate(Vector3::new(1.0, 0.0, 0.0));
+        }
+
+        if input_handler.get_key_map_copy().u{
+            //Get the Ring scene and translate it by 10,10,0
+            let mut tree_scene ={
+                //Get the reference in the current active scene
+                match asset_manager.get_active_scene().get_node("Helix_1"){
+                    Some(scene) => scene,
+                    None => continue,
+                }
+            };
+            //Set the translation on this node
+            tree_scene.translate(Vector3::new(0.0, 0.0, 0.05));
         }
 
 

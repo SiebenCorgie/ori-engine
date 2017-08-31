@@ -5,7 +5,6 @@ use collision;
 
 use render::shader_impls::pbr_vertex;
 use render::shader_impls::pbr_fragment;
-use core::NodeMember;
 use core::ReturnBoundInfo;
 use core::simple_scene_system::node;
 
@@ -15,6 +14,7 @@ use std::f64::consts;
 use core::resources;
 
 ///A Generic Point Light
+#[derive(Clone)]
 pub struct LightPoint {
     pub name: String,
     intensity: f32,
@@ -27,6 +27,7 @@ pub struct LightPoint {
 
 
 ///A generic directional light i.e. a sun
+#[derive(Clone)]
 pub struct LightDirectional {
     pub name: String,
     intensity: f32,
@@ -40,6 +41,7 @@ pub struct LightDirectional {
 
 
 ///A generic spot light, like car lights or stage light
+#[derive(Clone)]
 pub struct LightSpot {
     pub name: String,
     intensity: f32,
@@ -75,7 +77,6 @@ impl LightPoint{
             bound: collision::Aabb3::new(min, max),
         }
     }
-
     ///Returns this lught as its shader-useable instance
     pub fn as_shader_info(&self) -> pbr_fragment::ty::PointLight{
         //convert to a Vec4 for 128 bit padding in the shader
@@ -147,6 +148,11 @@ impl ReturnBoundInfo for LightPoint{
         );
 
         self.bound = collision::Aabb3::new(min, max);
+    }
+
+    ///Returns its bound
+    fn get_bound(&self) -> collision::Aabb3<f32>{
+        self.bound.clone()
     }
 
     ///Returns the vertices of the bounding mesh, good for debuging
@@ -277,6 +283,11 @@ impl ReturnBoundInfo for LightDirectional{
             max[2]
         );
         self.bound = collision::Aabb3::new(min, max);
+    }
+
+    ///Returns it' bound
+    fn get_bound(&self) -> collision::Aabb3<f32>{
+        self.bound.clone()
     }
 
     ///Returns the vertices of the bounding mesh, good for debuging
@@ -435,6 +446,11 @@ impl ReturnBoundInfo for LightSpot{
         );
 
         self.bound = collision::Aabb3::new(min, max);
+    }
+
+    ///Returns it' bound
+    fn get_bound(&self) -> collision::Aabb3<f32>{
+        self.bound.clone()
     }
 
     ///Returns the vertices of the bounding mesh, good for debuging

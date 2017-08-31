@@ -1,5 +1,4 @@
 
-use core::simple_scene_system::node_member;
 use core::resources::mesh;
 use core::simple_scene_system::node;
 use tools::Importer;
@@ -85,9 +84,10 @@ impl MeshManager {
             //println!("STATUS: MESH_MANAGER: Adding scene with name: {}", &name_instance.clone());
             let mut root_node = scene_instance.lock().expect("faield to lock scene while adding mehes");
             for i in arc_meshes.iter(){
-                let mesh_node = node_member::SimpleNodeMember::from_static_mesh(i.clone());
-                //let mesh_node = node::ContentTypes::StaticMesh(i.clone());
-                root_node.add_child(Arc::new(mesh_node));
+                //create a node
+                let mesh_node = node::ContentType::Renderable(node::RenderableContent::Mesh(i.clone()));
+                //And add it to the scene
+                root_node.add_child(mesh_node);
             }
 
 

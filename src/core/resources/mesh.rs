@@ -6,13 +6,8 @@ use collision;
 use vulkano;
 
 
-use core;
-use core::NodeMember;
 use core::ReturnBoundInfo;
-use core::simple_scene_system::node;
-use core::resources::material;
-use core::resources;
-use render::pipeline;
+
 
 ///Defines the information a Vertex should have
 #[derive(Clone,Copy)]
@@ -222,42 +217,11 @@ impl ReturnBoundInfo for Mesh{
         self.bound = collision::Aabb3::new(min, max);
     }
 
-    /*
-    ///Set the location of this type and rebuild it
-    fn set_location(&mut self, new_location: Vector3<f32>){
-        let bound_min = self.bound.min.clone();
-        let bound_max = self.bound.max.clone();
-        let old_location = self.location.clone();
-
-        let obj_space_min = Point3::new(
-            bound_min[0] - old_location[0],
-            bound_min[1] - old_location[1],
-            bound_min[2] - old_location[2]
-        );
-
-        let obj_space_max = Point3::new(
-            bound_max[0] - old_location[0],
-            bound_max[1] - old_location[1],
-            bound_max[2] - old_location[2],
-        );
-
-        self.location = new_location;
-        self.bound = nc::bounding_volume::AABB::new(
-            //min
-            Point3::new(
-                obj_space_min[0] + new_location[0],
-                obj_space_min[1] + new_location[1],
-                obj_space_min[2] + new_location[2],
-            ),
-            //max
-            Point3::new(
-                obj_space_max[0] + new_location[0],
-                obj_space_max[1] + new_location[1],
-                obj_space_max[2] + new_location[2],
-            )
-        );
+    ///Returns it' bound
+    fn get_bound(&self) -> collision::Aabb3<f32>{
+        self.bound.clone()
     }
-    */
+
     ///Returns the vertices of the bounding mesh, good for debuging
     fn get_bound_points(&self)-> Vec<Vector3<f32>>{
         let mut return_vector = Vec::new();

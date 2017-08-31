@@ -1,36 +1,116 @@
-///Defines a node and its behavoir int the tree
 
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::ops::Deref;
 
+use cgmath;
+use cgmath::Transform;
 use cgmath::*;
 use collision::*;
 use core::AABB3Intersection;
+use core::ReturnBoundInfo;
 
 use rt_error;
 use core;
-use core::NodeMember;
-use core::simple_scene_system::node_member;
 use core::resources::mesh;
 use core::resources::light;
 use core::resources::empty;
 use core::resources::camera;
 use core::resources::camera::Camera;
+
 ///All possible types of content a Node can hold.
-///This enum as well as all `match` sequenzes in the `impl Node for GenereicNode` have to be
 ///Changed in order to apply a new type
-
-
 #[derive(Clone)]
-pub enum ContentTag {
-    StaticMesh,
-    DynamicMesh,
-    LightPoint,
-    LightDirectional,
-    LightSpot,
-    Empty,
-    Custom,
+pub enum ContentType {
+    Renderable(RenderableContent),
+    Light(LightsContent),
+    Other(OtherContent),
+}
+///All renderable types
+#[derive(Clone)]
+pub enum RenderableContent {
+    Mesh(Arc<Mutex<mesh::Mesh>>),
+}
+///All lights
+#[derive(Clone)]
+pub enum LightsContent {
+    PointLight(light::LightPoint),
+    DirectionalLight(light::LightDirectional),
+    SpotLight(light::LightSpot),
+}
+///All Other components
+#[derive(Clone)]
+pub enum OtherContent {
+    Empty(empty::Empty),
+}
+
+///Some implementations to make the programmers life easier
+impl ContentType{
+    ///Returns the name of this node
+    pub fn get_name(&self) -> String{
+        match self{
+            &ContentType::Renderable(ref c) =>{
+                match c{
+                    &RenderableContent::Mesh(ref m) => {
+                        let mesh_lock = m.lock().expect("failed to lock mesh");
+                        (*mesh_lock).name.clone()
+                    },
+                }
+            },
+            &ContentType::Light(ref c) => {
+                match c {
+                    &LightsContent::PointLight(ref l) => {
+                        l.name.clone()
+                    },
+                    &LightsContent::DirectionalLight(ref l) => {
+                        l.name.clone()
+                    },
+                    &LightsContent::SpotLight(ref l) => {
+                        l.name.clone()
+                    },
+                }
+            },
+            &ContentType::Other(ref c) => {
+                match c {
+                    &OtherContent::Empty(ref e) => {
+                        e.name.clone()
+                    },
+                }
+            }
+        }
+    }
+
+    ///Returns the bound of this object
+    pub fn get_bound(&self) -> Aabb3<f32>{
+        match self{
+            &ContentType::Renderable(ref c) =>{
+                match c{
+                    &RenderableContent::Mesh(ref m) => {
+                        let mesh_lock = m.lock().expect("failed to lock mesh");
+                        (*mesh_lock).get_bound()
+                    },
+                }
+            },
+            &ContentType::Light(ref c) => {
+                match c {
+                    &LightsContent::PointLight(ref l) => {
+                        l.get_bound()
+                    },
+                    &LightsContent::DirectionalLight(ref l) => {
+                        l.get_bound()
+                    },
+                    &LightsContent::SpotLight(ref l) => {
+                        l.get_bound()
+                    },
+                }
+            },
+            &ContentType::Other(ref c) => {
+                match c {
+                    &OtherContent::Empty(ref e) => {
+                        e.get_bound()
+                    },
+                }
+            }
+        }
+    }
 }
 
 ///The normal Node of this Scene Tree
@@ -46,17 +126,18 @@ pub struct GenericNode {
     children: Vec<GenericNode>,
     ///There is a difference between a `Node`'s name and its `content` name
     pub name: String,
-    ///Location of this node in world space
-    location: Vector3<f32>,
-    rotation: Basis3<f32>,
-    scale: Vector3<f32>,
+    ///And ID which needs to be unique TODO: Implement
+    pub id: u32,
+    ///Transform of this node in local space
+    pub transform: Decomposed<Vector3<f32>, Quaternion<f32>>,
+    ///Transform in world space
+    pub world_transform: Decomposed<Vector3<f32>, Quaternion<f32>>,
     ///The bounds of this note, takes the own `content` bound as well as the max and min values of
     ///all its children into consideration
     bound: Aabb3<f32>,
     ///The content is a contaier from the `ContentTypes` type which can hold any implemented
     ///Enum value
-    content: Arc<NodeMember + Send + Sync>,
-    content_tag: ContentTag,
+    content: ContentType,
 }
 
 ///Implementation of the Node trait for Generic node
@@ -69,52 +150,33 @@ impl GenericNode{
         GenericNode{
             children: Vec::new(),
             name: String::from(name),
-            location: Vector3::new(0.0, 0.0, 0.0),
-            rotation: Basis3::from_axis_angle(Vector3::unit_x(), Rad(0.0)),
-            scale: Vector3::new(0.0, 0.0, 0.0),
+            id: 1,
+            transform: cgmath::Transform::one(),
+            world_transform: cgmath::Transform::one(),
 
             bound: tmp_bound,
 
-            content: Arc::new(
-                node_member::SimpleNodeMember::from_empty(
-                    Arc::new(
-                        Mutex::new(
-                            empty::Empty::new("Empty")
-                        )
-                    )
-                )
-            ),
-
-            content_tag: ContentTag::Empty,
+            content: ContentType::Other(OtherContent::Empty(empty::Empty::new(name.clone()))),
         }
     }
 
     ///Should return an node
-    pub fn new(name: &str, content: Arc<NodeMember + Send + Sync>)->Self{
+    pub fn new(name: &str, content: ContentType)->Self{
 
-        let mut tmp_bound = Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
-        //Building node bound from mesh
-
-        let mut imported_content_tag = content.get_content_type().clone();
-
-        // and bound
-        {
-            tmp_bound = Aabb3::new(
-                content.get_bound_min().clone(), content.get_bound_max().clone()
-            );
-        }
+        //Create variables needed to fill the final struct but change them depending on the match
+        let mut name = content.get_name();
+        let mut bound = content.get_bound();
 
         GenericNode{
             children: Vec::new(),
             name: String::from(name),
-            location: Vector3::new(0.0, 0.0, 0.0),
-            rotation: Basis3::from_axis_angle(Vector3::unit_x(), Rad(0.0)),
-            scale: Vector3::new(0.0, 0.0, 0.0),
+            id: 1,
+            transform: cgmath::Transform::one(),
+            world_transform: cgmath::Transform::one(),
 
-            bound: tmp_bound,
+            bound: bound,
 
             content: content,
-            content_tag: imported_content_tag,
         }
     }
 
@@ -139,7 +201,7 @@ impl GenericNode{
     }
 
     ///Adds a child node to this node
-    pub fn add_child(&mut self, child: Arc<NodeMember + Send + Sync>){
+    pub fn add_child(&mut self, child: ContentType){
 
         //find out the right name
         let name: String = child.get_name();
@@ -195,32 +257,16 @@ impl GenericNode{
 
     ///Returns the transform matrix
     pub fn get_transform_matrix(&self) -> Matrix4<f32>{
-/*
-        let translation = Translation::from_vector(self.location);
-        let mut isometry = Isometry3::from_parts(
-            translation, UnitQuaternion::from_rotation_matrix(&self.rotation)
-        );
 
-    //    println!("Returning Matrix: {:?}", isometry.to_homogeneous());
+    Matrix4::from(self.transform.inverse_transform().unwrap())
 
-        isometry.to_homogeneous()
-*/
-    let transform_loc = Matrix4::from_translation(self.location);
-    let transform_rot = Matrix4::from_cols(
-        self.rotation.as_ref().x.extend(0.0),
-        self.rotation.as_ref().y.extend(0.0),
-        self.rotation.as_ref().z.extend(0.0),
-        Vector4::new(0.0, 0.0, 0.0, 1.0)
-    );
-    let transform_scale = Matrix4::from_nonuniform_scale(self.scale.x, self.scale.y, self.scale.z);
-    //FIXME test this
-    transform_loc
     }
 
     ///Translates this node by `translation` and all its children
     pub fn translate(&mut self, translation: Vector3<f32>){
         //for self
-        self.location = self.location + translation;
+        self.transform.disp = self.transform.disp + translation;
+
         //for all children
         for child in self.children.iter_mut(){
             child.translate(translation);
@@ -230,104 +276,74 @@ impl GenericNode{
     ///Sets the location to `location` and changes the location of all its children as well
     pub fn set_location(&mut self, location: Vector3<f32>){
         //get the difference of the current and the new position
-        let difference = location - self.location;
+        let difference = location - self.transform.disp;
+
         //Set it for self
         self.translate(difference);
     }
 
     ///Rotates this node and all of its child by `rotation` around `point`
-    pub fn rotate_around_point(&mut self, rotation: Vector3<f32>, point: Point3<f32>){
+    pub fn rotate_around_point(&mut self, rotation: Vector3<f32>, point: Vector3<f32>){
 
         //FIXME reimplemt from https://gamedev.stackexchange.com/questions/16719/what-is-the-correct-order-to-multiply-scale-rotation-and-translation-matrices-f
-        /*
-        //To rotate around an point `p` we need to change the rotation as well as location
-        //of this node, there for we create a isometry from bot, rotate it around point p
-        //and decompose location and rotation back into the struct
-        //TODO Implement the "move, rotate move new" algorith for rotating around point
-        let translation = Translation3::from_vector(self.location);
-        //Create current isometry
-        let mut isometry = Isometry3::from_parts(
-            translation, UnitQuaternion::from_rotation_matrix(&self.rotation)
-        );
-        //append the rotation around point
-        isometry.append_rotation_wrt_point_mut(
-            &UnitQuaternion::from_rotation_matrix(&rotation), &point
-        );
+        //move to point
+        //create a rotation Quaternion from the angles in rotation.xyz
+        let q_rotation = Quaternion::from(Euler {
+            x: Deg(rotation.x),
+            y: Deg(rotation.y),
+            z: Deg(rotation.z),
+        });
 
-        //decompose to vector and rotation again from the new isometry
-        //location
-        let new_location_vector = Vector3::new(
-            isometry.translation.vector.x,
-            isometry.translation.vector.y,
-            isometry.translation.vector.z,
-        );
+        println!("current location {:?}", self.transform.disp);
 
-        self.location = new_location_vector;
+        self.transform.disp -= point;
+        //do rotation
+        self.transform.rot += q_rotation;
+        //self.transform.rot = q_rotation.rotate_vector(self.transform.rot);
+        self.transform.disp = q_rotation.rotate_vector(self.transform.disp);
+        //move back to origin
+        self.transform.disp += point;
 
-        self.rotation = isometry.rotation.to_rotation_matrix();
+        println!("Location Now {:?}", self.transform.disp);
 
         //now do the same for all childs
         for child in self.children.iter_mut(){
             child.rotate_around_point(rotation, point);
         }
-        */
+
     }
 
     ///Rotates this note and its children by `rotation`
     pub fn rotate(&mut self, rotation: Vector3<f32>){
-        /*
-        //create a Isometry from the current location and rotation,
-        //then apply rotation
-        let translation = Translation3::from_vector(self.location);
-        //Create current isometry
-        let mut isometry = Isometry3::from_parts(
-            translation, UnitQuaternion::from_rotation_matrix(&self.rotation)
-        );
+        println!("rotation ! ... current: {:?}", self.transform.rot);
+        let q_rotation = Quaternion::from(Euler {
+            x: Deg(rotation.x),
+            y: Deg(rotation.y),
+            z: Deg(rotation.z),
+        });
 
-        isometry.append_rotation_wrt_center_mut(
-            &UnitQuaternion::from_rotation_matrix(&rotation)
-        );
+        self.transform.rot += q_rotation ;
 
-        self.rotation = isometry.rotation.to_rotation_matrix();
+        println!("Still rotating: now {:?}", self.transform.rot);
 
         for child in self.children.iter_mut(){
-            child.rotate_around_point(rotation, Point3::from_coordinates(self.location));
+            child.rotate_around_point(rotation, self.transform.disp);
         }
-        */
+
     }
-
-
 
     ///Returns a mesh from childs with this name
     pub fn get_mesh(&mut self, name: &str)-> Option<Arc<Mutex<core::resources::mesh::Mesh>>>{
-
         let mut result_value: Option<Arc<Mutex<core::resources::mesh::Mesh>>> = None;
 
-        //first have a look if self's content is the searched one
-        //NOTE if the searched value is somewhere in the tree, this should return
-        //NOTE Some(value) once
-        let content_type = self.content_tag.clone();
-
-        match content_type{
-            ContentTag::StaticMesh | ContentTag::DynamicMesh=> {
-                if self.content.get_name() == String::from(name.clone()){
-
-                    //Have a look for a dynamic mesh
-                    match self.content.get_static_mesh(){
-                        Some(mesh) => result_value = Some(mesh),
-                        None => {},
-                    }
-                    //if it wasnt a staic mesh, have a look for a dynamic one
-                    if result_value.is_none() {
-                        match self.content.get_dynamic_mesh(){
-                            Some(mesh) => result_value = Some(mesh),
-                            None => {},
-                        }
-                    }
+        match self.content{
+            ContentType::Renderable(RenderableContent::Mesh(ref m)) => {
+                let mesh_lock = m.lock().expect("failed to lock mesh");
+                if (*mesh_lock).name == String::from(name){
+                    result_value = Some(m.clone());
                 }
-            }
-            //if not selfs content search in children
-            _=>{}
+            },
+            _ => {}, //no mesh
         }
 
         //Have a look if we found it in the content
@@ -355,32 +371,14 @@ impl GenericNode{
     }
 
     ///Returns the first light point with this name
-    pub fn get_light_point(&mut self, name: &str) -> Option<Arc<Mutex<core::resources::light::LightPoint>>>{
-        let mut result_value: Option<Arc<Mutex<core::resources::light::LightPoint>>> = None;
-
-        //first have a look if self's content is the searched one
-        //NOTE if the searched value is somewhere in the tree, this should return
-        //NOTE Some(value) once
-
-        let content_type = self.content_tag.clone();
-
-
-        match content_type{
-            ContentTag::LightPoint => {
-                if self.content.get_name() == String::from(name.clone()){
-
-                    //Have a look for a light
-                    match self.content.get_light_point(){
-                        Some(light) => result_value = Some(light),
-                        None => {},
-                    }
-
-                }
+    pub fn get_light_point(&mut self, name: &str) -> Option<&light::LightPoint>{
+        let mut result_value: Option<&light::LightPoint> = None;
+        match self.content{
+            ContentType::Light(LightsContent::PointLight(ref sp)) => {
+                result_value = Some(&sp);
             }
-            //if not selfs content search in children
-            _=>{}
+            _ => {}, //its not self
         }
-
         //Have a look if we found it in the content
         //if not search in childs
         match result_value{
@@ -392,46 +390,23 @@ impl GenericNode{
                     //make sure we dont overwrite the right value with a none of the next value
                     match result_value{
                         None=> result_value = i.get_light_point(name.clone()),
-                        //if tmp holds something overwerite the result_value
-                        //the early return makes sure we dont overwrite our found falue with another
-                        //none
                         Some(value)=> return Some(value),
                     }
-
                 }
             }
-
         }
         result_value
     }
 
-    ///Returns the first light directional with this name
-    pub fn get_light_directional(&mut self, name: &str) -> Option<Arc<Mutex<core::resources::light::LightDirectional>>>{
-        let mut result_value: Option<Arc<Mutex<core::resources::light::LightDirectional>>> = None;
-
-        //first have a look if self's content is the searched one
-        //NOTE if the searched value is somewhere in the tree, this should return
-        //NOTE Some(value) once
-
-        let content_type = self.content_tag.clone();
-
-
-        match content_type{
-            ContentTag::LightDirectional => {
-                if self.content.get_name() == String::from(name.clone()){
-
-                    //Have a look for a light
-                    match self.content.get_light_directional(){
-                        Some(light) => result_value = Some(light),
-                        None => {},
-                    }
-
-                }
+    ///Returns the first directional light with this name
+    pub fn get_light_directional(&mut self, name: &str) -> Option<&light::LightDirectional>{
+        let mut result_value: Option<&light::LightDirectional> = None;
+        match self.content{
+            ContentType::Light(LightsContent::DirectionalLight(ref sp)) => {
+                result_value = Some(&sp);
             }
-            //if not selfs content search in children
-            _=>{}
+            _ => {}, //its not self
         }
-
         //Have a look if we found it in the content
         //if not search in childs
         match result_value{
@@ -443,46 +418,23 @@ impl GenericNode{
                     //make sure we dont overwrite the right value with a none of the next value
                     match result_value{
                         None=> result_value = i.get_light_directional(name.clone()),
-                        //if tmp holds something overwerite the result_value
-                        //the early return makes sure we dont overwrite our found falue with another
-                        //none
                         Some(value)=> return Some(value),
                     }
-
                 }
             }
-
         }
         result_value
     }
 
     ///Returns the first light spot with this name
-    pub fn get_light_spot(&mut self, name: &str) -> Option<Arc<Mutex<core::resources::light::LightSpot>>>{
-        let mut result_value: Option<Arc<Mutex<core::resources::light::LightSpot>>> = None;
-
-        //first have a look if self's content is the searched one
-        //NOTE if the searched value is somewhere in the tree, this should return
-        //NOTE Some(value) once
-
-        let content_type = self.content_tag.clone();
-
-
-        match content_type{
-            ContentTag::LightSpot => {
-                if self.content.get_name() == String::from(name.clone()){
-
-                    //Have a look for a light
-                    match self.content.get_light_spot(){
-                        Some(light) => result_value = Some(light),
-                        None => {},
-                    }
-
-                }
+    pub fn get_light_spot(&mut self, name: &str) -> Option<&light::LightSpot>{
+        let mut result_value: Option<&light::LightSpot> = None;
+        match self.content{
+            ContentType::Light(LightsContent::SpotLight(ref sp)) => {
+                result_value = Some(&sp);
             }
-            //if not selfs content search in children
-            _=>{}
+            _ => {}, //its not self
         }
-
         //Have a look if we found it in the content
         //if not search in childs
         match result_value{
@@ -494,15 +446,10 @@ impl GenericNode{
                     //make sure we dont overwrite the right value with a none of the next value
                     match result_value{
                         None=> result_value = i.get_light_spot(name.clone()),
-                        //if tmp holds something overwerite the result_value
-                        //the early return makes sure we dont overwrite our found falue with another
-                        //none
                         Some(value)=> return Some(value),
                     }
-
                 }
             }
-
         }
         result_value
     }
@@ -516,9 +463,9 @@ impl GenericNode{
         let camera_frustum = camera.get_frustum_bound();
 
         //FIXME also add the dynamic meshse
-        match self.content.get_static_mesh(){
+        match self.content{
             //if selfs content is a mesh, check the bound
-            Some(ref static_mesh) => {
+            ContentType::Renderable(RenderableContent::Mesh(ref mesh)) => {
                 //check if self is in bound
 
                 let test = {
@@ -526,13 +473,13 @@ impl GenericNode{
                 };
 
                 match test{
-                    Relation::In => return_vector.push((static_mesh.clone(), self.get_transform_matrix())),
-                    Relation::Cross => return_vector.push((static_mesh.clone(), self.get_transform_matrix())),
+                    Relation::In => return_vector.push((mesh.clone(), self.get_transform_matrix())),
+                    Relation::Cross => return_vector.push((mesh.clone(), self.get_transform_matrix())),
                     Relation::Out => return return_vector,
                 }
             },
             //if self is no mesh, just check the bound
-            None => {
+            _ => {
                 let test = {
                     camera_frustum.contains(&self.bound)
                 };
@@ -559,21 +506,21 @@ impl GenericNode{
 
         let mut return_vector = Vec::new();
         //FIXME also add the dynamic meshse
-        match self.content.get_static_mesh(){
+        match self.content{
             //if selfs content is a mesh, check the bound
-            Some(ref static_mesh) => {
+            ContentType::Renderable(RenderableContent::Mesh(ref mesh)) => {
                 //check if self is in bound
                 let test = {
                     volume.contains(&self.bound)
                 };
                 match test{
-                    Relation::In => return_vector.push((static_mesh.clone(), self.get_transform_matrix())),
-                    Relation::Cross => return_vector.push((static_mesh.clone(), self.get_transform_matrix())),
+                    Relation::In => return_vector.push((mesh.clone(), self.get_transform_matrix())),
+                    Relation::Cross => return_vector.push((mesh.clone(), self.get_transform_matrix())),
                     Relation::Out => return return_vector,
                 }
             },
             //if self is no mesh, just check the bound
-            None => {
+            _ => {
                 let test = {
                     volume.contains(&self.bound)
                 };
@@ -599,17 +546,10 @@ impl GenericNode{
 
 
 
-        let opt_mesh = self.content.get_static_mesh();
-        let opt_dyn_mesh = self.content.get_static_mesh();
-
-        //Test self
-        match opt_mesh{
-            Some(mesh) => return_vector.push((mesh.clone(), self.get_transform_matrix())),
-            _ => {},
-        }
-
-        match opt_dyn_mesh{
-            Some(mesh) => return_vector.push((mesh.clone(), self.get_transform_matrix())),
+        match self.content{
+            ContentType::Renderable(RenderableContent::Mesh(ref mesh)) => {
+                return_vector.push((mesh.clone(), self.get_transform_matrix()));
+            },
             _ => {},
         }
 
@@ -623,46 +563,50 @@ impl GenericNode{
     }
 
     ///Gets all LightPoint from this node down
-    pub fn get_all_light_points(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightPoint>>>{
+    pub fn get_all_point_lights(&mut self) -> Vec<core::resources::light::LightPoint>{
         let mut return_vector = Vec::new();
 
         //Check self
-        match self.content.get_light_point(){
-            Some(light) => return_vector.push(light.clone()),
+        match self.content{
+            ContentType::Light(LightsContent::PointLight(ref pl)) => return_vector.push(pl.clone()),
             _ => {},
         }
 
         //Go down the tree
         for i in self.children.iter_mut(){
-            return_vector.append(&mut i.get_all_light_points());
+            return_vector.append(&mut i.get_all_point_lights());
         }
         return_vector
     }
 
-    ///Gets all LightDir from this node down
-    pub fn get_all_light_directionals(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightDirectional>>>{
+    ///Gets all LightPoint from this node down
+    pub fn get_all_directional_lights(&mut self) -> Vec<core::resources::light::LightDirectional>{
         let mut return_vector = Vec::new();
+
         //Check self
-        match self.content.get_light_directional(){
-            Some(light) => return_vector.push(light.clone()),
+        match self.content{
+            ContentType::Light(LightsContent::DirectionalLight(ref pl)) => return_vector.push(pl.clone()),
             _ => {},
         }
+
+        //Go down the tree
         for i in self.children.iter_mut(){
-            return_vector.append(&mut i.get_all_light_directionals());
+            return_vector.append(&mut i.get_all_directional_lights());
         }
         return_vector
     }
 
     ///Gets all LightSpot from this node down
-    pub fn get_all_light_spots(&mut self) -> Vec<Arc<Mutex<core::resources::light::LightSpot>>>{
+    pub fn get_all_spot_lights(&mut self) -> Vec<core::resources::light::LightSpot>{
         let mut return_vector = Vec::new();
         //Check self
-        match self.content.get_light_spot(){
-            Some(light) => return_vector.push(light.clone()),
+        //Check self
+        match self.content{
+            ContentType::Light(LightsContent::SpotLight(ref pl)) => return_vector.push(pl.clone()),
             _ => {},
         }
         for i in self.children.iter_mut(){
-            return_vector.append(&mut i.get_all_light_spots());
+            return_vector.append(&mut i.get_all_spot_lights());
         }
         return_vector
     }
@@ -763,9 +707,9 @@ impl GenericNode{
             self.bound.max[0],
             self.bound.max[1],
             self.bound.max[2],
-            self.location.x,
-            self.location.y,
-            self.location.z,
+            self.transform.disp.x,
+            self.transform.disp.y,
+            self.transform.disp.z,
         );
         for i in self.children.iter(){
             i.print_member(depth + 1);

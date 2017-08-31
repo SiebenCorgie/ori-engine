@@ -141,24 +141,20 @@ impl AssetManager {
 
         //in scope to prevent dead lock while updating material manager
         //TODO get the lights from the light-pre-pass
-        let all_point_lights = self.active_main_scene.get_all_light_points();
-        let all_directional_lights = self.active_main_scene.get_all_light_directionals();
-        let all_spot_lights = self.active_main_scene.get_all_light_spots();
 
         //after getting all lights, create the shader-usable shader infos
         let point_shader_info = {
+
+            let all_point_lights = self.active_main_scene.get_all_point_lights();
+
             let mut return_vec = Vec::new();
             //transform into shader infos
             for light in all_point_lights.iter(){
-                let light_inst = light.clone();
-                let light_lck = light_inst.lock().expect("failed to lock light");
-                return_vec.push((*light_lck).as_shader_info());
+                //let light_inst = light.clone();
+                //let light_lck = light_inst.lock().expect("failed to lock light");
+                return_vec.push(light.as_shader_info());
             }
-            /*
-            //s::PointLightInfo{
-                l_point: return_vec
-            }
-            */
+
             let empty_light = pbr_fragment::ty::PointLight{
                 color: [0.0; 3],
                 location: [0.0; 3],
@@ -183,13 +179,14 @@ impl AssetManager {
         };
 
         let directional_shader_info = {
+            let all_directional_lights = self.active_main_scene.get_all_directional_lights();
 
             let mut return_vec = Vec::new();
             //transform into shader infos
             for light in all_directional_lights.iter(){
-                let light_inst = light.clone();
-                let light_lck = light_inst.lock().expect("failed to lock light");
-                return_vec.push((*light_lck).as_shader_info());
+                //let light_inst = light.clone();
+                //let light_lck = light_inst.lock().expect("failed to lock light");
+                return_vec.push(light.as_shader_info());
             }
 
             let empty_light = pbr_fragment::ty::DirectionalLight{
@@ -217,11 +214,13 @@ impl AssetManager {
 
         let spot_shader_info = {
             let mut return_vec = Vec::new();
+            let all_spot_lights = self.active_main_scene.get_all_spot_lights();
+
             //transform into shader infos
             for light in all_spot_lights.iter(){
-                let light_inst = light.clone();
-                let light_lck = light_inst.lock().expect("failed to lock light");
-                return_vec.push((*light_lck).as_shader_info());
+                //let light_inst = light.clone();
+                //let light_lck = light_inst.lock().expect("failed to lock light");
+                return_vec.push(light.as_shader_info());
             }
 
             let empty_light = pbr_fragment::ty::SpotLight{
@@ -363,7 +362,7 @@ impl AssetManager {
             Some(sc) =>{
                 //TODO make this to an Arc<GenericNode>
                 let scene_lck = sc.lock().expect("failed to hold scene lock while adding");
-                //Create a copy and pass it to the main scene
+                //Create a pass it to the main scene TODO make this reference the old scene
                 self.active_main_scene.add_node((*scene_lck).clone());
             },
             None => rt_error("ASSET_MANAGER", &("Could not find scene with name".to_string() + name.clone()).to_string()),

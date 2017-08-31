@@ -1,10 +1,9 @@
-use core::simple_scene_system::node;
-use core::NodeMember;
 use core::ReturnBoundInfo;
 use cgmath::*;
 use collision;
 use collision::Aabb3;
 
+#[derive(Clone)]
 pub struct Empty {
     pub name: String,
     bound: Aabb3<f32>,
@@ -48,6 +47,11 @@ impl ReturnBoundInfo for Empty{
         );
 
         self.bound = Aabb3::new(min, max);
+    }
+
+    ///Returns it' bound
+    fn get_bound(&self) -> collision::Aabb3<f32>{
+        self.bound.clone()
     }
 
     ///Returns the vertices of the bounding mesh, good for debuging

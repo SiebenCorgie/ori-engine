@@ -87,30 +87,55 @@ fn main() {
                 asset_manager.get_texture_manager().get_none()
             ).with_factors(
                 core::resources::material::MaterialFactors::new()
-                .with_factor_albedo([1.0, 1.0, 0.0, 1.0])
+                .with_factor_albedo([1.0, 1.0, 1.0, 1.0])
             );
 
             asset_manager.add_material_to_manager(new_material, "new_material").expect("failed to add new_material");
         }
     }
-/*
+
+    //Black Material
+    {
+        let mut tex_builder_01 = asset_manager.create_texture("Cube_Albedo.png");
+        //tex_builder_01 = tex_builder_01.with_flipped_v();
+        //tex_builder_01 = tex_builder_01.with_flipped_h();
+        asset_manager.add_texture_to_manager(tex_builder_01, "cube_albedo").expect("failed to add new_texture");
+        //Normal
+        let mut tex_builder_02 = asset_manager.create_texture("Cube_Nrm.png");
+        //tex_builder_02 = tex_builder_02.with_flipped_v();
+        asset_manager.add_texture_to_manager(tex_builder_02, "cube_normal").expect("failed to add new_texture");
+
+        let albedo_in_manager = asset_manager.get_texture_manager().get_texture("cube_albedo");
+        let nrm_in_manager = asset_manager.get_texture_manager().get_texture("cube_normal");
+
+        let new_material = core::resources::material::MaterialBuilder::new(
+            Some(albedo_in_manager),
+            Some(nrm_in_manager),
+            None,
+            None,
+            asset_manager.get_texture_manager().get_none()
+        ).with_factors(
+            core::resources::material::MaterialFactors::new()
+            .with_factor_albedo([1.0, 0.0, 0.0, 1.0])
+            .with_factor_metal(0.99)
+            .with_factor_roughness(0.1)
+        );
+
+        asset_manager.add_material_to_manager(new_material, "metalBlack").expect("failed to add new_material");
+
+    }
+
     //SUN========================================================================
     let mut sun = light::LightDirectional::new("Sun");
     sun.set_direction(Vector3::new(1.0, 0.5, 0.5));
     sun.set_color(Vector3::new(1.0, 0.75, 0.75));
     sun.set_intensity(50.0);
 
-    let sun_node = Arc::new(
-        node_member::SimpleNodeMember::from_light_directional(
-            Arc::new(
-                Mutex::new(sun)
-            )
-        )
-    );
+    let sun_node = node::ContentType::Light(node::LightsContent::DirectionalLight(sun));
     asset_manager.get_active_scene().add_child(sun_node);
     //SUN========================================================================
-*/
-/*
+
+
     //SPOT 01 ===================================================================
     let mut spot_01 = light::LightSpot::new("Spot_01");
     spot_01.set_color(Vector3::new(1.0, 1.0, 1.0));
@@ -120,33 +145,21 @@ fn main() {
     spot_01.set_outer_radius(15.0);
     spot_01.set_inner_radius(10.0);
 
-    let spot_node_01 = Arc::new(
-        node_member::SimpleNodeMember::from_light_spot(
-            Arc::new(
-                Mutex::new(spot_01)
-            )
-        )
-    );
+    let spot_node_01 = node::ContentType::Light(node::LightsContent::SpotLight(spot_01));
     asset_manager.get_active_scene().add_child(spot_node_01);
     //SPOT 01 ===================================================================
-*/
-/*
+
+
     //POINT 00 ==================================================================
     let mut point_00 = light::LightPoint::new("Point_00");
     point_00.set_color(Vector3::new(1.0, 1.0, 1.0));
     point_00.set_intensity(150.0);
     point_00.set_location(Vector3::new(0.0, 0.0, 0.0));
 
-    let point_node_00 = Arc::new(
-        node_member::SimpleNodeMember::from_light_point(
-            Arc::new(
-                Mutex::new(point_00)
-            )
-        )
-    );
+    let point_node_00 = node::ContentType::Light(node::LightsContent::PointLight(point_00));
     asset_manager.get_active_scene().add_child(point_node_00);
     //POINT 00 ==================================================================
-*/
+
     //POINT 01 ==================================================================
     let mut point_01 = light::LightPoint::new("Point_01");
     point_01.set_color(Vector3::new(150.0, 150.0, 150.0));
@@ -231,7 +244,7 @@ fn main() {
                 println!("Cloned mesh", );
                 let mut mesh_lck = mesh.lock().expect("failed to lock helix");
                 println!("Locked mesh", );
-                (*mesh_lck).set_material("new_material");
+                (*mesh_lck).set_material("metalBlack");
                 println!("SetMaterial", );
             }
 
@@ -242,17 +255,16 @@ fn main() {
         }
         //println!("STATUS: GAME: Starting loop in game", );
         //Update the content of the render_manager
-        /*
+
         //Updating the light based on the camera position
         let camera_inst = asset_manager.get_camera().clone();
         {
             let light_inst = asset_manager.get_active_scene().get_light_spot("Spot_01").unwrap();
-            let mut light_lock = light_inst.lock().expect("failed to lock light");
-            (*light_lock).set_location(camera_inst.get_position());
-            (*light_lock).set_direction(- camera_inst.get_direction());
+            light_inst.set_location(camera_inst.get_position());
+            light_inst.set_direction(- camera_inst.get_direction());
 
         }
-        */
+
 
         asset_manager.update();
         println!("STATUS: GAME: Updated all assets", );
@@ -276,13 +288,13 @@ fn main() {
             //Get the Ring scene and translate it by 10,10,0
             let mut ape_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Helix"){
+                match asset_manager.get_active_scene().get_node("Helix_1"){
                     Some(scene) => scene,
                     None => continue,
                 }
             };
             //Set the translation on this node
-            ape_scene.translate(Vector3::new(-1.0, 0.0, 0.0));
+            ape_scene.set_location(Vector3::new(0.0, 0.0, 0.0));
             //println!("Translated", );
         }
 
@@ -315,7 +327,7 @@ fn main() {
 
         //Prints all materials and the scene tree
         //asset_manager.get_material_manager().print_all_materials();
-        //asset_manager.get_active_scene().print_member(0);
+        asset_manager.get_active_scene().print_member(0);
 
         let fps_time = start_time.elapsed().subsec_nanos();
 

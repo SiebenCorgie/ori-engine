@@ -150,6 +150,7 @@ impl MaterialFactors{
         }
     }
 
+
     ///Creates the Factor struct with a given albdeo factor
     pub fn with_factor_albedo(mut self, factor: [f32; 4]) -> Self{
         self.albedo_factor = factor;
@@ -290,7 +291,6 @@ impl MaterialBuilder{
         uniform_manager: Arc<Mutex<uniform_manager::UniformManager>>,
         device: Arc<vulkano::device::Device>,
     ) -> Material{
-
         //find out if a texture was supplied per slot
         //if not return the fallback texture for this builder
         //should usally be the 1x1 pixel texture
@@ -345,7 +345,7 @@ impl MaterialBuilder{
             )
             .add_buffer((*uniform_manager_lck).get_subbuffer_01(ident_mat_4).clone()).expect("Failed to create descriptor set")
 
-            .build().expect("failed to build descriptor")
+            .build().expect("failed to build first descriptor 01")
         );
 
 
@@ -378,7 +378,7 @@ impl MaterialBuilder{
                 //need to clone for storing in struct later
                 self.material_factors.clone().to_shader_factors()
             ).clone()).expect("failed to create the first material factor pool")
-            .build().expect("failed to build descriptor")
+            .build().expect("failed to build first descriptor 03")
         );
 
         //Creates thje first descriptor set 04
@@ -391,7 +391,9 @@ impl MaterialBuilder{
             .expect("Failed to create descriptor set")
             .add_buffer((*uniform_manager_lck).get_subbuffer_04())
             .expect("Failed to create descriptor set")
-            .build().expect("failed to build descriptor")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_05())
+            .expect("Failed to create descriptor set")
+            .build().expect("failed to build first descriptor 04")
         );
 
         //Now create the new material
@@ -519,8 +521,6 @@ impl Material {
     ///Recreates set_02, set_03
     pub fn recreate_static_sets(&mut self){
         //println!("STATUS: MATERIAL: Recreation static sets", );
-
-
         //Create the set 02
         //println!("STATUS: MATERIAL: ReCreating set 02", );
         let set_02 = Arc::new(
@@ -554,7 +554,7 @@ impl Material {
             .add_buffer(
                 self.get_material_factor_subbuffer()
             ).expect("failed to create the material factor pool")
-            .build().expect("failed to build descriptor")
+            .build().expect("failed to build descriptor 03")
         );
 
         self.set_03 = set_03;
@@ -585,7 +585,7 @@ impl Material {
                 self.pipeline.clone(), 0
             )
             .add_buffer((*uniform_manager_lck).get_subbuffer_01(transform_matrix)).expect("Failed to create descriptor set")
-            .build().expect("failed to build descriptor")
+            .build().expect("failed to build descriptor 01")
         );
         //println!("STATUS: MATERIAL: Returning new set to self", );
         //return the new set
@@ -597,6 +597,7 @@ impl Material {
     /// - Binding 0 = point lights
     /// - Binding 1 = directional lights
     /// - Binding 2 = spot lights
+    /// - Binding 3 = struct which describes how many actual lights wher sent
     ///*ENHANCE*: This and the first set could be created in the uniform manager because they are
     ///always the same
     pub fn recreate_set_04(&mut self){
@@ -615,7 +616,9 @@ impl Material {
             .expect("Failed to create descriptor set")
             .add_buffer((*uniform_manager_lck).get_subbuffer_04())
             .expect("Failed to create descriptor set")
-            .build().expect("failed to build descriptor")
+            .add_buffer((*uniform_manager_lck).get_subbuffer_05())
+            .expect("Failed to create descriptor set")
+            .build().expect("failed to build descriptor 04")
         );
         //println!("STATUS: MATERIAL: Returning new set to self", );
         //return the new set

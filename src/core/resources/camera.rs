@@ -230,14 +230,6 @@ impl Camera for DefaultCamera{
         perspective(Deg(self.fov),
         (width as f32 / height as f32),
         self.near_plane, self.far_plane)
-/*
-        Perspective3::new(
-            (width as f32 / height as f32), //Aspect
-            to_radians(self.fov),   //fov
-            self.near_plane,
-            self.far_plane
-        ).to_homogeneous()
-        */
     }
 
     ///Returns the frustum bound of this camera as a AABB

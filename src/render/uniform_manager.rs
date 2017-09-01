@@ -18,6 +18,8 @@ pub struct UniformManager {
     u_directional_lights: pbr_fragment::ty::directional_lights,
     u_spot_lights: pbr_fragment::ty::spot_lights,
 
+    u_light_count: pbr_fragment::ty::LightCount,
+
 
     ///First uniform buffer pool block, used or model, view and perspecive matrix
     buffer_pool_01_mvp: vulkano::buffer::cpu_pool::CpuBufferPool<pbr_fragment::ty::Data>,
@@ -30,6 +32,8 @@ pub struct UniformManager {
 
     ///4th uniform buffer pool block, used for spot lights
     buffer_pool_04_spot: vulkano::buffer::cpu_pool::CpuBufferPool<pbr_fragment::ty::spot_lights>,
+    ///5th for the light count
+    buffer_pool_05_count: vulkano::buffer::cpu_pool::CpuBufferPool<pbr_fragment::ty::LightCount>,
 
 }
 
@@ -113,6 +117,11 @@ impl UniformManager{
         };
 
 
+        let light_count_tmp = pbr_fragment::ty::LightCount{
+            points: 0,
+            directionals: 0,
+            spots: 0,
+        };
 
         //Create some pools to allocate from
         let tmp_uniform_buffer_pool_01 = CpuBufferPool::<pbr_fragment::ty::Data>::new(
@@ -131,6 +140,10 @@ impl UniformManager{
             device.clone(), vulkano::buffer::BufferUsage::all()
         );
 
+        let tmp_uniform_buffer_pool_05 = CpuBufferPool::<pbr_fragment::ty::LightCount>::new(
+            device.clone(), vulkano::buffer::BufferUsage::all()
+        );
+
 
 
         UniformManager{
@@ -140,6 +153,8 @@ impl UniformManager{
             u_point_lights: points,
             u_directional_lights: direct,
             u_spot_lights: spots,
+
+            u_light_count: light_count_tmp,
 
             ///First uniform buffer pool block, used or model, view and perspecive matrix
             buffer_pool_01_mvp: tmp_uniform_buffer_pool_01,
@@ -152,6 +167,8 @@ impl UniformManager{
 
             ///4th uniform buffer pool block, used for spot lights
             buffer_pool_04_spot: tmp_uniform_buffer_pool_04,
+
+            buffer_pool_05_count: tmp_uniform_buffer_pool_05,
 
         }
     }
@@ -186,6 +203,12 @@ impl UniformManager{
         self.buffer_pool_04_spot.next(self.u_spot_lights.clone())
     }
 
+    ///Returns a subbuffer of the u_spot_light
+    pub fn get_subbuffer_05 (&mut self) ->
+    CpuBufferPoolSubbuffer<pbr_fragment::ty::LightCount, Arc<vulkano::memory::pool::StdMemoryPool>>{
+        self.buffer_pool_05_count.next(self.u_light_count.clone())
+    }
+
 
     ///Updates the internal data used for the uniform buffer creation
     pub fn update(
@@ -193,10 +216,18 @@ impl UniformManager{
         new_point: pbr_fragment::ty::point_lights,
         new_dir: pbr_fragment::ty::directional_lights,
         new_spot: pbr_fragment::ty::spot_lights,
+        count_point: u32,
+        count_dir: u32,
+        count_spot: u32,
     ){
         self.u_world = new_u_world;
         self.u_point_lights = new_point;
         self.u_directional_lights = new_dir;
         self.u_spot_lights = new_spot;
+        self.u_light_count = pbr_fragment::ty::LightCount{
+            points: count_point,
+            directionals: count_dir,
+            spots: count_spot,
+        }
     }
 }

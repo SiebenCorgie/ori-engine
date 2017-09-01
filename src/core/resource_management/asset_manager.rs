@@ -141,7 +141,8 @@ impl AssetManager {
 
         //in scope to prevent dead lock while updating material manager
         //TODO get the lights from the light-pre-pass
-
+        //light counter
+        let (mut c_point, mut c_dir, mut c_spot): (u32, u32, u32) = (0,0,0);
         //after getting all lights, create the shader-usable shader infos
         let point_shader_info = {
 
@@ -169,6 +170,7 @@ impl AssetManager {
             while (index < 6) & (index < return_vec.len()) {
                 add_array[index] = return_vec[index];
                 index += 1;
+                c_point += 1;
             }
 
 
@@ -205,6 +207,7 @@ impl AssetManager {
             while (index < 6) & (index < return_vec.len()) {
                 add_array[index] = return_vec[index];
                 index += 1;
+                c_dir += 1;
             }
 
             pbr_fragment::ty::directional_lights{
@@ -243,6 +246,7 @@ impl AssetManager {
             while (index < 6) & (index < return_vec.len()) {
                 add_array[index] = return_vec[index];
                 index += 1;
+                c_spot +=1;
             }
 
             pbr_fragment::ty::spot_lights{
@@ -255,7 +259,7 @@ impl AssetManager {
             let uniform_manager = (*render_lck).get_uniform_manager();
             let mut uniform_manager_lck = uniform_manager.lock().expect("failed to lock uniform_man.");
             (*uniform_manager_lck).update(
-                uniform_data, point_shader_info, directional_shader_info, spot_shader_info
+                uniform_data, point_shader_info, directional_shader_info, spot_shader_info, c_point, c_dir, c_spot
             );
         }
 

@@ -32,6 +32,7 @@ impl Importer for AssimpImporter {
         loc_assimp.triangulate(true);
         loc_assimp.calc_tangent_space(|x| x.enable = true);
         //Maybe more if needed
+        //loc_assimp.flip_uvs(true);
 
         //Import scene with all meshes
         let scene = loc_assimp.read_file(path);

@@ -130,8 +130,6 @@ pub struct GenericNode {
     pub id: u32,
     ///Transform of this node in local space
     pub transform: Decomposed<Vector3<f32>, Quaternion<f32>>,
-    ///Transform in world space
-    pub world_transform: Decomposed<Vector3<f32>, Quaternion<f32>>,
     ///The bounds of this note, takes the own `content` bound as well as the max and min values of
     ///all its children into consideration
     bound: Aabb3<f32>,
@@ -152,7 +150,6 @@ impl GenericNode{
             name: String::from(name),
             id: 1,
             transform: cgmath::Transform::one(),
-            world_transform: cgmath::Transform::one(),
 
             bound: tmp_bound,
 
@@ -172,7 +169,6 @@ impl GenericNode{
             name: String::from(name),
             id: 1,
             transform: cgmath::Transform::one(),
-            world_transform: cgmath::Transform::one(),
 
             bound: bound,
 
@@ -257,8 +253,11 @@ impl GenericNode{
 
     ///Returns the transform matrix
     pub fn get_transform_matrix(&self) -> Matrix4<f32>{
-
-    Matrix4::from(self.transform.inverse_transform().unwrap())
+    println!("Matrix from: ", );
+    println!("Loc: {:?}", self.transform.disp);
+    println!("Rot: {:?}", self.transform.rot);
+    println!("Scale: {:?}", self.transform.scale);
+    Matrix4::from(self.transform)
 
     }
 
@@ -298,7 +297,7 @@ impl GenericNode{
 
         self.transform.disp -= point;
         //do rotation
-        self.transform.rot += q_rotation;
+        self.transform.rot = self.transform.rot * q_rotation;
         //self.transform.rot = q_rotation.rotate_vector(self.transform.rot);
         self.transform.disp = q_rotation.rotate_vector(self.transform.disp);
         //move back to origin
@@ -322,7 +321,7 @@ impl GenericNode{
             z: Deg(rotation.z),
         });
 
-        self.transform.rot += q_rotation ;
+        self.transform.rot = self.transform.rot * q_rotation;
 
         println!("Still rotating: now {:?}", self.transform.rot);
 
@@ -371,11 +370,11 @@ impl GenericNode{
     }
 
     ///Returns the first light point with this name
-    pub fn get_light_point(&mut self, name: &str) -> Option<&light::LightPoint>{
-        let mut result_value: Option<&light::LightPoint> = None;
+    pub fn get_light_point(&mut self, name: &str) -> Option<&mut light::LightPoint>{
+        let mut result_value: Option<&mut light::LightPoint> = None;
         match self.content{
-            ContentType::Light(LightsContent::PointLight(ref sp)) => {
-                result_value = Some(&sp);
+            ContentType::Light(LightsContent::PointLight(ref mut sp)) => {
+                result_value = Some(sp);
             }
             _ => {}, //its not self
         }
@@ -399,11 +398,11 @@ impl GenericNode{
     }
 
     ///Returns the first directional light with this name
-    pub fn get_light_directional(&mut self, name: &str) -> Option<&light::LightDirectional>{
-        let mut result_value: Option<&light::LightDirectional> = None;
+    pub fn get_light_directional(&mut self, name: &str) -> Option<&mut light::LightDirectional>{
+        let mut result_value: Option<&mut light::LightDirectional> = None;
         match self.content{
-            ContentType::Light(LightsContent::DirectionalLight(ref sp)) => {
-                result_value = Some(&sp);
+            ContentType::Light(LightsContent::DirectionalLight(ref mut sp)) => {
+                result_value = Some(sp);
             }
             _ => {}, //its not self
         }
@@ -427,11 +426,11 @@ impl GenericNode{
     }
 
     ///Returns the first light spot with this name
-    pub fn get_light_spot(&mut self, name: &str) -> Option<&light::LightSpot>{
-        let mut result_value: Option<&light::LightSpot> = None;
+    pub fn get_light_spot(&mut self, name: &str) -> Option<&mut light::LightSpot>{
+        let mut result_value: Option<&mut light::LightSpot> = None;
         match self.content{
-            ContentType::Light(LightsContent::SpotLight(ref sp)) => {
-                result_value = Some(&sp);
+            ContentType::Light(LightsContent::SpotLight(ref mut sp)) => {
+                result_value = Some(sp);
             }
             _ => {}, //its not self
         }
@@ -554,7 +553,6 @@ impl GenericNode{
         }
 
         //println!("Returning tanslation of: {:?}", self.get_transform_matrix());
-
         //Go down the tree
         for i in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_meshes());

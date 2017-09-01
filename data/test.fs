@@ -32,12 +32,12 @@ layout(set = 1, binding = 3) uniform sampler2D t_Emissive;
 //TEXTURE_USAGE
 //Texture usage infos (!= 1 is "not used" for now)
 layout(set = 2, binding = 0) uniform TextureUsageInfo {
-  bool b_albedo;
-  bool b_normal;
-  bool b_metal;
-  bool b_roughness;
-  bool b_occlusion;
-  bool b_emissive;
+  uint b_albedo;
+  uint b_normal;
+  uint b_metal;
+  uint b_roughness;
+  uint b_occlusion;
+  uint b_emissive;
 } u_tex_usage_info;
 
 //TEXTURE_FACTORS
@@ -80,6 +80,7 @@ struct SpotLight
 
 };
 
+
 //And the send bindings from rust/vulkano
 layout(set = 3, binding = 0) uniform point_lights{
   PointLight p_light[MAX_POINT_LIGHTS];
@@ -93,6 +94,11 @@ layout(set = 3, binding = 2) uniform spot_lights{
   SpotLight s_light[MAX_SPOT_LIGHTS];
 }u_spot_light;
 
+layout(set = 3, binding = 3) uniform LightCount{
+  uint points;
+  uint directionals;
+  uint spots;
+}u_light_count;
 
 ///outgoing final color
 layout(location = 0) out vec4 f_color;
@@ -285,60 +291,98 @@ vec3 calcSpotLight(SpotLight light, vec3 FragmentPosition, vec3 albedo, float me
 // ----------------------------------------------------------------------------
 void main()
 {
-    vec3 albedo     = pow(texture(t_Albedo, tex_coordinates).rgb, vec3(2.2));
-    float metallic  = texture(t_Physical, tex_coordinates).g;
-    float roughness = texture(t_Physical, tex_coordinates).b;
-    float ao        = texture(t_Physical, tex_coordinates).r;
+  //Set albedo color
+  vec3 albedo = vec3(0.0);
+  if (u_tex_usage_info.b_albedo != 1) {
+    albedo = u_tex_fac.albedo_factor.xyz;
+  }else{
+    albedo     = pow(texture(t_Albedo, tex_coordinates).rgb, vec3(2.2)) * u_tex_fac.albedo_factor.xyz;
+  }
 
-    vec3 N = texture(t_Normal, tex_coordinates).rgb;
-    N = normalize(N * 2.0 - 1.0);
-    N = normalize(TBN * N);
-    //vec3 N = normalize(v_normal);
-    //vec3 N = getNormalFromMap();
-    vec3 V = normalize(u_main.camera_position - FragmentPosition);
+  //Set metallic color
+  float metallic = 0.0;
+  if (u_tex_usage_info.b_metal != 1) {
+    metallic = u_tex_fac.metal_factor;
+  }else{
+    metallic = texture(t_Physical, tex_coordinates).g * u_tex_fac.metal_factor;
+  }
 
-    // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
-    // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
-    vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, metallic);
+  //Set roughness color
+  float roughness = 0.0;
+  if (u_tex_usage_info.b_roughness != 1) {
+    roughness = u_tex_fac.roughness_factor;
+  }else{
+    roughness = texture(t_Physical, tex_coordinates).b * u_tex_fac.roughness_factor;
+  }
 
-    // reflectance equation
-    vec3 Lo = vec3(0.0);
-    //Point Lights
-    for(int i = 0; i < MAX_POINT_LIGHTS; ++i)
-    {
-      if (u_point_light.p_light[i].intensity == 0.0){
-        continue;
-      }
-      Lo += calcPointLight(u_point_light.p_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+  //Set ao color
+  float ao = 0.0;
+  if (u_tex_usage_info.b_occlusion != 1) {
+    ao = u_tex_fac.occlusion_factor;
+  }else{
+    ao     = texture(t_Physical, tex_coordinates).r * u_tex_fac.occlusion_factor;
+  }
+
+  //TODO implemetn emmessive
+  vec3 N = vec3(0.0);
+  if (u_tex_usage_info.b_normal != 1){
+    N = u_tex_fac.normal_factor.xyz;
+  }else {
+    N = texture(t_Normal, tex_coordinates).rgb;
+  }
+
+
+  N = normalize(N * 2.0 - 1.0);
+  N = normalize(TBN * N);
+
+
+  //vec3 N = normalize(v_normal);
+  //vec3 N = getNormalFromMap();
+  vec3 V = normalize(u_main.camera_position - FragmentPosition);
+
+  // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
+  // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
+  vec3 F0 = vec3(0.04);
+  F0 = mix(F0, albedo, metallic);
+
+  // reflectance equation
+  vec3 Lo = vec3(0.0);
+  //Point Lights
+  for(int i = 0; i < min(MAX_POINT_LIGHTS, u_light_count.points); ++i)
+  {
+    if (u_point_light.p_light[i].intensity == 0.0){
+      continue;
     }
-/*
-    //Directional Lights
-    for(int i = 0; i < MAX_DIR_LIGHTS; ++i){
-      if (u_dir_light.d_light[i].intensity == 0.0){
-        continue;
-      }
-      Lo += calcDirectionalLight(u_dir_light.d_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+    Lo += calcPointLight(u_point_light.p_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+  }
+
+  //Directional Lights
+  for(int i = 0; i < min(MAX_DIR_LIGHTS, u_light_count.directionals); ++i){
+    if (u_dir_light.d_light[i].intensity == 0.0){
+      continue;
     }
-    //Spot Lights
-    for(int i = 0; i < MAX_SPOT_LIGHTS; ++i){
-      if (u_spot_light.s_light[i].intensity == 0.0){
-        continue;
-      }
-      Lo += calcSpotLight(u_spot_light.s_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+    Lo += calcDirectionalLight(u_dir_light.d_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+  }
+  //Spot Lights
+  for(int i = 0; i < min(MAX_SPOT_LIGHTS, u_light_count.spots); ++i){
+    if (u_spot_light.s_light[i].intensity == 0.0){
+      continue;
     }
-*/
+    Lo += calcSpotLight(u_spot_light.s_light[i], FragmentPosition, albedo, metallic, roughness, V, N, F0);
+  }
 
-    // ambient lighting (note that the next IBL tutorial will replace
-    // this ambient lighting with environment lighting).
-    vec3 ambient = vec3(0.03) * albedo * ao;
 
-    vec3 color = ambient + Lo;
+  // ambient lighting (note that the next IBL tutorial will replace
+  // this ambient lighting with environment lighting).
+  vec3 ambient = vec3(0.03) * albedo * ao;
 
-    // HDR tonemapping
-    color = color / (color + vec3(1.0));
-    // gamma correct
-    color = pow(color, vec3(1.0/2.2));
+  vec3 color = ambient + Lo;
 
-    f_color = vec4(color, 1.0);
+  // HDR tonemapping
+  color = color / (color + vec3(1.0));
+  // gamma correct
+  color = pow(color, vec3(1.0/2.2));
+
+  f_color = vec4(color, 1.0);
+
 }

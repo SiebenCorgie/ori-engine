@@ -53,12 +53,12 @@ fn main() {
     //Start the input thread
     input_handler.start();
 
-    //Import the ape
-    asset_manager.import_scene("Ape", "Apes.fbx");
-    asset_manager.import_scene("Ring", "Ring.fbx");
-    asset_manager.import_scene("Helix", "Helix.fbx");
-    //asset_manager.import_scene("Ape_02", "Apes.fbx");
-    //asset_manager.import_scene("Ape_03", "Apes.fbx");
+    //Import the ball_01
+    asset_manager.import_scene("ball_01", "Ball_01.obj");
+    asset_manager.import_scene("ball_02", "Ball_02.obj");
+    asset_manager.import_scene("plane", "Plane.obj");
+    //asset_manager.import_scene("ball_01_02", "ball_01s.fbx");
+    //asset_manager.import_scene("ball_01_03", "ball_01s.fbx");
     {
         //Albedo
         let mut tex_builder_01 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/lowRes/rustediron2_basecolor.png");
@@ -109,16 +109,16 @@ fn main() {
         let nrm_in_manager = asset_manager.get_texture_manager().get_texture("cube_normal");
 
         let new_material = core::resources::material::MaterialBuilder::new(
-            Some(albedo_in_manager),
+            None,
             Some(nrm_in_manager),
             None,
             None,
             asset_manager.get_texture_manager().get_none()
         ).with_factors(
             core::resources::material::MaterialFactors::new()
-            .with_factor_albedo([1.0, 0.0, 0.0, 1.0])
-            .with_factor_metal(0.85)
-            .with_factor_roughness(0.05)
+            .with_factor_albedo([0.4, 0.2, 0.0, 1.0])
+            .with_factor_metal(0.8)
+            .with_factor_roughness(0.1)
         );
 
         asset_manager.add_material_to_manager(new_material, "metalBlack").expect("failed to add new_material");
@@ -198,7 +198,7 @@ fn main() {
 
     asset_manager.get_active_scene().print_member(0);
 
-    let mut adding_status_helix = false;
+    let mut adding_status_plane = false;
     let mut adding_status = false;
 
     let mut start_time = Instant::now();
@@ -209,15 +209,15 @@ fn main() {
     let mut max_fps = 0.0;
 
     loop {
-        //Add the ape scene if finished loading. This will be managed by a defined loader later
-        if adding_status == false && asset_manager.has_scene("Ape") && asset_manager.has_scene("Ring"){
-            println!("Adding ape", );
-            let mut ape_scene ={
+        //Add the ball_01 scene if finished loading. This will be managed by a defined loader later
+        if adding_status == false && asset_manager.has_scene("ball_01") && asset_manager.has_scene("ball_02"){
+            println!("Adding ball_01", );
+            let mut ball_01_scene ={
                 //let scene_manager = asset_manager.get_scene_manager();
-                asset_manager.get_scene_manager().get_scene("Ape").expect("no Apes :(")
+                asset_manager.get_scene_manager().get_scene("ball_01").expect("no ball_01s :(")
             };
 
-            for i in (*ape_scene).lock().unwrap().get_all_meshes().iter(){
+            for i in (*ball_01_scene).lock().unwrap().get_all_meshes().iter(){
                 //Unwrap the mesh from the tubel
                 let mesh = i.0.clone();
 
@@ -225,33 +225,33 @@ fn main() {
                 let mut mesh_lck = mesh_inst.lock().expect("failed to change material");
                 (*mesh_lck).set_material("new_material");
             }
-            asset_manager.add_scene_to_main_scene("Ape");
-            asset_manager.add_scene_to_main_scene("Ring");
+            asset_manager.add_scene_to_main_scene("ball_01");
+            asset_manager.add_scene_to_main_scene("ball_02");
 
             adding_status = true;
-            println!("STATUS: GAME: added all apes", );
+            println!("STATUS: GAME: added all ball_01s", );
 
         }
 
-        if !adding_status_helix && asset_manager.has_scene("Helix"){
-            println!("Adding helix", );
+        if !adding_status_plane && asset_manager.has_scene("plane"){
+            println!("Adding plane", );
 
-            let helix_scene = asset_manager.get_scene_manager().get_scene("Helix").expect("no Helix :(");
+            let plane_scene = asset_manager.get_scene_manager().get_scene("plane").expect("no plane :(");
 
-            println!("Set Helix lock", );
-            for i in (*helix_scene).lock().unwrap().get_all_meshes().iter(){
+            println!("Set plane lock", );
+            for i in (*plane_scene).lock().unwrap().get_all_meshes().iter(){
                 let mesh = i.0.clone();
                 println!("Cloned mesh", );
-                let mut mesh_lck = mesh.lock().expect("failed to lock helix");
+                let mut mesh_lck = mesh.lock().expect("failed to lock plane");
                 println!("Locked mesh", );
                 (*mesh_lck).set_material("metalBlack");
                 println!("SetMaterial", );
             }
 
-            asset_manager.add_scene_to_main_scene("Helix");
+            asset_manager.add_scene_to_main_scene("plane");
 
-            adding_status_helix = true;
-            println!("Finished helix", );
+            adding_status_plane = true;
+            println!("Finished plane", );
         }
         //println!("STATUS: GAME: Starting loop in game", );
         //Update the content of the render_manager
@@ -268,7 +268,7 @@ fn main() {
 
         asset_manager.update();
         println!("STATUS: GAME: Updated all assets", );
-        (*render).lock().expect("Failed to lock renderer for rendering").render(&mut asset_manager);
+        (*render).lock().expect("Failed to lock renderer for rendeball_02").render(&mut asset_manager);
         //Check if loop should close
         if input_handler.get_key_map_copy().closed{
             println!("STATUS: GAME: Shuting down", );
@@ -285,37 +285,37 @@ fn main() {
         }
 
         if input_handler.get_key_map_copy().t{
-            //Get the Ring scene and translate it by 10,10,0
-            let mut ape_scene ={
+            //Get the ball_02 scene and translate it by 10,10,0
+            let ball_01_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Helix_0"){
+                match asset_manager.get_active_scene().get_node("plane_0"){
                     Some(scene) => scene,
                     None => continue,
                 }
             };
             //Set the translation on this node
-            ape_scene.set_location(Vector3::new(0.0, 0.0, 0.0));
+            ball_01_scene.set_location(Vector3::new(0.0, 0.0, 0.0));
             //println!("Translated", );
         }
 
         if input_handler.get_key_map_copy().z{
-            //Get the Ring scene and translate it by 10,10,0
-            let mut helix_scene ={
+            //Get the ball_02 scene and translate it by 10,10,0
+            let mut plane_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Helix_0"){
+                match asset_manager.get_active_scene().get_node("plane_0"){
                     Some(scene) => scene,
                     None => continue,
                 }
             };
             //Set the translation on this node
-            helix_scene.rotate(Vector3::new(1.0, 0.0, 0.0));
+            plane_scene.rotate(Vector3::new(1.0, 0.0, 0.0));
         }
 
         if input_handler.get_key_map_copy().u{
-            //Get the Ring scene and translate it by 10,10,0
+            //Get the ball_02 scene and translate it by 10,10,0
             let mut tree_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Helix_0"){
+                match asset_manager.get_active_scene().get_node("plane_0"){
                     Some(scene) => scene,
                     None => continue,
                 }

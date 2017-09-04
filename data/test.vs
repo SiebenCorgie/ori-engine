@@ -24,14 +24,17 @@ layout(set = 0, binding = 0) uniform Data {
 
 void main() {
 
-  v_normal = mat3(u_main.model) * normal;
+  //new
+  v_normal = mat3(transpose(inverse(u_main.model))) * normal;
+
+  //v_normal = mat3(u_main.model) * normal;
   tex_coordinates = tex_coord;
 
   //Create TBN
   vec3 T = normalize(vec3(u_main.model * vec4(tangent, 0.0)));
   vec3 N = normalize(vec3(u_main.model * vec4(normal, 0.0)));
   // re-orthogonalize T with respect to N
-  T = normalize(T - dot(T, N) * N);
+  //T = normalize(T - dot(T, N) * N);
   // then retrieve perpendicular vector B with the cross product of T and N
   vec3 B = cross(N, T);
 

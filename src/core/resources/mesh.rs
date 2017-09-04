@@ -221,6 +221,7 @@ impl ReturnBoundInfo for Mesh{
     fn get_bound(&self) -> collision::Aabb3<f32>{
         self.bound.clone()
     }
+    
 
     ///Returns the vertices of the bounding mesh, good for debuging
     fn get_bound_points(&self)-> Vec<Vector3<f32>>{

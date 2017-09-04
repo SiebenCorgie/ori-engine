@@ -7,12 +7,23 @@ use std::sync::{Arc, Mutex};
 use core::engine_settings;
 use input::KeyMap;
 
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 
 ///Camera trait, use this to implement any type of camera
 pub trait Camera {
     ///Creates a default camera
     fn new(settings: Arc<Mutex<engine_settings::EngineSettings>>, key_map: Arc<Mutex<KeyMap>>) -> Self;
+    ///Initiates a camera with given opetions
+    fn from_properties(
+        settings: Arc<Mutex<engine_settings::EngineSettings>>,
+        key_map: Arc<Mutex<KeyMap>>,
+        front: Vector3<f32>,
+        position: Vector3<f32>,
+        up: Vector3<f32>,
+        yaw: f32,
+        pitch: f32,
+        speed: f32,
+    ) -> Self;
     ///Calculates / Update the view
     fn update_view(&mut self);
     ///Returns the view matrix if needed
@@ -39,9 +50,11 @@ pub trait Camera {
 #[derive(Clone)]
 pub struct DefaultCamera {
     //camera General
-    pub cameraPos: Vector3<f32>,
-    pub cameraFront: Vector3<f32>,
-    pub cameraUp: Vector3<f32>,
+    pub position: Vector3<f32>,
+    pub front: Vector3<f32>,
+    pub up: Vector3<f32>,
+    pub right: Vector3<f32>,
+    pub world_up: Vector3<f32>,
     //Camera Rotation
     yaw: f32,
     pitch: f32,
@@ -50,6 +63,8 @@ pub struct DefaultCamera {
     fov: f32,
     near_plane: f32,
     far_plane: f32,
+
+    speed: f32,
 
     settings: Arc<Mutex<engine_settings::EngineSettings>>,
     key_map: Arc<Mutex<KeyMap>>,
@@ -64,11 +79,13 @@ impl Camera for DefaultCamera{
         key_map: Arc<Mutex<KeyMap>>
     ) -> Self {
         //camera General
-        let cameraPos = Vector3::new(0.0, 0.0, 0.0);
-        let cameraFront = Vector3::new(0.0, 0.0, 1.0);
-        let cameraUp = Vector3::new(0.0, 0.0, -1.0);
+        let position = Vector3::new(0.0, 0.0, 0.0);
+        let front = Vector3::new(0.0, 0.0, -1.0);
+        let up = Vector3::new(0.0, -1.0, 0.0);
+        let world_up = Vector3::new(0.0, -1.0, 0.0);
+
         //Camera Rotation
-        let yaw: f32 = 0.0;
+        let yaw: f32 = -90.0;
         let pitch: f32 = 0.0;
 
         let fov = 45.0;
@@ -76,14 +93,20 @@ impl Camera for DefaultCamera{
         let far_plane = 100.0;
 
         DefaultCamera {
-            cameraPos: cameraPos,
-            cameraFront: cameraFront,
-            cameraUp: cameraUp,
+            position: position,
+            front: front,
+            up: up,
+            right: front.cross(up),
+            world_up: up,
+
             yaw: yaw,
             pitch: pitch,
             fov: fov,
+
             near_plane: near_plane,
             far_plane: far_plane,
+
+            speed: 25.0,
 
             settings: settings,
 
@@ -91,6 +114,48 @@ impl Camera for DefaultCamera{
 
             last_time: Instant::now(),
         }
+    }
+
+    ///Initiates a camera with given opetions
+    fn from_properties(
+        settings: Arc<Mutex<engine_settings::EngineSettings>>,
+        key_map: Arc<Mutex<KeyMap>>,
+        front: Vector3<f32>,
+        position: Vector3<f32>,
+        up: Vector3<f32>,
+        yaw: f32,
+        pitch: f32,
+        speed: f32,
+    ) -> Self{
+
+        let fov = 45.0;
+        let near_plane = 0.1;
+        let far_plane = 100.0;
+
+        let mut new_cam = DefaultCamera {
+            position: position,
+            front: front,
+            up: up,
+            right: front.cross(up),
+            world_up: up,
+
+            yaw: yaw,
+            pitch: pitch,
+            fov: fov,
+            near_plane: near_plane,
+            far_plane: far_plane,
+
+            speed: speed,
+
+            settings: settings,
+
+            key_map: key_map,
+
+            last_time: Instant::now(),
+        };
+
+        new_cam.update_view();
+        new_cam
     }
 
     ///Updates the camera view information
@@ -123,24 +188,25 @@ impl Camera for DefaultCamera{
 
 
         //Input processing
+        //some are flipped because in vulkan the upper_left corener is -1/-1 not -1/1 like in opengl
         {
             if key_map_inst.a == true {
-                self.cameraPos = self.cameraPos + (self.cameraFront.cross(self.cameraUp).normalize()) * camera_speed;
+                self.position -= self.right * camera_speed;
             }
             if key_map_inst.w == true {
-                self.cameraPos = self.cameraPos - self.cameraFront * camera_speed;
+                self.position += self.front * camera_speed;
             }
             if key_map_inst.s == true {
-                self.cameraPos = self.cameraPos + self.cameraFront * camera_speed;
+                self.position -= self.front * camera_speed;
             }
             if key_map_inst.d == true {
-                self.cameraPos = self.cameraPos - (self.cameraFront.cross(self.cameraUp).normalize()) * camera_speed;
+                self.position += self.right * camera_speed;
             }
             if (key_map_inst.ctrl_l == true) | (key_map_inst.q == true) {
-                self.cameraPos = self.cameraPos - Vector3::new(0.0, 0.0, camera_speed);
+                self.position = self.position - Vector3::new(0.0, camera_speed, 0.0);
             }
             if (key_map_inst.shift_l == true) | (key_map_inst.e == true) {
-                self.cameraPos = self.cameraPos + Vector3::new(0.0, 0.0, camera_speed);
+                self.position = self.position + Vector3::new(0.0, camera_speed, 0.0);
             }
         }
 
@@ -148,12 +214,12 @@ impl Camera for DefaultCamera{
 
         //Fixed camera gittering by slowing down so one integer delta = movement of
         // delta * sensitvity * time_delta * slowdown (virtual speed up)
-        let virtual_speedup = 1.0;
-        let x_offset: f32 = key_map_inst.mouse_delta_y as f32 * sensitivity * delta_time * virtual_speedup;
-        let y_offset: f32 = key_map_inst.mouse_delta_x as f32 * sensitivity * delta_time * virtual_speedup;
+        let virtual_speedup = 1.0; //currently not used because of the new float delta
+        let x_offset: f32 = key_map_inst.mouse_delta_x as f32 * sensitivity * delta_time * virtual_speedup;
+        let y_offset: f32 = key_map_inst.mouse_delta_y as f32 * sensitivity * delta_time * virtual_speedup;
         //needed to exchange these beacuse of the z-is-up system
-        self.yaw += y_offset;
-        self.pitch += x_offset;
+        self.yaw -= x_offset;
+        self.pitch -= y_offset;
 
         if self.pitch > 89.0 {
             self.pitch = 89.0;
@@ -164,43 +230,46 @@ impl Camera for DefaultCamera{
 
         let mut front = Vector3::new(0.0, 0.0, 0.0);
         front.x = to_radians(self.yaw).cos() * to_radians(self.pitch).cos();
-        front.z = to_radians(self.pitch).sin();
-        front.y =  to_radians(self.yaw).sin() * to_radians(self.pitch).cos();
-        self.cameraFront = front.normalize();
+        front.y = to_radians(self.pitch).sin();
+        front.z =  to_radians(self.yaw).sin() * to_radians(self.pitch).cos();
+        self.front = front.normalize();
+
+        self.right = self.front.cross(self.world_up).normalize();
+        self.up = self.right.cross(self.front).normalize();
 
     }
 
     //Return view matrix as [[f32; 4]; 4]
     fn get_view_matrix(&self) -> Matrix4<f32> {
 
-        let tmp_target = self.cameraPos - self.cameraFront;
+        let tmp_target = self.position + self.front;
 
         let view = Matrix4::look_at(
-            Point3::new(self.cameraPos.x, self.cameraPos.y, self.cameraPos.z),
+            Point3::new(self.position.x, self.position.y, self.position.z),
             Point3::new(tmp_target.x, tmp_target.y, tmp_target.z),
-            self.cameraUp
+            self.up
         );
         view
     }
 
     ///Returns the direction the camera is facing
     fn get_direction(&self) -> Vector3<f32> {
-        self.cameraFront
+        self.front
     }
 
     ///Sets the direction of the camera to a Vector3<f32>
     fn set_direction(&mut self, new_direction: Vector3<f32>){
-        self.cameraFront = new_direction.normalize();
+        self.front = new_direction.normalize();
     }
 
     ///Returns the position of the camera as Vector3<f32>
     fn get_position(&self) -> Vector3<f32> {
-        self.cameraPos
+        self.position
     }
 
     ///Sets the position
     fn set_position(&mut self, new_pos: Vector3<f32>){
-        self.cameraPos = new_pos;
+        self.position = new_pos;
     }
 
     ///Sets the field of view for this camera
@@ -217,9 +286,9 @@ impl Camera for DefaultCamera{
     //Calculates the perspective based on the engine and camera settings
     fn get_perspective(&self) -> Matrix4<f32>{
         //TODO update the perspective to use current engine settings
-        let (mut width, mut height) = {
+        let (width, height) = {
             let engine_settings_inst = self.settings.clone();
-            let mut engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
+            let engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
 
             (
                 (*engine_settings_lck).get_dimensions()[0],
@@ -238,9 +307,6 @@ impl Camera for DefaultCamera{
         collision::Frustum::from_matrix4(matrix).expect("failed to create frustum")
     }
 }
-
-
-
 
 //Helper function for calculating the view
 fn to_radians(degree: f32) -> f32 {

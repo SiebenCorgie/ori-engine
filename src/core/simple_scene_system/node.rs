@@ -504,7 +504,6 @@ impl GenericNode{
     ) -> Vec<(Arc<Mutex<mesh::Mesh>>, Matrix4<f32>)>{
 
         let mut return_vector = Vec::new();
-        //FIXME also add the dynamic meshse
         match self.content{
             //if selfs content is a mesh, check the bound
             ContentType::Renderable(RenderableContent::Mesh(ref mesh)) => {

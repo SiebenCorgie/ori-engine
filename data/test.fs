@@ -296,7 +296,7 @@ void main()
   if (u_tex_usage_info.b_albedo != 1) {
     albedo = u_tex_fac.albedo_factor.xyz;
   }else{
-    albedo     = pow(texture(t_Albedo, tex_coordinates).rgb, vec3(2.2)) * u_tex_fac.albedo_factor.xyz;
+    albedo = pow(texture(t_Albedo, tex_coordinates).rgb, vec3(2.2)) * u_tex_fac.albedo_factor.xyz;
   }
 
   //Set metallic color
@@ -320,10 +320,11 @@ void main()
   if (u_tex_usage_info.b_occlusion != 1) {
     ao = u_tex_fac.occlusion_factor;
   }else{
-    ao     = texture(t_Physical, tex_coordinates).r * u_tex_fac.occlusion_factor;
+    ao = texture(t_Physical, tex_coordinates).r * u_tex_fac.occlusion_factor;
   }
 
   //TODO implemetn emmessive
+
   vec3 N = vec3(0.0);
   if (u_tex_usage_info.b_normal != 1){
     N = u_tex_fac.normal_factor.xyz;
@@ -331,17 +332,17 @@ void main()
     N = texture(t_Normal, tex_coordinates).rgb;
   }
 
+  N = normalize(TBN * ((2.0 * N - 1.0) * vec3(u_tex_fac.normal_factor.xy, 1.0)));
 
-  N = normalize(N * 2.0 - 1.0);
-  N = normalize(TBN * N);
-
+  //N = normalize(N * 2.0 - 1.0);
+  //N = normalize(TBN * N);
 
   //vec3 N = normalize(v_normal);
   //vec3 N = getNormalFromMap();
   vec3 V = normalize(u_main.camera_position - FragmentPosition);
 
   // calculate reflectance at normal incidence; if dia-electric (like plastic) use F0
-  // of 0.04 and if it's a metal, use the albedo color as F0 (metallic workflow)
+  // of 0.04 and if sit's a metal, use the albedo color as F0 (metallic workflow)
   vec3 F0 = vec3(0.04);
   F0 = mix(F0, albedo, metallic);
 
@@ -384,5 +385,4 @@ void main()
   color = pow(color, vec3(1.0/2.2));
 
   f_color = vec4(color, 1.0);
-
 }

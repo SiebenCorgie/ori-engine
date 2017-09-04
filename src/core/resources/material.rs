@@ -39,6 +39,7 @@ impl TextureUsageFlags{
         }
     }
 
+
     ///Creates with a set albedo status
     pub fn with_albedo(mut self, albedo: i32) ->Self{
         self.albedo = albedo;
@@ -142,7 +143,7 @@ impl MaterialFactors{
         MaterialFactors{
             albedo_factor: [1.0; 4],
             //this needs to be set to just blue for not manipulating the rest
-            normal_factor: [0.0, 0.0, 1.0, 1.0],
+            normal_factor: [1.0, 1.0, 1.0, 1.0],
             emissive_factor: [1.0; 4],
             metal_factor: 1.0,
             roughness_factor: 1.0,

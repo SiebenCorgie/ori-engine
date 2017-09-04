@@ -1,0 +1,170 @@
+{
+    "accessors": {
+        "accessor_buffer_Sphere.002_0": {
+            "bufferView": "bufferView_buffer_Sphere.002_0",
+            "byteOffset": 0,
+            "byteStride": 32,
+            "componentType": 5126,
+            "count": 2805,
+            "max": [
+                6.400001525878906,
+                0,
+                0.9981124997138977
+            ],
+            "min": [
+                -6.0,
+                -3.000000476837158,
+                -0.9981124997138977
+            ],
+            "type": "VEC3"
+        },
+        "accessor_buffer_Sphere.002_1": {
+            "bufferView": "bufferView_buffer_Sphere.002_0",
+            "byteOffset": 12,
+            "byteStride": 32,
+            "componentType": 5126,
+            "count": 2805,
+            "max": [
+                1.0,
+                1.0,
+                0.9959410429000854
+            ],
+            "min": [
+                -1.0,
+                -1.0,
+                -0.9959410429000854
+            ],
+            "type": "VEC3"
+        },
+        "accessor_buffer_Sphere.002_2": {
+            "bufferView": "bufferView_buffer_Sphere.002_0",
+            "byteOffset": 24,
+            "byteStride": 32,
+            "componentType": 5126,
+            "count": 2805,
+            "max": [
+                1.0,
+                0.9999999403953552
+            ],
+            "min": [
+                0.0,
+                0.0
+            ],
+            "type": "VEC2"
+        },
+        "accessor_buffer_Sphere.002_3": {
+            "bufferView": "bufferView_buffer_Sphere.002_1",
+            "byteOffset": 0,
+            "byteStride": 2,
+            "componentType": 5123,
+            "count": 15360,
+            "max": [
+                2804
+            ],
+            "min": [
+                0
+            ],
+            "type": "SCALAR"
+        }
+    },
+    "asset": {
+        "profile": {
+            "api": "OpenGL",
+            "version": "3.0"
+        },
+        "version": "1.0"
+    },
+    "bufferViews": {
+        "bufferView_buffer_Sphere.002_0": {
+            "buffer": "buffer_combined",
+            "byteLength": 89760,
+            "byteOffset": 0,
+            "target": 34962
+        },
+        "bufferView_buffer_Sphere.002_1": {
+            "buffer": "buffer_combined",
+            "byteLength": 30720,
+            "byteOffset": 89760,
+            "target": 34963
+        }
+    },
+    "buffers": {
+        "buffer_combined": {
+            "byteLength": 120480,
+            "type": "arraybuffer",
+            "uri": "buffer_combined.bin"
+        }
+    },
+    "extensions": {
+        "KHR_materials_common": {
+            "lights": {}
+        }
+    },
+    "extensionsUsed": [
+        "KHR_materials_common"
+    ],
+    "meshes": {
+        "mesh_Sphere.002": {
+            "name": "Sphere.002",
+            "primitives": [
+                {
+                    "attributes": {
+                        "NORMAL": "accessor_buffer_Sphere.002_1",
+                        "POSITION": "accessor_buffer_Sphere.002_0",
+                        "TEXCOORD_0": "accessor_buffer_Sphere.002_2"
+                    },
+                    "indices": "accessor_buffer_Sphere.002_3",
+                    "mode": 4
+                }
+            ]
+        }
+    },
+    "nodes": {
+        "node_Sphere.002": {
+            "children": [],
+            "matrix": [
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                1.0
+            ],
+            "meshes": [
+                "mesh_Sphere.002"
+            ],
+            "name": "Sphere.002"
+        }
+    },
+    "samplers": {
+        "sampler_default": {}
+    },
+    "scene": "scene_Scene",
+    "scenes": {
+        "scene_Scene": {
+            "extras": {
+                "active_camera": null,
+                "background_color": [
+                    0.05087608844041824,
+                    0.05087608844041824,
+                    0.05087608844041824
+                ],
+                "frames_per_second": 24
+            },
+            "name": "Scene",
+            "nodes": [
+                "node_Sphere.002"
+            ]
+        }
+    }
+}

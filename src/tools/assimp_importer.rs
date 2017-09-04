@@ -32,7 +32,10 @@ impl Importer for AssimpImporter {
         loc_assimp.triangulate(true);
         loc_assimp.calc_tangent_space(|x| x.enable = true);
         //Maybe more if needed
-        //loc_assimp.flip_uvs(true);
+        loc_assimp.generate_normals(|x| x.enable = true);
+        loc_assimp.flip_uvs(true);
+
+
 
         //Import scene with all meshes
         let scene = loc_assimp.read_file(path);
@@ -103,7 +106,7 @@ impl Importer for AssimpImporter {
                                     tex = [vec3[0], vec3[1]];
                                 },
                             None =>{
-                                //println!("Failed to find uv_coords on index: {} of mesh: {}", index.clone(), tmp_name);
+                                println!("Failed to find uv_coords on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
                                 tex = Vector2::new(1.0, 1.0).into();
                             }
@@ -113,7 +116,7 @@ impl Importer for AssimpImporter {
                         match mesh.get_normal(index){
                             Some(normal) => norm = normal.into(),
                             None => {
-                                //println!("Failed to find normals on index: {} of mesh: {}", index.clone(), tmp_name);
+                                println!("Failed to find normals on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
                                 norm = Vector3::new(1.0, 1.0, 1.0).into();
                             },
@@ -122,7 +125,7 @@ impl Importer for AssimpImporter {
                         match mesh.get_tangent(index){
                             Some(tangent) => tang = tangent.into(),
                             None => {
-                                //println!("Failed to find tangent on index: {} of mesh: {}", index.clone(), tmp_name);
+                                println!("Failed to find tangent on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
                                 tang = Vector3::new(1.0, 1.0, 1.0).into();
                             },

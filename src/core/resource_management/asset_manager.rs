@@ -75,12 +75,12 @@ impl AssetManager {
 
         //Gt us needed instances
         let device = {
-            let mut render_lck = renderer_instance.lock().expect("failed to hold renderer lock");
+            let render_lck = renderer_instance.lock().expect("failed to hold renderer lock");
             (*render_lck).get_device().clone()
         };
 
         let queue = {
-            let mut render_lck = renderer_instance.lock().expect("failed to hold renderer lock");
+            let render_lck = renderer_instance.lock().expect("failed to hold renderer lock");
             (*render_lck).get_queue().clone()
         };
 
@@ -118,11 +118,6 @@ impl AssetManager {
     ///Updates all child components
     pub fn update(&mut self){
 
-        //println!("STATUS: ASSET_MANAGER: Trying to update", );
-        //Update uniform manager
-        let render_int = self.renderer.clone();
-        let render_lck = render_int.lock().expect("failed to lock renderer");
-
         //Debug stuff which will be handled by the application later
         //let rotation = Rotation3::from_axis_angle(&Vector3::unit_z(), time::precise_time_ns() as f32 * 0.000000001);
         let mat_4: Matrix4<f32> = Matrix4::identity();
@@ -130,7 +125,7 @@ impl AssetManager {
 
         let uniform_data = pbr_fragment::ty::Data {
             //Updating camera from camera transform
-            camera_position: self.camera.cameraPos.clone().into(),
+            camera_position: self.camera.position.clone().into(),
             _dummy0: [0; 4],
             //This is getting a dummy value which is updated right bevore set cretion via the new
             //model provided transform matrix. There might be a better way though.
@@ -256,6 +251,8 @@ impl AssetManager {
 
         //Update the uniform manager with the latest infos about camera and light
         {
+            let render_int = self.renderer.clone();
+            let render_lck = render_int.lock().expect("failed to lock renderer");
             let uniform_manager = (*render_lck).get_uniform_manager();
             let mut uniform_manager_lck = uniform_manager.lock().expect("failed to lock uniform_man.");
             (*uniform_manager_lck).update(

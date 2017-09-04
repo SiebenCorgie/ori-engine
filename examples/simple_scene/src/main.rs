@@ -61,15 +61,15 @@ fn main() {
     //asset_manager.import_scene("Ape_03", "Apes.fbx");
     {
         //Albedo
-        let mut tex_builder_01 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_basecolor.png");
+        let mut tex_builder_01 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/lowRes/rustediron2_basecolor.png");
         tex_builder_01 = tex_builder_01.with_flipped_v();
         asset_manager.add_texture_to_manager(tex_builder_01, "metal_albedo").expect("failed to add new_texture");
         //Normal
-        let mut tex_builder_02 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_normal.png");
+        let mut tex_builder_02 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/lowRes/rustediron2_normal.png");
         tex_builder_02 = tex_builder_02.with_flipped_v();
         asset_manager.add_texture_to_manager(tex_builder_02, "metal_normal").expect("failed to add new_texture");
         //Physical
-        let mut tex_builder_03 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/rustediron2_physical.png");
+        let mut tex_builder_03 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/lowRes/rustediron2_physical.png");
         tex_builder_03 = tex_builder_03.with_flipped_v();
         asset_manager.add_texture_to_manager(tex_builder_03, "metal_physical").expect("failed to add new_texture");
         //Creating a new material, currently a bit ugly
@@ -96,12 +96,12 @@ fn main() {
 
     //Black Material
     {
-        let mut tex_builder_01 = asset_manager.create_texture("Cube_Albedo.png");
+        let mut tex_builder_01 = asset_manager.create_texture("brickwall128.jpg");
         //tex_builder_01 = tex_builder_01.with_flipped_v();
         //tex_builder_01 = tex_builder_01.with_flipped_h();
         asset_manager.add_texture_to_manager(tex_builder_01, "cube_albedo").expect("failed to add new_texture");
         //Normal
-        let mut tex_builder_02 = asset_manager.create_texture("Cube_Nrm.png");
+        let mut tex_builder_02 = asset_manager.create_texture("brickwall_normal128.jpg");
         //tex_builder_02 = tex_builder_02.with_flipped_v();
         asset_manager.add_texture_to_manager(tex_builder_02, "cube_normal").expect("failed to add new_texture");
 
@@ -117,19 +117,19 @@ fn main() {
         ).with_factors(
             core::resources::material::MaterialFactors::new()
             .with_factor_albedo([1.0, 0.0, 0.0, 1.0])
-            .with_factor_metal(0.99)
-            .with_factor_roughness(0.1)
+            .with_factor_metal(0.85)
+            .with_factor_roughness(0.05)
         );
 
         asset_manager.add_material_to_manager(new_material, "metalBlack").expect("failed to add new_material");
 
     }
-
+/*
     //SUN========================================================================
     let mut sun = light::LightDirectional::new("Sun");
-    sun.set_direction(Vector3::new(1.0, 0.5, 0.5));
+    sun.set_direction(Vector3::new(1.0, -0.5, 0.5));
     sun.set_color(Vector3::new(1.0, 0.75, 0.75));
-    sun.set_intensity(50.0);
+    sun.set_intensity(200.0);
 
     let sun_node = node::ContentType::Light(node::LightsContent::DirectionalLight(sun));
     asset_manager.get_active_scene().add_child(sun_node);
@@ -140,7 +140,7 @@ fn main() {
     let mut spot_01 = light::LightSpot::new("Spot_01");
     spot_01.set_color(Vector3::new(1.0, 1.0, 1.0));
     spot_01.set_intensity(100.0);
-    spot_01.set_location(Vector3::new(0.0, 0.0, 10.0));
+    spot_01.set_location(Vector3::new(0.0, 1.0, 5.0));
     spot_01.set_direction(Vector3::new(0.5, 0.0, -1.0));
     spot_01.set_outer_radius(15.0);
     spot_01.set_inner_radius(10.0);
@@ -148,7 +148,7 @@ fn main() {
     let spot_node_01 = node::ContentType::Light(node::LightsContent::SpotLight(spot_01));
     asset_manager.get_active_scene().add_child(spot_node_01);
     //SPOT 01 ===================================================================
-
+*/
 
     //POINT 00 ==================================================================
     let mut point_00 = light::LightPoint::new("Point_00");
@@ -163,7 +163,7 @@ fn main() {
     //POINT 01 ==================================================================
     let mut point_01 = light::LightPoint::new("Point_01");
     point_01.set_color(Vector3::new(150.0, 150.0, 150.0));
-    point_01.set_location(Vector3::new(-5.0, -5.0, 10.0));
+    point_01.set_location(Vector3::new(-3.0, 0.0, -3.0));
 
     let point_node_01 = node::ContentType::Light(node::LightsContent::PointLight(point_01));
     asset_manager.get_active_scene().add_child(point_node_01);
@@ -172,7 +172,7 @@ fn main() {
     //POINT 02 ==================================================================
     let mut point_02 = light::LightPoint::new("Point_02");
     point_02.set_color(Vector3::new(150.0, 150.0, 150.0));
-    point_02.set_location(Vector3::new(-5.0, 5.0, 10.0));
+    point_02.set_location(Vector3::new(-3.0, 0.0, 3.0));
 
     let point_node_02 = node::ContentType::Light(node::LightsContent::PointLight(point_02));
     asset_manager.get_active_scene().add_child(point_node_02);
@@ -181,7 +181,7 @@ fn main() {
     //POINT 03 ==================================================================
     let mut point_03 = light::LightPoint::new("Point_03");
     point_03.set_color(Vector3::new(150.0, 150.0, 150.0));
-    point_03.set_location(Vector3::new(5.0, -5.0, 10.0));
+    point_03.set_location(Vector3::new(3.0, 0.0, -3.0));
 
     let point_node_03 = node::ContentType::Light(node::LightsContent::PointLight(point_03));
     asset_manager.get_active_scene().add_child(point_node_03);
@@ -190,7 +190,7 @@ fn main() {
     //POINT 04 ==================================================================
     let mut point_04 = light::LightPoint::new("Point_04");
     point_04.set_color(Vector3::new(150.0, 150.0, 150.0));
-    point_04.set_location(Vector3::new(5.0, 5.0, 10.0));
+    point_04.set_location(Vector3::new(3.0, 0.0, 3.0));
 
     let point_node_04 = node::ContentType::Light(node::LightsContent::PointLight(point_04));
     asset_manager.get_active_scene().add_child(point_node_04);
@@ -255,7 +255,7 @@ fn main() {
         }
         //println!("STATUS: GAME: Starting loop in game", );
         //Update the content of the render_manager
-
+/*
         //Updating the light based on the camera position
         let camera_inst = asset_manager.get_camera().clone();
         {
@@ -264,7 +264,7 @@ fn main() {
             light_inst.set_direction(- camera_inst.get_direction());
 
         }
-
+*/
 
         asset_manager.update();
         println!("STATUS: GAME: Updated all assets", );
@@ -288,7 +288,7 @@ fn main() {
             //Get the Ring scene and translate it by 10,10,0
             let mut ape_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Helix_1"){
+                match asset_manager.get_active_scene().get_node("Helix_0"){
                     Some(scene) => scene,
                     None => continue,
                 }
@@ -315,13 +315,13 @@ fn main() {
             //Get the Ring scene and translate it by 10,10,0
             let mut tree_scene ={
                 //Get the reference in the current active scene
-                match asset_manager.get_active_scene().get_node("Helix_1"){
+                match asset_manager.get_active_scene().get_node("Helix_0"){
                     Some(scene) => scene,
                     None => continue,
                 }
             };
             //Set the translation on this node
-            tree_scene.translate(Vector3::new(0.0, 0.0, 0.05));
+            tree_scene.translate(Vector3::new(0.0, 1.0, 0.0));
         }
 
 

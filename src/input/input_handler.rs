@@ -366,6 +366,7 @@ impl InputHandler{
                 });
 
                 //Overwrite the Arc<Mutex<KeyMap>> with the new capture
+                println!("######MOUSE X: {}    Y: {}", current_keys.mouse_delta_x, current_keys.mouse_delta_y);
                 {
                     let mut key_map_unlck = key_map_inst
                     .lock()

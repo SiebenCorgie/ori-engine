@@ -32,14 +32,11 @@ impl Importer for AssimpImporter {
         loc_assimp.triangulate(true);
         loc_assimp.calc_tangent_space(|x| x.enable = true);
         //Maybe more if needed
-        loc_assimp.generate_normals(|x| x.enable = true);
-        loc_assimp.flip_uvs(true);
-
-
+        //loc_assimp.generate_normals(|x| x.enable = true);
+        //loc_assimp.flip_uvs(true);
 
         //Import scene with all meshes
         let scene = loc_assimp.read_file(path);
-
 
         //dummy root, gets no real mesh
         let mut mesh_collection = Vec::new();

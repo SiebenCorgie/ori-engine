@@ -221,7 +221,7 @@ impl ReturnBoundInfo for Mesh{
     fn get_bound(&self) -> collision::Aabb3<f32>{
         self.bound.clone()
     }
-    
+
 
     ///Returns the vertices of the bounding mesh, good for debuging
     fn get_bound_points(&self)-> Vec<Vector3<f32>>{
@@ -230,7 +230,7 @@ impl ReturnBoundInfo for Mesh{
         let b_min = self.bound.min.clone();
         let b_max = self.bound.max.clone();
 
-        ///low
+        //low
         return_vector.push(Vector3::new(b_min[0], b_min[1], b_min[2])); //Low
         return_vector.push(Vector3::new(b_min[0] + b_max[0], b_min[1], b_min[2])); //+x
         return_vector.push(Vector3::new(b_min[0], b_min[1] + b_max[1], b_min[2])); //+y

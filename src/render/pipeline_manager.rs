@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use rt_error;
 use render::pipeline;
@@ -11,7 +11,7 @@ use vulkano::pipeline::GraphicsPipelineAbstract;
 
 ///Manages all available pipeline
 pub struct PipelineManager {
-    pipelines: HashMap<String, pipeline::Pipeline>,
+    pipelines: BTreeMap<String, pipeline::Pipeline>,
 }
 
 impl PipelineManager{
@@ -22,13 +22,13 @@ impl PipelineManager{
         renderpass: Arc<vulkano::framebuffer::RenderPassAbstract + Send + Sync>,
     ) -> Self
     {
-        let mut hashmap = HashMap::new();
+        let mut BTreeMap = BTreeMap::new();
         //Creates a default pipeline from a default shader
         let default_pipeline = pipeline::Pipeline::new(device, renderpass);
-        hashmap.insert(String::from("DefaultPipeline"), default_pipeline);
+        BTreeMap.insert(String::from("DefaultPipeline"), default_pipeline);
 
         PipelineManager{
-            pipelines: hashmap,
+            pipelines: BTreeMap,
         }
     }
 

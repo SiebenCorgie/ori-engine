@@ -324,7 +324,7 @@ void main()
   }
 
   //TODO implemetn emmessive
-/*
+
   vec3 N = vec3(0.0);
   if (u_tex_usage_info.b_normal != 1){
     N = u_tex_fac.normal_factor.xyz;
@@ -333,11 +333,11 @@ void main()
   }
 
   N = normalize(TBN * ((2.0 * N - 1.0) * vec3(u_tex_fac.normal_factor.xy, 1.0)));
-*/
+
   //N = normalize(N * 2.0 - 1.0);
   //N = normalize(TBN * N);
 
-  vec3 N = normalize(v_normal);
+  //vec3 N = normalize(v_normal);
   //vec3 N = getNormalFromMap();
   vec3 V = normalize(u_main.camera_position - FragmentPosition);
 

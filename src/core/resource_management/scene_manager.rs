@@ -1,56 +1,48 @@
 use core::simple_scene_system::node;
 
 use std::sync::{Arc, Mutex};
+use std::collections::BTreeMap;
 
 ///has a list of all available scenes
 pub struct SceneManager {
-    scenes: Vec<Arc<Mutex<node::GenericNode>>>,
+    scenes: BTreeMap<String, Arc<Mutex<node::GenericNode>>>,
 }
 
 impl SceneManager {
     pub fn new() -> Self{
         SceneManager{
-            scenes: Vec::new(),
+            scenes: BTreeMap::new(),
         }
     }
 
     //Adds a scene to the scene manager
     pub fn add_scene(&mut self, scene: node::GenericNode){
-        self.scenes.push(Arc::new(Mutex::new(scene)));
+        self.scenes.insert(scene.name.clone(), Arc::new(Mutex::new(scene)));
     }
 
     ///Returns Some(scene) by name from the `scenes` Vector
     pub fn get_scene(&mut self, name: &str) -> Option<Arc<Mutex<node::GenericNode>>>{
 
-        for i in self.scenes.iter(){
-
-            let scene_lck = i.lock().expect("failed to lock scene in scene Manager");
-
-            if (*scene_lck).name == String::from(name.clone()){
-                return Some(i.clone());
-            }
+        let has = self.scenes.get(&String::from(name));
+        match has{
+            None => None,
+            Some(scene) => Some(scene.clone()),
         }
-        None
+
     }
 
     ///Returns the scenes vector as a copy
     pub fn get_scenes_copy(&self) -> Vec<Arc<Mutex<node::GenericNode>>>{
-        self.scenes.clone()
+        let mut return_vec = Vec::new();
+        for (_,i) in self.scenes.iter(){
+            return_vec.push(i.clone())
+        }
+        return_vec
     }
 
     ///Returns true if a scene with `name` as name exists in the `self.scenes` vector
     pub fn has_scene(&self, name: &str) -> bool{
 
-        let mut return_value = false;
-
-        for scene in  self.scenes.iter(){
-            let scene_lck = scene.lock().expect("failed to lock scene while testing");
-            if (*scene_lck).name == String::from(name.clone()){
-                return_value = true;
-            }
-
-        }
-
-        return_value
+        self.scenes.contains_key(&String::from(name))
     }
 }

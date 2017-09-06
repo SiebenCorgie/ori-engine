@@ -1,5 +1,5 @@
 use std::sync::{Mutex,Arc};
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use core::resources::material;
 use render;
 use render::pipeline;
@@ -9,7 +9,7 @@ use core::resources::texture::Texture;
 ///Handles all available materials
 pub struct MaterialManager {
     //TODO comapare if a Vec<material> + search algorith would be faster
-    material_vault: HashMap<String, Arc<Mutex<material::Material>>>,
+    material_vault: BTreeMap<String, Arc<Mutex<material::Material>>>,
     renderer_inst: Arc<Mutex<render::renderer::Renderer>>,
 }
 
@@ -80,7 +80,7 @@ impl MaterialManager {
             )
         );
 
-        let mut tmp_map = HashMap::new();
+        let mut tmp_map = BTreeMap::new();
         //and finnaly insert
         tmp_map.insert(String::from("fallback"), fallback_material);
 

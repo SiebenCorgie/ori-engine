@@ -5,13 +5,13 @@ authors = ["Siebencorgie <siebencorgie@googlemail.com>"]
 
 [dependencies]
 winit = "0.7.6"
-vulkano = { path = "lib/vulkano/vulkano" }
-vulkano-shader-derive = { path = "lib/vulkano/vulkano-shader-derive" }
-vulkano-win = { path = "lib/vulkano/vulkano-win" }
+vulkano = "0.6.1"
+vulkano-shader-derive = "0.6.1"
+vulkano-win = "0.6.1"
 
 image = "0.15.0"
 cgmath = "0.15.0"
-collision = { path = "lib/collision-rs" }
+collision = "0.11.0"
 assimp = "0.2.1"
 time = "0.1.37"
 

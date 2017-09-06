@@ -6,19 +6,20 @@ use tools::assimp_importer;
 
 use vulkano;
 
+use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
 
 ///The structure containing all meshes and created scenes
 pub struct MeshManager {
-    meshes: Arc<Mutex<Vec<Arc<Mutex<mesh::Mesh>>>>>,
+    meshes: Arc<Mutex<BTreeMap<String, Arc<Mutex<mesh::Mesh>>>>>,
 
 }
 
 impl MeshManager {
     pub fn new() -> Self{
         MeshManager{
-            meshes: Arc::new(Mutex::new(Vec::new())),
+            meshes: Arc::new(Mutex::new(BTreeMap::new())),
         }
     }
 
@@ -27,10 +28,21 @@ impl MeshManager {
 
         let meshes_instance = self.meshes.clone();
         {
+            //insert the new mesh
             (*meshes_instance).lock().expect("Failed to hold while adding mesh to mesh manager")
-            .push(Arc::new(Mutex::new(mesh)));
+            .insert(mesh.name.clone(), Arc::new(Mutex::new(mesh)));
         }
 
+    }
+
+    ///Returns a mesh by name without locking it (as a Arc<T> clone)
+    pub fn get_mesh(&mut self, name: &str) -> Option<Arc<Mutex<mesh::Mesh>>>{
+        let meshes_inst = self.meshes.clone();
+        let meshes = meshes_inst.lock().expect("faield to lock meshes");
+        match meshes.get(&String::from(name)){
+            Some(mesh) => Some(mesh.clone()),
+            None => None,
+        }
     }
 
     ///Imports a mesh in a seperate thread.
@@ -62,11 +74,10 @@ impl MeshManager {
             let mut importer = assimp_importer::AssimpImporter::new();
             let new_meshes = importer.import(&path_instance, &name_instance, device_instance.clone(), queue_instance.clone());
 
-            //Convert the meshes to Arc<Mutex<mesh::Mesh>>
 
-            let mut arc_meshes = Vec::new();
+            let mut arc_meshes: Vec<(String, Arc<Mutex<mesh::Mesh>>)> = Vec::new();
             for mesh in new_meshes.iter(){
-                arc_meshes.push(Arc::new(Mutex::new(mesh.clone())));
+                arc_meshes.push((String::from(mesh.name.clone()),Arc::new(Mutex::new(mesh.clone()))));
             }
 
 
@@ -76,7 +87,7 @@ impl MeshManager {
             {
                 let mut meshes_editor = (*meshes_instance).lock().expect("failed to lock meshes vec");
                 for mesh in arc_meshes.iter(){
-                    meshes_editor.push(mesh.clone());
+                    meshes_editor.insert(mesh.0.clone() ,mesh.1.clone() );
                 }
             }
 
@@ -85,7 +96,12 @@ impl MeshManager {
             let mut root_node = scene_instance.lock().expect("faield to lock scene while adding mehes");
             for i in arc_meshes.iter(){
                 //create a node
-                let mesh_node = node::ContentType::Renderable(node::RenderableContent::Mesh(i.clone()));
+                let mesh_node = node::ContentType::Renderable(
+                    node::RenderableContent::Mesh(
+                        i.1.clone()
+                    )
+                );
+                println!("Adding mesh: {} ==================", i.0.clone());
                 //And add it to the scene
                 root_node.add_child(mesh_node);
             }
@@ -93,6 +109,5 @@ impl MeshManager {
 
             //println!("STATUS: MESH_MANAGER: Finshed importing {}", name_instance.clone());
         });
-
     }
 }

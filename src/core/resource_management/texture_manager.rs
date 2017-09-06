@@ -109,7 +109,7 @@ impl TextureManager{
     pub fn get_texture(&mut self, name: &str) -> Arc<texture::Texture>{
 
         match self.textures.get(&String::from(name)){
-            Some(texture) return Some(texture.clone())
+            Some(texture) => return texture.clone(),
             None => {
                 //if no texture was found return the fallback albedo (this should always be 1)
                 println!(
@@ -117,7 +117,7 @@ impl TextureManager{
                     name.clone()
                 );
 
-                self.textures[1] .clone()
+                self.textures.get("none").unwrap().clone()
 
             }
         }
@@ -129,15 +129,13 @@ impl TextureManager{
 
         //get the texture name and test the already used textures
         let name = texture.name.clone();
-
-        for i in self.textures.iter(){
-            if i.name == String::from(name.clone()){
-                return Err("This texture is already in th manager")
-            }
+        //check if already in
+        if self.textures.contains_key(&name){
+            return Err("This texture is already in th manager");
         }
 
         //If the texture passed the name test, we can add it
-        self.textures.push(texture);
+        self.textures.insert(name, texture);
         Ok({})
     }
 
@@ -146,23 +144,10 @@ impl TextureManager{
     ///TODO verfiy that not index 0-3 is delted (used for the system)
     pub fn remove_texture(mut self, texture_name: &str) -> Result<(), &'static str>{
 
-        //Test if the texture is in the naming index
-        let mut texture_index = 0;
-        let mut is_in_manager = false;
-        for i in self.textures.iter_mut(){
-            if i.name == String::from(texture_name){
-                is_in_manager = true;
-                break;
-            }
-            texture_index += 1;
-        }
-        //if the texture was in the manager we can use the last index to remvoe this texture
-        if is_in_manager{
-            self.textures.remove(texture_index);
-            return Ok({});
-        }
 
-        //if the texture was not in the manager, send an error
-        Err("the texture could not removed because it is not in the manager")
+        match self.textures.remove(&String::from(texture_name)){
+            Some(t) => return Ok({}),
+            None => Err("the texture could not removed because it is not in the manager"),
+        }
     }
 }

@@ -399,7 +399,7 @@ impl Renderer {
     ///Renders the scene with the parameters supplied by the asset_manager
     pub fn render(&mut self, asset_manager: &mut asset_manager::AssetManager){
 
-        println!("STATUS: RENDER CORE: Starting render ", );
+        //println!("STATUS: RENDER CORE: Starting render ", );
         //DEBUG
         let start_time = Instant::now();
 
@@ -459,7 +459,7 @@ impl Renderer {
                     1f32.into()
                 ]).expect("failed to clear"));
 
-            println!("Trying to get meshes in frustum", );
+            //println!("Trying to get meshes in frustum", );
             //Draw
                 //get all meshes, later in view frustum based on camera
             let meshes_in_frustum = asset_manager.get_meshes_in_frustum();

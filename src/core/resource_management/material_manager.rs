@@ -5,7 +5,7 @@ use render;
 use render::pipeline;
 use render::pipeline_manager;
 use core::resources::texture::Texture;
-
+use vulkano;
 ///Handles all available materials
 pub struct MaterialManager {
     //TODO comapare if a Vec<material> + search algorith would be faster

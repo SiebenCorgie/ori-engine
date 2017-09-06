@@ -5,11 +5,11 @@ use core::resources::texture;
 use core::engine_settings;
 
 use vulkano::device::{Device, Queue};
+use vulkano;
 
-
-///Holds a vector of different textures which can be retrieved as a copy in for of a Arc<Texture>
+///Holds all kinds of different textures which can be retrieved as a copy in for of a Arc<Texture<F>>
 pub struct TextureManager {
-    //the textures
+    //rgba textures
     textures: BTreeMap<String, Arc<texture::Texture>>,
 
     //Some more copys of structures needed to create more textures
@@ -88,7 +88,9 @@ impl TextureManager{
     ///Returns the set of fallback textures in teh order: (albedo, normal, physical)
     ///TODO This could be faster by using index 1-3
     pub fn get_fallback_textures(&mut self) -> (
-        Arc<texture::Texture>, Arc<texture::Texture>, Arc<texture::Texture>
+        Arc<texture::Texture>,
+        Arc<texture::Texture>,
+        Arc<texture::Texture>
     ){
         let albedo_tex = self.get_texture("fallback_albedo");
         let normal_tex = self.get_texture("fallback_normal");

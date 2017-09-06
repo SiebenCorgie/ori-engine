@@ -13,18 +13,9 @@ use vulkano::format::AcceptsPixels;
 use vulkano;
 
 use image;
+use image::DynamicImage::*;
 
 use core::engine_settings;
-
-/// A simple format enum used to describe image formats supported by Ori
-/// Currently has no effect because the only "always" supported type is 8Bit RGBA
-#[derive(Eq, PartialEq)]
-pub enum TextureColorFormats {
-    R8G8B8A8_SRGB,
-    R8G8B8A8_UNORM,
-    R8_GREYSCALE,
-}
-
 
 pub struct TextureBuilder {
     //sampler
@@ -47,8 +38,6 @@ pub struct TextureBuilder {
     max_lod: f32,
 
     //image
-    //color format
-    color_format: TextureColorFormats,
     //Some helpful postprogressing
     b_blur: bool,
     blur_factor: f32,
@@ -74,6 +63,12 @@ pub struct TextureBuilder {
     engine_settings: Arc<Mutex<engine_settings::EngineSettings>>,
 }
 
+///a small struct used to return image information
+struct ImageInfo {
+    pub dimensions: vulkano::image::Dimensions,
+    pub format: vulkano::format::Format,
+    pub data: Vec<u8>,
+}
 
 impl TextureBuilder {
     ///Creates a new builder struct with default parameters from an image at `image_path`
@@ -105,8 +100,6 @@ impl TextureBuilder {
             max_lod: 0.0,
 
             //image
-            //color format
-            color_format: TextureColorFormats::R8G8B8A8_SRGB,
             //Some helpful postprogressing
             b_blur: false,
             blur_factor: 0.0,
@@ -183,13 +176,6 @@ impl TextureBuilder {
         self
     }
 
-    ///Sets new target color format for the image
-    ///The imported image will be converted to this after importing
-    pub fn with_format(mut self, format: TextureColorFormats) -> Self{
-        self.color_format = format;
-        self
-    }
-
     ///The imported image will be blured by `factor` after importing
     pub fn with_blur(mut self, factor: f32) -> Self{
         self.b_blur = true;
@@ -259,7 +245,10 @@ impl TextureBuilder {
         ).expect("Failed to generate sampler");
         //Now load a the texture
         let texture = {
-            let (texture_tmp, tex_future) = {
+
+            //
+
+            let image = {
                 let mut image = image::open(&self.image_path.to_string())
                 .expect("failed to load png normal in creation");
 
@@ -295,53 +284,105 @@ impl TextureBuilder {
                     image = image.rotate270();
                 }
 
-                /* TODO Implement a parmaeter F: format for dynamic image formats
-                //if specified load as greyscale
-                if self.color_format == TextureColorFormats::R8_GREYSCALE{
-                    let final_image = image.to_luma();
-                    //Now transform the image::* into a vulkano image
-                    let (width, height) = final_image.dimensions();
-                    let image_data = final_image.into_raw().clone();
+                //now match the format of this image
+                match image{
+                    ImageLuma8(gray_image) => {
+                        //Now transform the image::* into a vulkano image
+                        let (width, height) = gray_image.dimensions();
+                        let image_data = gray_image.into_raw().clone();
+                        ImageInfo{
+                            dimensions: Dim2d { width: width, height: height },
+                            format: vulkano::format::Format::R8Srgb,
+                            data: image_data,
+                        }
 
-                    //return image and its GpuFuture
-                    ImmutableImage::from_iter(
-                        image_data.iter().cloned(),
-                        Dim2d { width: width, height: height },
-                        //Set format dependent on self.color_format
-                        vulkano::format::R8Srgb,
-                        Some(self.queue.family()),
-                        self.queue.clone()).expect("failed to create immutable image")
-                //else load the image as 8bit rgba srgb
-                }else{
-                    let final_image = image.to_rgba();
-                    //Now transform the image::* into a vulkano image
-                    let (width, height) = final_image.dimensions();
-                    let image_data = final_image.into_raw().clone();
-
-                    //return image and its GpuFuture
-                    ImmutableImage::from_iter(
-                        image_data.iter().cloned(),
-                        Dim2d { width: width, height: height },
-                        //Set format dependent on self.color_format
-                        vulkano::format::R8G8B8A8Srgb,
-                        Some(self.queue.family()),
-                        self.queue.clone()).expect("failed to create immutable image")
+                        /*
+                        //return image and its GpuFuture
+                        ImmutableImage::from_iter(
+                            image_data.iter().cloned(),
+                            Dim2d { width: width, height: height },
+                            //Set format dependent on self.color_format
+                            vulkano::format::R8Srgb,
+                            self.queue.clone())
+                        .expect("failed to create immutable image")
+                        */
+                    },
+                    ImageLumaA8(gray_alpha_image) => {
+                        //Now transform the image::* into a vulkano image
+                        let (width, height) = gray_alpha_image.dimensions();
+                        let image_data = gray_alpha_image.into_raw().clone();
+                        //(Dim2d { width: width, height: height },vulkano::format::R8G8Srgb, image_data)
+                        ImageInfo{
+                            dimensions: Dim2d { width: width, height: height },
+                            format: vulkano::format::Format::R8G8Srgb,
+                            data: image_data,
+                        }
+                        /*
+                        //return image and its GpuFuture
+                        ImmutableImage::from_iter(
+                            image_data.iter().cloned(),
+                            Dim2d { width: width, height: height },
+                            //Set format dependent on self.color_format
+                            vulkano::format::R8G8Srgb,
+                            self.queue.clone())
+                        .expect("failed to create immutable image")
+                        */
+                    },
+                    ImageRgb8(_) =>{
+                        // Since RGB is often not supported by Vulkan, convert to RGBA instead.
+                        let rgba = image.to_rgba();
+                        //Now transform the image::* into a vulkano image
+                        let (width, height) = rgba.dimensions();
+                        let image_data = rgba.into_raw().clone();
+                        //(Dim2d { width: width, height: height },vulkano::format::R8G8B8A8Srgb, image_data)
+                        ImageInfo{
+                            dimensions: Dim2d { width: width, height: height },
+                            format: vulkano::format::Format::R8G8B8A8Srgb,
+                            data: image_data,
+                        }
+                        /*
+                        //return image and its GpuFuture
+                        ImmutableImage::from_iter(
+                            image_data.iter().cloned(),
+                            Dim2d { width: width, height: height },
+                            //Set format dependent on self.color_format
+                            vulkano::format::R8G8B8A8Srgb,
+                            self.queue.clone())
+                        .expect("failed to create immutable image")
+                        */
+                    },
+                    ImageRgba8(grba_image) =>{
+                        //Now transform the image::* into a vulkano image
+                        let (width, height) = grba_image.dimensions();
+                        let image_data = grba_image.into_raw().clone();
+                        //(Dim2d { width: width, height: height },vulkano::format::R8G8B8A8Srgb, image_data)
+                        ImageInfo{
+                            dimensions: Dim2d { width: width, height: height },
+                            format: vulkano::format::Format::R8G8B8A8Srgb,
+                            data: image_data,
+                        }
+                        /*
+                        //return image and its GpuFuture
+                        ImmutableImage::from_iter(
+                            image_data.iter().cloned(),
+                            Dim2d { width: width, height: height },
+                            //Set format dependent on self.color_format
+                            vulkano::format::R8G8B8A8Srgb,
+                            self.queue.clone())
+                        .expect("failed to create immutable image")
+                        */
+                    },
                 }
-                */
-
-                //NOTE the static image format is not final
-                let final_image = image.to_rgba();
-                //Now transform the image::* into a vulkano image
-                let (width, height) = final_image.dimensions();
-                let image_data = final_image.into_raw().clone();
-
-                //return image and its GpuFuture
+            };
+            //create a image from the optained format and resources
+            let (texture_tmp, tex_future) = {
                 ImmutableImage::from_iter(
-                    image_data.iter().cloned(),
-                    Dim2d { width: width, height: height },
+                    image.data.iter().cloned(),
+                    image.dimensions,
                     //Set format dependent on self.color_format
-                    vulkano::format::R8G8B8A8Srgb,
-                    self.queue.clone()).expect("failed to create immutable image")
+                    image.format,
+                    self.queue.clone())
+                .expect("failed to create immutable image")
             };
             //drop the future to wait for gpu
             texture_tmp
@@ -352,21 +393,10 @@ impl TextureBuilder {
             sampler: tmp_sampler,
             original_path: self.image_path.clone(),
         };
+
         Arc::new(texture_struct)
     }
 }
-/*
-let sampler_albedo_tmp = vulkano::sampler::Sampler::new(
-    device.clone(),
-    vulkano::sampler::Filter::Linear,
-    vulkano::sampler::Filter::Linear,
-    vulkano::sampler::MipmapMode::Nearest,
-    vulkano::sampler::SamplerAddressMode::Repeat,
-    vulkano::sampler::SamplerAddressMode::Repeat,
-    vulkano::sampler::SamplerAddressMode::Repeat,
-    0.0, 1.0, 0.0, 0.0
-).expect("Failed to generate albedo sampler");
-*/
 
 ///The Texture holds a images as well as the sampler, mipmapping etc for this texture is stored
 /// withing the `vulkano::image::immutable::ImmutableImage`.
@@ -375,7 +405,7 @@ let sampler_albedo_tmp = vulkano::sampler::Sampler::new(
 pub struct Texture {
     ///A name which can be used to reference the texture
     pub name: String,
-    texture: Arc<ImmutableImage<vulkano::format::R8G8B8A8Srgb>>,
+    texture: Arc<ImmutableImage<vulkano::format::Format>>,
     sampler: Arc<vulkano::sampler::Sampler>,
 
     original_path: String,
@@ -383,8 +413,9 @@ pub struct Texture {
 
 ///The implementation doesn't change anything on this texture
 impl Texture{
-    ///Returns the raw `Arc<ImmutableImage<vulkano::format::R8G8B8A8Srgb>>`
-    pub fn get_raw_texture(&self) -> Arc<ImmutableImage<vulkano::format::R8G8B8A8Srgb>>{
+    ///Returns the raw `Arc<ImmutableImage<T>>`
+    pub fn get_raw_texture(&self) -> Arc<ImmutableImage<vulkano::format::Format>>
+    {
         self.texture.clone()
     }
 

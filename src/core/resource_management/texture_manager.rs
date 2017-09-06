@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use std::collections::BTreeMap;
 
 use core::resources::texture;
 use core::engine_settings;
@@ -9,7 +10,7 @@ use vulkano::device::{Device, Queue};
 ///Holds a vector of different textures which can be retrieved as a copy in for of a Arc<Texture>
 pub struct TextureManager {
     //the textures
-    textures: Vec<Arc<texture::Texture>>,
+    textures: BTreeMap<String, Arc<texture::Texture>>,
 
     //Some more copys of structures needed to create more textures
     device: Arc<Device>,
@@ -67,12 +68,12 @@ impl TextureManager{
         .build_with_name("fallback_physical");
 
         //Now store all the textures
-        let mut current_textures = Vec::new();
+        let mut current_textures = BTreeMap::new();
 
-        current_textures.push(none_texture);
-        current_textures.push(fallback_albedo);
-        current_textures.push(fallback_normal);
-        current_textures.push(fallback_physical);
+        current_textures.insert(String::from("none"), none_texture);
+        current_textures.insert(String::from("fallback_albedo"), fallback_albedo);
+        current_textures.insert(String::from("fallback_normal"), fallback_normal);
+        current_textures.insert(String::from("fallback_physical"), fallback_physical);
 
         //Create the struct and return it
         TextureManager{
@@ -107,17 +108,19 @@ impl TextureManager{
     ///Returns a texture if this name, if not found, returns th fallback texture
     pub fn get_texture(&mut self, name: &str) -> Arc<texture::Texture>{
 
-        for i in self.textures.iter(){
-            if i.name == String::from(name.clone()){
-                return i.clone();
+        match self.textures.get(&String::from(name)){
+            Some(texture) return Some(texture.clone())
+            None => {
+                //if no texture was found return the fallback albedo (this should always be 1)
+                println!(
+                    "WARNING: TEXTURE_MANAGER: Returning fallback albedo because: {} was not found",
+                    name.clone()
+                );
+
+                self.textures[1] .clone()
+
             }
         }
-        //if no texture was found return the fallback albedo (this should always be 1)
-        println!(
-            "WARNING: TEXTURE_MANAGER: Returning fallback albedo because: {} was not found",
-            name.clone()
-        );
-        self.textures[1] .clone()
     }
 
     ///Adds a new texture to the manager, this will return an error if the texture is already in

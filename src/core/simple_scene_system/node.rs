@@ -5,7 +5,8 @@ use cgmath;
 use cgmath::Transform;
 use cgmath::*;
 use collision::*;
-use core::AABB3Intersection;
+//use core::AABB3Intersection;
+//use collision::Discrete;
 use core::ReturnBoundInfo;
 
 use rt_error;
@@ -15,6 +16,9 @@ use core::resources::light;
 use core::resources::empty;
 use core::resources::camera;
 use core::resources::camera::Camera;
+
+//used for sorting and searching the children
+use std::collections::BTreeMap;
 
 ///All possible types of content a Node can hold.
 ///Changed in order to apply a new type
@@ -115,15 +119,18 @@ impl ContentType{
 
 ///The normal Node of this Scene Tree
 ///
-/// *Why a Vector and no HashMap?*
-/// I decided to use a Vector of Structs where the name is in the struct mainly because of
-/// performance reasons. With small datasets (5-100 entries) the HashMap is faster and provides
+/// *Why a BTreeMap and no HashMap?*
+/// I decided to use a BTreeMap of Structs where the name is in the struct and the tree mainly because of
+/// performance reasons. With small datasets (5-100 entries) the BTreeMap is faster and provides
 /// some comfort (you can store the name as a String as key value). However, if you have bigger
-/// datasets (over 1,000,000) the vector is MUCH faster, as specially in `--release` mode.
+/// datasets (over 1,000,000) the HashMap is faster, as specially in `--release` mode.
+/// However, this should not be relevant to this node tree because it should mostly consist of mid
+// sized BTreeMaps
 #[derive(Clone)]
 pub struct GenericNode {
 
-    children: Vec<GenericNode>,
+    //children: Vec<GenericNode>,
+    children: BTreeMap<String, GenericNode>,
     ///There is a difference between a `Node`'s name and its `content` name
     pub name: String,
     ///And ID which needs to be unique TODO: Implement
@@ -143,10 +150,10 @@ impl GenericNode{
     ///Creates a new, empty node
     pub fn new_empty(name: &str)-> Self{
 
-        let mut tmp_bound = Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
+        let tmp_bound = Aabb3::new(Point3::new(0.0, 0.0, 0.0), Point3::new(1.0, 1.0, 1.0));
 
         GenericNode{
-            children: Vec::new(),
+            children: BTreeMap::new(),
             name: String::from(name),
             id: 1,
             transform: cgmath::Transform::one(),
@@ -158,14 +165,14 @@ impl GenericNode{
     }
 
     ///Should return an node
-    pub fn new(name: &str, content: ContentType)->Self{
+    pub fn new(content: ContentType)->Self{
 
         //Create variables needed to fill the final struct but change them depending on the match
         let mut name = content.get_name();
         let mut bound = content.get_bound();
 
         GenericNode{
-            children: Vec::new(),
+            children: BTreeMap::new(),
             name: String::from(name),
             id: 1,
             transform: cgmath::Transform::one(),
@@ -178,10 +185,13 @@ impl GenericNode{
 
     ///should release a node from memory
     pub fn release(&mut self, name: &str){
-        //Only remove if in Vec
-        for i in 0..self.children.len(){
-            if self.children[i].name == String::from(name.clone()){
-                self.children.remove(i);
+        match self.children.remove(&String::from(name)){
+            //if `name` was in self.children return, else search in children
+            Some(_) => return,
+            None => {
+                for (name, child) in self.children.iter_mut(){
+                    child.release(name);
+                }
             }
         }
     }
@@ -189,7 +199,7 @@ impl GenericNode{
     ///Destroy this node and all its children
     pub fn destroy(&mut self){
         //First delete all children
-        for i in self.children.iter_mut(){
+        for (_,i) in self.children.iter_mut(){
             i.destroy();
         }
         //then self
@@ -198,21 +208,16 @@ impl GenericNode{
 
     ///Adds a child node to this node
     pub fn add_child(&mut self, child: ContentType){
-
-        //find out the right name
-        let name: String = child.get_name();
-
-        let tmp_name: &str = &name.to_string();
-        //deside how to add, based on type
-        let tmp_child = GenericNode::new(tmp_name, child);
-        self.children.push(tmp_child);
-
+        //create the new node from the type
+        let tmp_child = GenericNode::new(child);
+        //and add it
+        self.children.insert(tmp_child.name.clone(), tmp_child);
     }
 
     ///Adds a already prepared node, good for merging different trees
     pub fn add_node(&mut self, node: GenericNode){
         //Add it based on its own name
-        self.children.push(node);
+        self.children.insert(node.name.clone(), node);
     }
 
     ///Adds a `node_to_add` as a child to a node with `node_name` as name
@@ -231,17 +236,18 @@ impl GenericNode{
 
         let mut tmp_return: Option<&mut Self> = None;
 
-        if self.name == String::from(node_name.clone()){
+        if self.name == String::from(node_name){
             return Some(self);
         }
-        //nothing new: if it's not self, it cycles trough the children
+
         match tmp_return{
             //if something was found return it
-            Some(_) => {},
+            Some(item) => return Some(item),
+            //else search in childrens children
             None=>{
-                for i in self.children.iter_mut(){
+                for (_,i) in self.children.iter_mut(){
                     match tmp_return{
-                        None=> tmp_return = i.get_node(node_name.clone()),
+                        None=> tmp_return = i.get_node(node_name),
                         Some(value)=> return Some(value),
                     }
                 }
@@ -253,10 +259,6 @@ impl GenericNode{
 
     ///Returns the transform matrix
     pub fn get_transform_matrix(&self) -> Matrix4<f32>{
-    println!("Matrix from: ", );
-    println!("Loc: {:?}", self.transform.disp);
-    println!("Rot: {:?}", self.transform.rot);
-    println!("Scale: {:?}", self.transform.scale);
     Matrix4::from(self.transform)
 
     }
@@ -267,7 +269,7 @@ impl GenericNode{
         self.transform.disp = self.transform.disp + translation;
 
         //for all children
-        for child in self.children.iter_mut(){
+        for (_, child) in self.children.iter_mut(){
             child.translate(translation);
         }
     }
@@ -293,8 +295,6 @@ impl GenericNode{
             z: Deg(rotation.z),
         });
 
-        println!("current location {:?}", self.transform.disp);
-
         self.transform.disp -= point;
         //do rotation
         self.transform.rot = self.transform.rot * q_rotation;
@@ -303,10 +303,8 @@ impl GenericNode{
         //move back to origin
         self.transform.disp += point;
 
-        println!("Location Now {:?}", self.transform.disp);
-
         //now do the same for all childs
-        for child in self.children.iter_mut(){
+        for (_, child) in self.children.iter_mut(){
             child.rotate_around_point(rotation, point);
         }
 
@@ -314,7 +312,6 @@ impl GenericNode{
 
     ///Rotates this note and its children by `rotation`
     pub fn rotate(&mut self, rotation: Vector3<f32>){
-        println!("rotation ! ... current: {:?}", self.transform.rot);
         let q_rotation = Quaternion::from(Euler {
             x: Deg(rotation.x),
             y: Deg(rotation.y),
@@ -323,9 +320,7 @@ impl GenericNode{
 
         self.transform.rot = self.transform.rot * q_rotation;
 
-        println!("Still rotating: now {:?}", self.transform.rot);
-
-        for child in self.children.iter_mut(){
+        for (_, child) in self.children.iter_mut(){
             child.rotate_around_point(rotation, self.transform.disp);
         }
 
@@ -335,6 +330,7 @@ impl GenericNode{
     pub fn get_mesh(&mut self, name: &str)-> Option<Arc<Mutex<core::resources::mesh::Mesh>>>{
         let mut result_value: Option<Arc<Mutex<core::resources::mesh::Mesh>>> = None;
 
+        //match self
         match self.content{
             ContentType::Renderable(RenderableContent::Mesh(ref m)) => {
                 let mesh_lock = m.lock().expect("failed to lock mesh");
@@ -352,7 +348,7 @@ impl GenericNode{
             Some(_)=> {},
             None=> {
                 //Cycling though the children till we got any Some(x)
-                for i in self.children.iter_mut(){
+                for (_, i) in self.children.iter_mut(){
                     //make sure we dont overwrite the right value with a none of the next value
                     match result_value{
                         None=> result_value = i.get_mesh(name.clone()),
@@ -385,7 +381,7 @@ impl GenericNode{
             Some(_)=> {},
             None=> {
                 //Cycling though the children till we got any Some(x)
-                for i in self.children.iter_mut(){
+                for (_, i) in self.children.iter_mut(){
                     //make sure we dont overwrite the right value with a none of the next value
                     match result_value{
                         None=> result_value = i.get_light_point(name.clone()),
@@ -413,7 +409,7 @@ impl GenericNode{
             Some(_)=> {},
             None=> {
                 //Cycling though the children till we got any Some(x)
-                for i in self.children.iter_mut(){
+                for (_, i) in self.children.iter_mut(){
                     //make sure we dont overwrite the right value with a none of the next value
                     match result_value{
                         None=> result_value = i.get_light_directional(name.clone()),
@@ -441,7 +437,7 @@ impl GenericNode{
             Some(_)=> {},
             None=> {
                 //Cycling though the children till we got any Some(x)
-                for i in self.children.iter_mut(){
+                for (_, i) in self.children.iter_mut(){
                     //make sure we dont overwrite the right value with a none of the next value
                     match result_value{
                         None=> result_value = i.get_light_spot(name.clone()),
@@ -492,7 +488,7 @@ impl GenericNode{
 
 
         //if not already return because the bound is too small, check the children
-        for i in self.children.iter_mut(){
+        for (_, i) in self.children.iter_mut(){
             return_vector.append(&mut i.get_meshes_in_volume(&camera_frustum, camera.get_position()));
         }
         return_vector
@@ -532,7 +528,7 @@ impl GenericNode{
 
 
         //if not already return because the bound is too small, check the children
-        for i in self.children.iter_mut(){
+        for (_, i) in self.children.iter_mut(){
             return_vector.append(&mut i.get_meshes_in_volume(&volume, location));
         }
         return_vector
@@ -541,8 +537,6 @@ impl GenericNode{
     ///Gets all meshes from this node down
     pub fn get_all_meshes(&mut self) -> Vec<(Arc<Mutex<mesh::Mesh>>, Matrix4<f32>)>{
         let mut return_vector = Vec::new();
-
-
 
         match self.content{
             ContentType::Renderable(RenderableContent::Mesh(ref mesh)) => {
@@ -553,7 +547,7 @@ impl GenericNode{
 
         //println!("Returning tanslation of: {:?}", self.get_transform_matrix());
         //Go down the tree
-        for i in self.children.iter_mut(){
+        for (_, i) in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_meshes());
         }
         return_vector
@@ -570,7 +564,7 @@ impl GenericNode{
         }
 
         //Go down the tree
-        for i in self.children.iter_mut(){
+        for (_, i) in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_point_lights());
         }
         return_vector
@@ -587,7 +581,7 @@ impl GenericNode{
         }
 
         //Go down the tree
-        for i in self.children.iter_mut(){
+        for (_, i) in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_directional_lights());
         }
         return_vector
@@ -602,7 +596,7 @@ impl GenericNode{
             ContentType::Light(LightsContent::SpotLight(ref pl)) => return_vector.push(pl.clone()),
             _ => {},
         }
-        for i in self.children.iter_mut(){
+        for (_, i) in self.children.iter_mut(){
             return_vector.append(&mut i.get_all_spot_lights());
         }
         return_vector
@@ -619,7 +613,7 @@ impl GenericNode{
         let mut return_max = self.bound.max.clone();
 
         //Compare self with the children an their children etc.
-        for i in self.children.iter_mut(){
+        for (_, i) in self.children.iter_mut(){
             let child_max = i.get_bound_max();
 
             //Comapare per axis    X
@@ -649,7 +643,7 @@ impl GenericNode{
         let mut return_min = self.bound.min.clone();
 
         //Compare self with the children an their children etc.
-        for i in self.children.iter_mut(){
+        for (_, i) in self.children.iter_mut(){
             let child_min = i.get_bound_min();
 
             //Comapare per axis    X
@@ -677,7 +671,7 @@ impl GenericNode{
     pub fn rebuild_bounds(&mut self){
 
         //First rebuild the bounds of all sub children
-        for k in self.children.iter_mut(){
+        for (_, k) in self.children.iter_mut(){
             k.rebuild_bounds();
         }
         //Then get the new max and min values
@@ -708,7 +702,7 @@ impl GenericNode{
             self.transform.disp.y,
             self.transform.disp.z,
         );
-        for i in self.children.iter(){
+        for (_, i) in self.children.iter(){
             i.print_member(depth + 1);
         }
     }

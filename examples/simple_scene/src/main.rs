@@ -13,6 +13,7 @@ use std::time::{Instant, Duration};
 
 
 
+
 extern crate winit;
 
 fn main() {
@@ -109,25 +110,25 @@ fn main() {
         let nrm_in_manager = asset_manager.get_texture_manager().get_texture("cube_normal");
 
         let new_material = core::resources::material::MaterialBuilder::new(
-            None,
+            Some(albedo_in_manager),
             Some(nrm_in_manager),
             None,
             None,
             asset_manager.get_texture_manager().get_none()
         ).with_factors(
             core::resources::material::MaterialFactors::new()
-            .with_factor_albedo([0.4, 0.2, 0.0, 1.0])
-            .with_factor_metal(0.8)
+            //.with_factor_albedo([0.4, 0.2, 0.0, 1.0])
+            .with_factor_metal(0.0)
             .with_factor_roughness(0.1)
         );
 
         asset_manager.add_material_to_manager(new_material, "metalBlack").expect("failed to add new_material");
 
     }
-/*
+
     //SUN========================================================================
     let mut sun = light::LightDirectional::new("Sun");
-    sun.set_direction(Vector3::new(1.0, -0.5, 0.5));
+    sun.set_direction(Vector3::new(1.0, -0.5, 0.0));
     sun.set_color(Vector3::new(1.0, 0.75, 0.75));
     sun.set_intensity(200.0);
 
@@ -135,7 +136,7 @@ fn main() {
     asset_manager.get_active_scene().add_child(sun_node);
     //SUN========================================================================
 
-
+/*
     //SPOT 01 ===================================================================
     let mut spot_01 = light::LightSpot::new("Spot_01");
     spot_01.set_color(Vector3::new(1.0, 1.0, 1.0));
@@ -148,7 +149,7 @@ fn main() {
     let spot_node_01 = node::ContentType::Light(node::LightsContent::SpotLight(spot_01));
     asset_manager.get_active_scene().add_child(spot_node_01);
     //SPOT 01 ===================================================================
-*/
+
 
     //POINT 00 ==================================================================
     let mut point_00 = light::LightPoint::new("Point_00");
@@ -195,7 +196,7 @@ fn main() {
     let point_node_04 = node::ContentType::Light(node::LightsContent::PointLight(point_04));
     asset_manager.get_active_scene().add_child(point_node_04);
     //POINT 04 ==================================================================
-
+*/
     asset_manager.get_active_scene().print_member(0);
 
     let mut adding_status_plane = false;
@@ -229,7 +230,7 @@ fn main() {
             asset_manager.add_scene_to_main_scene("ball_02");
 
             adding_status = true;
-            println!("STATUS: GAME: added all ball_01s", );
+            println!("STATUS: GAME: added all ball_01s=============================================", );
 
         }
 

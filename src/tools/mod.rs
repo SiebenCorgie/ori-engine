@@ -5,9 +5,13 @@ use vulkano;
 
 use core::resources::mesh;
 
-/// an importer via the assimp library
-pub mod assimp_importer;
 
+/// an importer via the assimp library
+/// #deprecated
+///This should only be userd if you can't transform your model in a gltf. This importer is no longer tested.
+pub mod assimp_importer;
+///The main importer for this engine
+pub mod gltf_importer;
 
 ///A trait every importer should implement
 pub trait Importer {
@@ -44,7 +48,7 @@ impl BoundCreateInfo{
             min_z: 0.0,
         }
     }
-
+    
     ///Returns the bound min value
     pub fn get_info_min(&mut self) -> Point3<f32>{
         Point3::new(self.min_x.clone(), self.min_y.clone(), self.min_z.clone())

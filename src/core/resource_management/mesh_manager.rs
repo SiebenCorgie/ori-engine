@@ -24,13 +24,24 @@ impl MeshManager {
     }
 
     ///Adds a mesh to the manager
-    pub fn add_mesh(&mut self, mesh: mesh::Mesh){
+    pub fn add_mesh(&mut self, mut mesh: mesh::Mesh){
 
         let meshes_instance = self.meshes.clone();
-        {
-            //insert the new mesh
-            (*meshes_instance).lock().expect("Failed to hold while adding mesh to mesh manager")
-            .insert(mesh.name.clone(), Arc::new(Mutex::new(mesh)));
+
+        let mut mesh_lck = meshes_instance.lock().expect("Failed to hold while adding mesh to mesh manager");
+        //have a look for this mesh in self
+        let b_contains = (*mesh_lck).contains_key(&String::from(mesh.name.clone()));
+        match b_contains{
+            true => {
+                println!("The name: {} is already in the mesh manager, will add as {}_1", mesh.name.clone(), mesh.name.clone());
+                let new_name = mesh.name.clone() + "_1";
+                //change the name in mesh
+                mesh.name = new_name.clone();
+                (*mesh_lck).insert(new_name, Arc::new(Mutex::new(mesh)));
+            },
+            false => {
+               (*mesh_lck).insert(mesh.name.clone(), Arc::new(Mutex::new(mesh)));
+            }
         }
 
     }

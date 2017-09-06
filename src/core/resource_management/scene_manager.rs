@@ -16,8 +16,19 @@ impl SceneManager {
     }
 
     //Adds a scene to the scene manager
-    pub fn add_scene(&mut self, scene: node::GenericNode){
-        self.scenes.insert(scene.name.clone(), Arc::new(Mutex::new(scene)));
+    pub fn add_scene(&mut self, mut scene: node::GenericNode){
+        match self.scenes.contains_key(&scene.name.clone()){
+            true => {
+                println!("This scene({}) already exists, adding it as {}_1", scene.name.clone(), scene.name.clone());
+                let new_name = String::from(scene.name.clone()) + "_1";
+                //change the internal name of this scene
+                scene.name = new_name.clone();
+                self.scenes.insert(new_name, Arc::new(Mutex::new(scene)));
+            },
+            false =>{
+                self.scenes.insert(scene.name.clone(), Arc::new(Mutex::new(scene)));
+            },
+        }
     }
 
     ///Returns Some(scene) by name from the `scenes` Vector

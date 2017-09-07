@@ -89,9 +89,8 @@ impl MaterialManager {
     ///Updates all materials
     pub fn update(&mut self){
         //println!("STATUS: MATERIAL_MANAGER: In material manager", );
-        for (k,i) in self.material_vault.iter_mut(){
-            let i_inst = i.clone();
-            let mut i_lck = i_inst.lock().expect("failed to lock material for updating");
+        for (_ ,i) in self.material_vault.iter_mut(){
+            let mut i_lck = i.lock().expect("failed to lock material for updating");
             //println!("STATUS: MATERIAL_MANAGER: Updating: {}", k);
             (*i_lck).update();
         }

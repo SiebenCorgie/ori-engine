@@ -579,8 +579,7 @@ impl Material {
     pub fn recreate_set_01(&mut self, transform_matrix: Matrix4<f32>){
 
         //println!("STATUS: MATERIAL: Trying to lock uniform manager", );
-        let uniform_manager_isnt = self.uniform_manager.clone();
-        let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
+        let mut uniform_manager_lck = self.uniform_manager.lock().expect("Failed to locj unfiorm_mng");
         //println!("STATUS: MATERIAL: Generation new set_01", );
         let new_set = Arc::new(PersistentDescriptorSet::start(
                 self.pipeline.clone(), 0
@@ -605,8 +604,7 @@ impl Material {
 
 
         //TODO Add the buffers of the uniform manager to the descriptor set
-        let uniform_manager_isnt = self.uniform_manager.clone();
-        let mut uniform_manager_lck = uniform_manager_isnt.lock().expect("Failed to locj unfiorm_mng");
+        let mut uniform_manager_lck = self.uniform_manager.lock().expect("Failed to locj unfiorm_mng");
         //println!("STATUS: MATERIAL: Generation new set_04", );
         let new_set = Arc::new(PersistentDescriptorSet::start(
                 self.pipeline.clone(), 3

@@ -87,8 +87,7 @@ impl Renderer {
         .expect("failed to create instance");
 
         let engine_settings_wrk = {
-            let engine_settings_isnt = engine_settings.clone();
-            let engine_settings_lck = engine_settings_isnt
+            let engine_settings_lck = engine_settings
             .lock()
             .expect("failed to lock engine settings");
 
@@ -137,8 +136,7 @@ impl Renderer {
                                 .next().expect("no device available");
         //println!("STATUS: RENDER: Using device: {} (type: {:?})", physical.name(), physical.ty());
         //copy the events loop for the window creation
-        let events_loop_instance = events_loop.clone();
-        let events_loop_unlck = events_loop_instance
+        let events_loop_unlck = events_loop
         .lock()
         .expect("Failed to hold lock on events loop");
 
@@ -186,9 +184,7 @@ impl Renderer {
             .capabilities(physical).expect("failed to get surface capabilities");
 
             //lock settings to read fallback settings
-            let engine_settings_inst = engine_settings.clone();
-
-            let mut engine_settings_lck = engine_settings_inst
+            let mut engine_settings_lck = engine_settings
             .lock()
             .expect("Failed to lock settings");
 
@@ -324,8 +320,7 @@ impl Renderer {
     ///Returns true if successfully recreated chain
     pub fn recreate_swapchain(&mut self) -> bool{
         //get new dimmensions etc
-        let engine_settings_inst = self.engine_settings.clone();
-        let mut engine_settings_lck = engine_settings_inst
+        let mut engine_settings_lck = self.engine_settings
         .lock()
         .expect("Faield to lock settings");
 
@@ -435,8 +430,7 @@ impl Renderer {
 
 
             let dimensions = {
-                let engine_settings_inst = self.engine_settings.clone();
-                let engine_settings_lck = engine_settings_inst
+                let engine_settings_lck = self.engine_settings
                 .lock()
                 .expect("Faield to lock settings");
                 (*engine_settings_lck).get_dimensions()
@@ -467,10 +461,10 @@ impl Renderer {
 
             for mesh_transform in meshes_in_frustum.iter(){
 
-                let mesh = mesh_transform.0.clone();
-                let transform = mesh_transform.1.clone();
+                //let mesh = mesh_transform.0.clone();
+                //let transform = mesh_transform.1.clone();
 
-                let mesh_lck = mesh
+                let mesh_lck = mesh_transform.0
                 .lock()
                 .expect("could not lock mesh for building command buffer");
 
@@ -495,7 +489,7 @@ impl Renderer {
                 let set_01 = {
                     //TODO Set the model-matrix from the mesh data
                     //aquirre the tranform matrix and generate the new set_01
-                    (*unlocked_material).get_set_01(transform)
+                    (*unlocked_material).get_set_01(mesh_transform.1)
                 };
 
 

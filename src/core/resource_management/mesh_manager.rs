@@ -26,9 +26,7 @@ impl MeshManager {
     ///Adds a mesh to the manager
     pub fn add_mesh(&mut self, mut mesh: mesh::Mesh){
 
-        let meshes_instance = self.meshes.clone();
-
-        let mut mesh_lck = meshes_instance.lock().expect("Failed to hold while adding mesh to mesh manager");
+        let mut mesh_lck = self.meshes.lock().expect("Failed to hold while adding mesh to mesh manager");
         //have a look for this mesh in self
         let b_contains = (*mesh_lck).contains_key(&String::from(mesh.name.clone()));
         match b_contains{
@@ -48,8 +46,7 @@ impl MeshManager {
 
     ///Returns a mesh by name without locking it (as a Arc<T> clone)
     pub fn get_mesh(&mut self, name: &str) -> Option<Arc<Mutex<mesh::Mesh>>>{
-        let meshes_inst = self.meshes.clone();
-        let meshes = meshes_inst.lock().expect("faield to lock meshes");
+        let meshes = self.meshes.lock().expect("faield to lock meshes");
         match meshes.get(&String::from(name)){
             Some(mesh) => Some(mesh.clone()),
             None => None,

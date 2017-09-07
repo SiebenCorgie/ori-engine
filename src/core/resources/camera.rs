@@ -177,8 +177,7 @@ impl Camera for DefaultCamera{
 
         //copy us a easy key map
         let key_map_inst = {
-            let glob_key_map_inst = self.key_map.clone();
-            let glob_key_map_lck = glob_key_map_inst
+            let glob_key_map_lck = self.key_map
             .lock()
             .expect("failed to lock global key map");
 
@@ -287,8 +286,7 @@ impl Camera for DefaultCamera{
     fn get_perspective(&self) -> Matrix4<f32>{
         //TODO update the perspective to use current engine settings
         let (width, height) = {
-            let engine_settings_inst = self.settings.clone();
-            let engine_settings_lck = engine_settings_inst.lock().expect("Faield to lock settings");
+            let engine_settings_lck = self.settings.lock().expect("Faield to lock settings");
 
             (
                 (*engine_settings_lck).get_dimensions()[0],

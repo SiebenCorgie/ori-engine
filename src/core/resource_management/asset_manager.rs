@@ -1,4 +1,4 @@
-use std::sync::{Mutex, Arc};
+use std::sync::{Mutex, Arc, MutexGuard};
 use std::thread;
 use time;
 
@@ -10,6 +10,7 @@ use core::resources::mesh;
 use core::resource_management::mesh_manager;
 use tools::assimp_importer;
 use tools::Importer;
+use tools::gltf_importer;
 use core::resource_management::scene_manager;
 use core::resources::camera::Camera;
 use core::resources::camera::DefaultCamera;
@@ -44,7 +45,7 @@ pub struct AssetManager {
 
     mesh_manager: mesh_manager::MeshManager,
 
-    scene_manager:scene_manager::SceneManager,
+    scene_manager: Arc<Mutex<scene_manager::SceneManager>>,
 
     ///Holds a reference to the renderer
     renderer: Arc<Mutex<renderer::Renderer>>,
@@ -70,17 +71,14 @@ impl AssetManager {
         //The camera will be moved to a camera manager
         let camera = DefaultCamera::new(settings.clone(), key_map.clone());
 
-        //Make a nice copy so we can retrive the device and queueu
-        let renderer_instance = renderer.clone();
-
         //Gt us needed instances
         let device = {
-            let render_lck = renderer_instance.lock().expect("failed to hold renderer lock");
+            let render_lck = renderer.lock().expect("failed to hold renderer lock");
             (*render_lck).get_device().clone()
         };
 
         let queue = {
-            let render_lck = renderer_instance.lock().expect("failed to hold renderer lock");
+            let render_lck = renderer.lock().expect("failed to hold renderer lock");
             (*render_lck).get_queue().clone()
         };
 
@@ -98,15 +96,15 @@ impl AssetManager {
             fallback_phy,
             none_texture,
         );
-
+        let new_scene_manager = Arc::new(Mutex::new(scene_manager::SceneManager::new()));
 
         AssetManager{
             active_main_scene: node::GenericNode::new_empty("Empty"),
             texture_manager: tmp_texture_manager,
             material_manager: tmp_material_manager,
             mesh_manager: mesh_manager::MeshManager::new(),
-            scene_manager: scene_manager::SceneManager::new(),
-            renderer: renderer_instance,
+            scene_manager: new_scene_manager,
+            renderer: renderer,
             camera: camera,
 
             settings: settings,
@@ -270,10 +268,12 @@ impl AssetManager {
         self.camera.update_view();
     }
 
-    ///Returns the scene manager
-    pub fn get_scene_manager(&mut self) -> &mut scene_manager::SceneManager{
-
-        &mut self.scene_manager
+    ///Returns the scene manager as a locked mutex, need to be returned
+    pub fn get_scene_manager<'a>(&'a mut self) -> MutexGuard<'a, scene_manager::SceneManager>{
+        //lock own manager to return borrow
+        //let scene_inst = self.scene_manager.clone();
+        let mut scene_lock = self.scene_manager.lock().expect("failed to hold lock for scene manager");
+        scene_lock
     }
 
     ///Returns the camera in use TODO this will be managed by a independent camera manager in the future
@@ -319,6 +319,11 @@ impl AssetManager {
         self.active_main_scene.get_meshes_in_frustum(&self.camera)
     }
 
+    ///Imports a new gltf scene file to a new scene with `name` as name from `path`
+    pub fn import_gltf(&mut self, name: &str, path: &str){
+
+    }
+
     ///Imports a new scene from a file at `path` and saves the scene as `name`
     ///The meshes are stored as Arc<Mutex<T>>'s in the mesh manager the scene Is stored in the scene manager
     pub fn import_scene(&mut self, name: &str, path: &str){
@@ -336,9 +341,9 @@ impl AssetManager {
         //Create the topy scene via an empty which will be used to add all the meshe-nodes
         let new_scene = node::GenericNode::new_empty(name.clone());
         //Add the new scene to the manager
-        self.scene_manager.add_scene(new_scene);
+        self.get_scene_manager().add_scene(new_scene);
         //Now get the scene in the manager (as Arc<T>) and pass it for adding new meshes
-        let scene_in_manager = self.scene_manager.get_scene(
+        let scene_in_manager = self.get_scene_manager().get_scene(
             name.clone()
         ).expect("could not find the just added scene, this should not happen");
 
@@ -356,7 +361,7 @@ impl AssetManager {
 
         //Get the scene
         let scene ={
-            self.scene_manager.get_scene(name).clone()
+            self.get_scene_manager().get_scene(name).clone()
         };
 
         match scene{

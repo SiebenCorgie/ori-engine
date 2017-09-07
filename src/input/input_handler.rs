@@ -76,8 +76,7 @@ impl InputHandler{
                 //Polling all events TODO make a variable input cap for polling
                 //Copy our selfs a settings instance to change settings which ... changed
                 let mut settings_instance = {
-                    let tmp = settings_ins.clone();
-                    let lck = tmp.lock().expect("failed to lock settings in input handler");
+                    let lck = settings_ins.lock().expect("failed to lock settings in input handler");
 
                     (*lck).clone()
                 };
@@ -144,7 +143,6 @@ impl InputHandler{
 
                                 },
                                 KeyboardInput {device_id, input} =>{
-                                    use winit::KeyboardInput;
                                     use winit::VirtualKeyCode;
 
                                     //Match the type of input
@@ -418,11 +416,10 @@ impl InputHandler{
         });
     }
 
-    ///Ends the input threa via a end flag
+    ///Ends the input thread via a end flag
     pub fn end(&mut self){
 
-        let state_inst = self.state.clone();
-        let mut state_lck = state_inst
+        let mut state_lck = self.state
         .lock()
         .expect("Failed to lock input thread state for ending");
 

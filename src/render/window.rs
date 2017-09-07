@@ -24,8 +24,7 @@ impl Window{
 
         let mut available_monitors = winit::get_available_monitors();
 
-        let engine_settings_inst = engine_settings.clone();
-        let engine_settings_lck = engine_settings_inst.lock().expect("Failed to lock engine settings");
+        let engine_settings_lck = engine_settings.lock().expect("Failed to lock engine settings");
 
         let mut window_builder = winit::WindowBuilder::new();
 

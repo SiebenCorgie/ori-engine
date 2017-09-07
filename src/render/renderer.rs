@@ -597,7 +597,6 @@ impl Renderer {
         Arc<GraphicsPipelineAbstract + Send + Sync>,
         Arc<Mutex<uniform_manager::UniformManager>>,
         Arc<vulkano::device::Device>,
-        Arc<vulkano::device::Queue>,
         )
     {
         //Copy a default pipeline currently there is no way to nicly create a pipeline from a
@@ -611,9 +610,8 @@ impl Renderer {
         let pipe = pipeline_copy;
         let uni_man = self.uniform_manager.clone();
         let device = self.device.clone();
-        let queue = self.queue.clone();
 
-        (pipe, uni_man, device, queue)
+        (pipe, uni_man, device)
     }
 
     ///Returns an instance of the engine settings

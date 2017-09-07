@@ -38,12 +38,12 @@ pub struct AssetManager {
     active_main_scene: node::GenericNode,
 
     ///holds all textures
-    texture_manager: texture_manager::TextureManager,
+    texture_manager: Arc<Mutex<texture_manager::TextureManager>>,
 
     ///Holds the current material manager
-    material_manager: material_manager::MaterialManager,
+    material_manager: Arc<Mutex<material_manager::MaterialManager>>,
 
-    mesh_manager: mesh_manager::MeshManager,
+    mesh_manager: Arc<Mutex<mesh_manager::MeshManager>>,
 
     scene_manager: Arc<Mutex<scene_manager::SceneManager>>,
 
@@ -100,9 +100,9 @@ impl AssetManager {
 
         AssetManager{
             active_main_scene: node::GenericNode::new_empty("Empty"),
-            texture_manager: tmp_texture_manager,
-            material_manager: tmp_material_manager,
-            mesh_manager: mesh_manager::MeshManager::new(),
+            texture_manager: Arc::new(Mutex::new(tmp_texture_manager)),
+            material_manager: Arc::new(Mutex::new(tmp_material_manager)),
+            mesh_manager: Arc::new(Mutex::new(mesh_manager::MeshManager::new())),
             scene_manager: new_scene_manager,
             renderer: renderer,
             camera: camera,
@@ -249,8 +249,7 @@ impl AssetManager {
 
         //Update the uniform manager with the latest infos about camera and light
         {
-            let render_int = self.renderer.clone();
-            let render_lck = render_int.lock().expect("failed to lock renderer");
+            let render_lck = self.renderer.lock().expect("failed to lock renderer");
             let uniform_manager = (*render_lck).get_uniform_manager();
             let mut uniform_manager_lck = uniform_manager.lock().expect("failed to lock uniform_man.");
             (*uniform_manager_lck).update(
@@ -261,7 +260,8 @@ impl AssetManager {
 
         //println!("STATUS: ASSET_MANAGER: Now I'll update the materials", );
         //Update materials
-        self.material_manager.update();
+        self.get_material_manager().update();
+        //self.material_manager.update();
         //println!("STATUS: ASSET_MANAGER: Finished materials", );
 
         //Now update the camera
@@ -299,13 +299,18 @@ impl AssetManager {
     }
 
     //Returns a reference to the texture manager
-    pub fn get_texture_manager(&mut self) -> &mut texture_manager::TextureManager{
-        &mut self.texture_manager
+    pub fn get_texture_manager(&mut self) -> MutexGuard<texture_manager::TextureManager>{
+        self.texture_manager.lock().expect("failed to lock texture manager")
     }
 
     ///Returns a reference to the material manager
-    pub fn get_material_manager(&mut self) -> &mut material_manager::MaterialManager{
-        &mut self.material_manager
+    pub fn get_material_manager(&mut self) -> MutexGuard<material_manager::MaterialManager>{
+        self.material_manager.lock().expect("failed to hold material manager")
+    }
+
+    ///Returns the mesh manager
+    pub fn get_mesh_manager(&mut self) -> MutexGuard<mesh_manager::MeshManager>{
+        self.mesh_manager.lock().expect("failed to hold mesh manager")
     }
 
     //Returns a raw copy of the meshes in the current active scene tree
@@ -348,7 +353,7 @@ impl AssetManager {
         ).expect("could not find the just added scene, this should not happen");
 
         //Pass the import params an a scene manager instance to the mesh manager
-        self.mesh_manager.import_mesh(
+        self.get_mesh_manager().import_mesh(
             name, path,
             device_inst, queue_inst,
             scene_in_manager
@@ -411,7 +416,7 @@ impl AssetManager {
     {
 
         let final_texture = texture_builder.build_with_name(tex_name);
-        self.texture_manager.add_texture(final_texture)
+        self.get_texture_manager().add_texture(final_texture)
     }
 
     ///Takes an `material::MaterialBuilder` as well as the `name` for the new material
@@ -422,7 +427,7 @@ impl AssetManager {
         //lock the renderer
         let render_inst = self.renderer.clone();
         let  render_lck = render_inst.lock().expect("failed to hold renderer");
-        let (pipe, uni_man, device, queue) = (*render_lck).get_material_instances();
+        let (pipe, uni_man, device) = (*render_lck).get_material_instances();
 
         let final_material = material.build(
             name,
@@ -431,7 +436,7 @@ impl AssetManager {
             device,
         );
 
-        self.material_manager.add_material(final_material)
+        self.get_material_manager().add_material(final_material)
     }
 }
 

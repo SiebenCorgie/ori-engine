@@ -26,13 +26,9 @@ impl MaterialManager {
         none_texture: Arc<Texture>,
 
     )->Self{
-
-        //First get a tmp render instance
-        let render_inst = render.clone();
-
         //We'll have to check for a default pipeline, otherwise the Manager creation could fail
         {
-            let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
+            let mut render_lck = render.lock().expect("Failed to lock renderer");
 
             let pipeline_copy = (*render_lck).get_pipeline_manager().clone();
             {
@@ -51,12 +47,12 @@ impl MaterialManager {
         //Creates a fallback material to which the programm can fallback in case of a "materal not found"
 
         let (pipe, uni_man, device, queue) ={
-            let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
+            let mut render_lck = render.lock().expect("Failed to lock renderer");
             (*render_lck).get_material_instances()
         };
 
         let engine_settings = {
-            let mut render_lck = render_inst.lock().expect("Failed to lock renderer");
+            let mut render_lck = render.lock().expect("Failed to lock renderer");
             (*render_lck).get_engine_settings()
         };
 

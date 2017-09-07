@@ -13,6 +13,9 @@ extern crate vulkano_shader_derive;
 extern crate vulkano_win;
 extern crate time;
 extern crate image;
+extern crate gltf;
+extern crate gltf_importer;
+
 
 ///The engine core defines most functions and
 ///traits needed to feed the renderer and communicate with the physics.

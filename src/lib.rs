@@ -15,6 +15,7 @@ extern crate time;
 extern crate image;
 extern crate gltf;
 extern crate gltf_importer;
+extern crate gltf_utils;
 
 
 ///The engine core defines most functions and

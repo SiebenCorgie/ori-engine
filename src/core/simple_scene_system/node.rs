@@ -44,6 +44,7 @@ pub enum LightsContent {
 #[derive(Clone)]
 pub enum OtherContent {
     Empty(empty::Empty),
+    Camera(camera::DefaultCamera),
 }
 
 ///Some implementations to make the programmers life easier
@@ -77,6 +78,10 @@ impl ContentType{
                     &OtherContent::Empty(ref e) => {
                         e.name.clone()
                     },
+                    &OtherContent::Camera(ref c) =>{
+                        //c.name.clone() TODO add a camera name
+                        String::from("CameraName")
+                    }
                 }
             }
         }
@@ -111,6 +116,12 @@ impl ContentType{
                     &OtherContent::Empty(ref e) => {
                         e.get_bound()
                     },
+                    &OtherContent::Camera(ref c) =>{
+                        Aabb3::new(
+                            Point3::new(-1.0, -1.0, -1.0),
+                            Point3::new(1.0, 1.0, 1.0)
+                        )
+                    }
                 }
             }
         }
@@ -261,6 +272,11 @@ impl GenericNode{
     pub fn get_transform_matrix(&self) -> Matrix4<f32>{
     Matrix4::from(self.transform)
 
+    }
+
+    ///Sets the transform of this node without changing its children
+    pub fn set_transform_single(&mut self, new_transform: Decomposed<Vector3<f32>, Quaternion<f32>>){
+        self.transform = new_transform;
     }
 
     ///Translates this node by `translation` and all its children

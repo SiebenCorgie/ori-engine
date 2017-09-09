@@ -64,7 +64,6 @@ pub struct Mesh {
 
 impl Mesh {
     ///Returns the Member with the passed `name`
-    ///Special parameters light radius or color will have to be set later
     pub fn new(name: &str, device: Arc<vulkano::device::Device>,
         queue: Arc<vulkano::device::Queue>)
         ->Self{

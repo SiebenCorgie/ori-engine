@@ -17,7 +17,7 @@ use image::DynamicImage::*;
 
 use core::engine_settings;
 
-pub struct TextureBuilder {
+pub struct TextureBuilder<'a> {
     //sampler
     //Sampling information if the image is larger or smaller than the original
     mag_filter: Filter,
@@ -58,6 +58,8 @@ pub struct TextureBuilder {
 
     //Create info (this won't be included in the final texture)
     image_path: String,
+    //This is some if the image should be create from data
+    image_data: Option<&'a [u8]>,
     device: Arc<Device>,
     queue: Arc<Queue>,
     engine_settings: Arc<Mutex<engine_settings::EngineSettings>>,
@@ -70,7 +72,7 @@ struct ImageInfo {
     pub data: Vec<u8>,
 }
 
-impl TextureBuilder {
+impl<'a> TextureBuilder<'a> {
     ///Creates a new builder struct with default parameters from an image at `image_path`
     pub fn from_image(
         image_path: &str,
@@ -120,6 +122,63 @@ impl TextureBuilder {
 
             //Create info (this won't be included in the final texture)
             image_path: String::from(image_path),
+            image_data: None,
+            device: device,
+            queue: queue,
+            engine_settings: engine_settings,
+        }
+    }
+
+    ///Creates an image from provided data
+    pub fn from_data(
+        data: &'a [u8],
+        device: Arc<Device>,
+        queue: Arc<Queue>,
+        engine_settings: Arc<Mutex<engine_settings::EngineSettings>>
+    ) -> Self{
+        //Create the default builder
+        TextureBuilder{
+            //sampler
+            //Sampling information if the image is larger or smaller than the original
+            mag_filter: Filter::Linear,
+            min_filter: Filter::Linear,
+            //defines mipmapping mode
+            mip_map_mode: MipmapMode::Nearest,
+            //defines how vulkano should handle U-V-W coordinates outside of 0.0-1.0
+            address_u: SamplerAddressMode::Repeat,
+            address_v: SamplerAddressMode::Repeat,
+            address_w: SamplerAddressMode::Repeat,
+
+            // adds to the mip_mapping distance
+            mip_lod_bias: 0.0,
+            //set the filtering of this texture, this should usually be read from the settings
+            max_anisotropy: 1.0,
+            //Sets the max and min mipmapping level to use
+            min_lod: 0.0,
+            max_lod: 0.0,
+
+            //image
+            //Some helpful postprogressing
+            b_blur: false,
+            blur_factor: 0.0,
+
+            b_unsharpen: false,
+            sharp_factor: 0.0,
+            sharp_threshold: 0,
+
+            b_brighten: false,
+            brighten_factor: 0,
+
+            b_flipv: false,
+            b_fliph: false,
+
+            b_rotate90: false,
+            b_rotate180: false,
+            b_rotate270: false,
+
+            //Create info (this won't be included in the final texture)
+            image_path: String::from("None"),
+            image_data: Some(data),
             device: device,
             queue: queue,
             engine_settings: engine_settings,
@@ -127,9 +186,9 @@ impl TextureBuilder {
     }
 
     ///Sets new filtering technic for the sampler
-    pub fn with_sampling_filter(mut self, new_filter: Filter) -> Self{
-        self.mag_filter = new_filter.clone();
-        self.min_filter = new_filter.clone();
+    pub fn with_sampling_filter(mut self, mag_filter: Filter, min_filter: Filter) -> Self{
+        self.mag_filter = mag_filter;
+        self.min_filter = min_filter;
         self
     }
 
@@ -140,10 +199,12 @@ impl TextureBuilder {
     }
 
     ///Sets new tiling mode for the sampler
-    pub fn with_tiling_mode(mut self, new_mode: SamplerAddressMode) -> Self{
-        self.address_u = new_mode.clone();
-        self.address_v = new_mode.clone();
-        self.address_w = new_mode.clone();
+    pub fn with_tiling_mode(
+        mut self, u: SamplerAddressMode, v: SamplerAddressMode, w: SamplerAddressMode
+    ) -> Self{
+        self.address_u = u;
+        self.address_v = v;
+        self.address_w = w;
         self
     }
     ///Sets new mip lod bias for the sampler
@@ -246,11 +307,24 @@ impl TextureBuilder {
         //Now load a the texture
         let texture = {
 
-            //
-
+            //first load the image
             let image = {
-                let mut image = image::open(&self.image_path.to_string())
-                .expect("failed to load png normal in creation");
+                //load the image::DynamicImage based on the type in the builder
+                let mut image = {
+                    match self.image_data{
+                        Some(image_data) => {
+                            //This image is some data buffer, will use this to load
+                            //load with format from data
+                            image::load_from_memory(&image_data)
+                            .expect("failed to load image data based on guessing")
+                        },
+                        None => {
+                            //There is no buffer, thats why we load it from the uri
+                            image::open(&self.image_path.to_string())
+                            .expect("failed to load png normal in creation")
+                        }
+                    }
+                };
 
                 //now apply, based on the settings all the post progressing
                 //after applying everything we can convert the Dynamic image into the correct format
@@ -295,17 +369,6 @@ impl TextureBuilder {
                             format: vulkano::format::Format::R8Srgb,
                             data: image_data,
                         }
-
-                        /*
-                        //return image and its GpuFuture
-                        ImmutableImage::from_iter(
-                            image_data.iter().cloned(),
-                            Dim2d { width: width, height: height },
-                            //Set format dependent on self.color_format
-                            vulkano::format::R8Srgb,
-                            self.queue.clone())
-                        .expect("failed to create immutable image")
-                        */
                     },
                     ImageLumaA8(gray_alpha_image) => {
                         //Now transform the image::* into a vulkano image
@@ -317,16 +380,6 @@ impl TextureBuilder {
                             format: vulkano::format::Format::R8G8Srgb,
                             data: image_data,
                         }
-                        /*
-                        //return image and its GpuFuture
-                        ImmutableImage::from_iter(
-                            image_data.iter().cloned(),
-                            Dim2d { width: width, height: height },
-                            //Set format dependent on self.color_format
-                            vulkano::format::R8G8Srgb,
-                            self.queue.clone())
-                        .expect("failed to create immutable image")
-                        */
                     },
                     ImageRgb8(_) =>{
                         // Since RGB is often not supported by Vulkan, convert to RGBA instead.
@@ -340,16 +393,6 @@ impl TextureBuilder {
                             format: vulkano::format::Format::R8G8B8A8Srgb,
                             data: image_data,
                         }
-                        /*
-                        //return image and its GpuFuture
-                        ImmutableImage::from_iter(
-                            image_data.iter().cloned(),
-                            Dim2d { width: width, height: height },
-                            //Set format dependent on self.color_format
-                            vulkano::format::R8G8B8A8Srgb,
-                            self.queue.clone())
-                        .expect("failed to create immutable image")
-                        */
                     },
                     ImageRgba8(grba_image) =>{
                         //Now transform the image::* into a vulkano image
@@ -361,16 +404,6 @@ impl TextureBuilder {
                             format: vulkano::format::Format::R8G8B8A8Srgb,
                             data: image_data,
                         }
-                        /*
-                        //return image and its GpuFuture
-                        ImmutableImage::from_iter(
-                            image_data.iter().cloned(),
-                            Dim2d { width: width, height: height },
-                            //Set format dependent on self.color_format
-                            vulkano::format::R8G8B8A8Srgb,
-                            self.queue.clone())
-                        .expect("failed to create immutable image")
-                        */
                     },
                 }
             };

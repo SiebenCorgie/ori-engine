@@ -27,19 +27,146 @@ pub struct GltfImporter {
 //manager for easy adding etc.
 
 ///Imports a gltf texture
-pub fn load_gltf_texture(){
+pub fn load_gltf_texture(
+    texture: &gltf::Texture,
+    name: String,
+    buffers: &gltf_importer::Buffers,
+    base: &Path,
+    material_manager: &Arc<Mutex<material_manager::MaterialManager>>,
+    texture_manager: &Arc<Mutex<texture_manager::TextureManager>>,
+) -> Arc<texture::Texture>
+{
+    //The texture can be a buffer or an external file, depending on the case we load the texture
+    //wrap it into an Arc<Texture>, then add it to the manager once and return the other one
 
+    //first create a texture builder and configure it with the right sampler from the provided texture
+    let mut texture_builder = {
+        //lock the texture manager once to get some data
+        let texture_manager_lck = texture_manager.lock().expect("failed to lock texture manager");
+        //No create the textuer builder based on the type of data
+        match texture.source().data(){
+            gltf::image::Data::View{view, mime_type} => {
+                //found a data buffer for the image
+                let data = buffers.view(&view).expect("failed to load image data from gltf buffer");
+                //we got the data, lets provide it to a TextureBuilder
+                texture::TextureBuilder::from_data(
+                    data,
+                    (*texture_manager_lck).get_device(),
+                    (*texture_manager_lck).get_queue(),
+                    (*texture_manager_lck).get_settings(),
+                )
+            },
+            gltf::image::Data::Uri{uri, mime_type} =>{
+                //prepare the path
+                let path = base.join(uri);
+                texture::TextureBuilder::from_image(
+                    path.to_str().expect("failed to create string from path"),
+                    (*texture_manager_lck).get_device(),
+                    (*texture_manager_lck).get_queue(),
+                    (*texture_manager_lck).get_settings(),
+                )
+            }
+        }
+    };
+
+    //Now set all sampler settings on the builder
+    let sampler = texture.sampler();
+    match sampler.index(){
+        Some(_) => {
+            //This texture got an sampler, lets set the settings
+            let mag_filter = {
+                use gltf::texture::MagFilter;
+
+                match sampler.mag_filter(){
+                    Some(filter) => {
+                        match filter{
+                            //return the vulkano sampler based on the gltf sampler
+                            MagFilter::Linear => vulkano::sampler::Filter::Linear,
+                            MagFilter::Nearest => vulkano::sampler::Filter::Nearest,
+                        }
+                    },
+                    None => {
+                        //Use linear filtering if no filter is set
+                        vulkano::sampler::Filter::Linear
+                    },
+                }
+            };
+            let min_filter = {
+                use gltf::texture::MinFilter;
+
+                match sampler.min_filter(){
+                    Some(filter) => {
+                        match filter{
+                            //return the vulkano sampler based on the gltf sampler
+                            MinFilter::Linear => vulkano::sampler::Filter::Linear,
+                            MinFilter::Nearest => vulkano::sampler::Filter::Nearest,
+                            _ => vulkano::sampler::Filter::Linear, //All other types are linear as well
+                        }
+                    },
+                    None => {
+                        //Use linear filtering if no filter is set
+                        vulkano::sampler::Filter::Linear
+                    },
+                }
+            };
+            //Setup sampling
+            texture_builder = texture_builder.with_sampling_filter(mag_filter, min_filter);
+
+            //Setup wraping
+            let wrap_u = {
+                use gltf::texture::WrappingMode;
+                match sampler.wrap_s(){
+                    WrappingMode::ClampToEdge => vulkano::sampler::SamplerAddressMode::ClampToEdge,
+                    WrappingMode::MirroredRepeat => vulkano::sampler::SamplerAddressMode::MirroredRepeat,
+                    WrappingMode::Repeat => vulkano::sampler::SamplerAddressMode::Repeat,
+                }
+            };
+            let wrap_v = {
+                use gltf::texture::WrappingMode;
+                match sampler.wrap_t(){
+                    WrappingMode::ClampToEdge => vulkano::sampler::SamplerAddressMode::ClampToEdge,
+                new_texture    WrappingMode::MirroredRepeat => vulkano::sampler::SamplerAddressMode::MirroredRepeat,
+                    WrappingMode::Repeat => vulkano::sampler::SamplerAddressMode::Repeat,
+                }
+            };
+
+            texture_builder = texture_builder.with_tiling_mode(wrap_u, wrap_v,wrap_v); //tilling on w will be same but unused because of 2D texture
+        },
+        None => {}, //this texture has no sampler => using the default one
+    }
+
+    //finally build the texture
+    let new_texture = texture_builder.build_with_name(&name);
+    //now add a copy to the manager and return the other one
+    {
+        let mut texture_manager_lck = texture_manager.lock().expect("failed to lock texture manager");
+        let tex_error = (*texture_manager_lck).add_texture(new_texture.clone());
+        match tex_error{
+            Ok(_) => {}, //everything allright while adding
+            Err(r) => println!("failed to add texture to manager while loading gltf: {}", r),
+        }
+    }
+    //finally return the new texture
+    new_texture
 }
 
 ///Imports a gltf material, returns the name of the loaded materials
 pub fn load_gltf_material(
     mat: &gltf::Material,
+    material_name: String,
     buffers: &gltf_importer::Buffers,
     base: &Path,
     material_manager: &Arc<Mutex<material_manager::MaterialManager>>,
     texture_manager: &Arc<Mutex<texture_manager::TextureManager>>,
 ) -> String{
-
+    //first load the pbr info
+    let pbr = mat.pbr_metallic_roughness();
+    //TODO now, for every textuer do:
+    // - load texture and its sampler info
+    // - setup factors
+    // - create material from textures
+    // - add it to the texture manager
+    // - return the name of it as reference for the mesh
     String::from("Teddy")
 }
 
@@ -148,7 +275,14 @@ pub fn load_gltf_mesh(
                     add_mesh.set_material(&material_name);
                 }else{
                     //Damn has no such material will create one
-                    add_mesh.set_material(&load_gltf_material(&mesh_material, &buffers, &base, &material_manager, &texture_manager));
+                    add_mesh.set_material(&load_gltf_material(
+                        &mesh_material,
+                        material_name,
+                        &buffers,
+                        &base,
+                        &material_manager,
+                        &texture_manager)
+                    );
                 }
             }
         }

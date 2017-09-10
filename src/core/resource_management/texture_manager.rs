@@ -152,4 +152,20 @@ impl TextureManager{
             None => Err("the texture could not removed because it is not in the manager"),
         }
     }
+
+    ///A small helper function which returns the used engine settings, good if you have to transport
+    ///much data between function
+    pub fn get_settings(&self) -> Arc<Mutex<engine_settings::EngineSettings>>{
+        self.engine_settings.clone()
+    }
+
+    ///Returns the stored device
+    pub fn get_device(&self) -> Arc<vulkano::device::Device>{
+        self.device.clone()
+    }
+
+    ///Returns the stored queue
+    pub fn get_queue(&self) -> Arc<vulkano::device::Queue>{
+        self.queue.clone()
+    }
 }

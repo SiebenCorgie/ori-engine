@@ -438,6 +438,13 @@ impl AssetManager {
 
         self.get_material_manager().add_material(final_material)
     }
+
+    ///A small helper function which returns the used engine settings, good if you have to transport
+    ///much data between function
+    pub fn get_settings(&self) -> Arc<Mutex<engine_settings::EngineSettings>>{
+        self.settings.clone()
+    }
+
 }
 
 

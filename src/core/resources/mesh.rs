@@ -15,8 +15,8 @@ pub struct Vertex {
     position: [f32; 3],
     tex_coord: [f32; 2],
     normal: [f32; 3],
-    tangent: [f32; 3],
-    color: [f32; 3],
+    tangent: [f32; 4],
+    color: [f32; 4],
 }
 
 //Implements the vulkano::vertex trait on Vertex
@@ -30,8 +30,8 @@ impl Vertex{
         position: [f32; 3],
         tex_coord: [f32; 2],
         normal: [f32; 3],
-        tangent: [f32; 3],
-        color: [f32; 3]
+        tangent: [f32; 4],
+        color: [f32; 4]
         ) -> Self
     {
         Vertex{
@@ -72,7 +72,7 @@ impl Mesh {
         let max = Point3::new(0.5, 0.5, 0.5);
 
         let mut vertices: Vec<Vertex> = Vec::new();
-        vertices.push(Vertex::new([0.0; 3], [0.0; 2], [0.0; 3], [0.0; 3], [0.0; 3]));
+        vertices.push(Vertex::new([0.0; 3], [0.0; 2], [0.0; 3], [0.0; 4], [0.0; 4]));
 
         let sample_vertex_buffer = vulkano::buffer::cpu_access::CpuAccessibleBuffer
                                     ::from_iter(device.clone(), vulkano::buffer::BufferUsage::all(), vertices.iter().cloned())
@@ -152,7 +152,7 @@ impl Mesh {
     }
 
     ///Returns all pos data
-    pub fn get_all_tangents(&self)-> Vec<[f32; 3]>{
+    pub fn get_all_tangents(&self)-> Vec<[f32; 4]>{
         let mut return_vec = Vec::new();
         for i in self.vertices.iter(){
             return_vec.push(i.tangent);
@@ -161,7 +161,7 @@ impl Mesh {
     }
 
     ///Returns all pos data
-    pub fn get_all_colors(&self)-> Vec<[f32; 3]>{
+    pub fn get_all_colors(&self)-> Vec<[f32; 4]>{
         let mut return_vec = Vec::new();
         for i in self.vertices.iter(){
             return_vec.push(i.color);

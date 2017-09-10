@@ -207,7 +207,8 @@ impl MaterialFactors{
 pub struct MaterialBuilder {
     albedo: Option<Arc<texture::Texture>>,
     normal: Option<Arc<texture::Texture>>,
-    physical: Option<Arc<texture::Texture>>,
+    metallic_roughness: Option<Arc<texture::Texture>>,
+    occlusion: Option<Arc<texture::Texture>>,
     emissive: Option<Arc<texture::Texture>>,
     fallback_texture: Arc<texture::Texture>,
     //texture and material infos
@@ -221,7 +222,8 @@ impl MaterialBuilder{
     pub fn new(
         albedo: Option<Arc<texture::Texture>>,
         normal: Option<Arc<texture::Texture>>,
-        physical: Option<Arc<texture::Texture>>,
+        metallic_roughness: Option<Arc<texture::Texture>>,
+        occlusion: Option<Arc<texture::Texture>>,
         emissive: Option<Arc<texture::Texture>>,
         fallback_texture: Arc<texture::Texture>,
     ) -> Self {
@@ -231,6 +233,7 @@ impl MaterialBuilder{
         let mut used_normal = 0;
         let mut used_emissive = 0;
         let mut used_physical = 0;
+        let mut used_occlusion = 0;
 
         match albedo.clone(){
             Some(_) => used_albedo = 1,
@@ -240,8 +243,12 @@ impl MaterialBuilder{
             Some(_) => used_normal = 1,
              _=> {},
         }
-        match physical.clone(){
+        match metallic_roughness.clone(){
             Some(_) => used_physical = 1,
+             _=> {},
+        }
+        match occlusion.clone(){
+            Some(_) => used_occlusion = 1,
              _=> {},
         }
         match emissive.clone(){
@@ -255,13 +262,14 @@ impl MaterialBuilder{
         usage_flags.normal = used_normal;
         usage_flags.roughness = used_physical;
         usage_flags.metal = used_physical;
-        usage_flags.occlusion = used_physical;
+        usage_flags.occlusion = used_occlusion;
         usage_flags.emissive = used_emissive;
 
         MaterialBuilder{
             albedo: albedo,
             normal: normal,
-            physical: physical,
+            metallic_roughness: metallic_roughness,
+            occlusion: occlusion,
             emissive: emissive,
             fallback_texture: fallback_texture,
             //texture and material infos as shader usable struct
@@ -310,7 +318,14 @@ impl MaterialBuilder{
         };
 
         let tmp_physical = {
-            match self.physical{
+            match self.metallic_roughness{
+                Some(texture) => texture,
+                None => self.fallback_texture.clone(),
+            }
+        };
+
+        let tmp_occlusion = {
+            match self.occlusion{
                 Some(texture) => texture,
                 None => self.fallback_texture.clone(),
             }
@@ -362,6 +377,8 @@ impl MaterialBuilder{
             .expect("failed to add sampled nrm")
             .add_sampled_image(tmp_physical.get_raw_texture(), tmp_physical.get_raw_sampler())
             .expect("failed to add sampled physical")
+            .add_sampled_image(tmp_occlusion.get_raw_texture(), tmp_occlusion.get_raw_sampler())
+            .expect("failed to add occlusion texture")
             .add_sampled_image(tmp_emissive.get_raw_texture(), tmp_emissive.get_raw_sampler())
             .expect("failed to add emissive texture")
             .build().expect("failed to build set_02")
@@ -405,7 +422,9 @@ impl MaterialBuilder{
             //normal
             t_normal: tmp_normal,
             //Physical
-            t_physical: tmp_physical,
+            t_metallic_roughness: tmp_physical,
+            //Occlusion
+            t_occlusion: tmp_occlusion,
             //Additional textures
             t_emissive: tmp_emissive,
 
@@ -436,11 +455,13 @@ impl MaterialBuilder{
 ///It mostly contains three textures:
 /// - albedo: the color representation (without light)
 /// - normal: the normal representation of the surface
-/// - physical: is a system texture which is split by channels:
-/// The metallic-roughness / physical texture.
+/// - metallic-roughness: is a system texture which is split by channels:
+/// - occlusion: is a system texture used to make some areas darker
+///
+/// The metallic-roughness  texture.
 ///
 /// This texture has two components:
-/// 
+///
 /// * The first component (R) contains the metallic-ness of the material.
 /// * The second component (G) contains the roughness of the material.
 /// * If the third component (B) and/or the fourth component (A) are present
@@ -454,8 +475,10 @@ pub struct Material {
     t_albedo: Arc<texture::Texture>,
     //normal
     t_normal: Arc<texture::Texture>,
-    //Physical
-    t_physical: Arc<texture::Texture>,
+    //metallic_roughness
+    t_metallic_roughness: Arc<texture::Texture>,
+    ///occlusion texture
+    t_occlusion: Arc<texture::Texture>,
     //Additional textures: TODO implent
     t_emissive: Arc<texture::Texture>,
 
@@ -504,8 +527,8 @@ impl Material {
     }
 
     ///Adds a physical texture
-    pub fn set_physical_texture(&mut self, physical: Arc<texture::Texture>){
-        self.t_physical = physical;
+    pub fn set_metallic_roughness_texture(&mut self, physical: Arc<texture::Texture>){
+        self.t_metallic_roughness = physical;
     }
 
     ///Adds a emissive texture
@@ -541,7 +564,15 @@ impl Material {
             )
             .expect("failed to add sampled nrm")
             .add_sampled_image(
-                self.t_physical.get_raw_texture().clone(), self.t_physical.get_raw_sampler().clone()
+                self.t_metallic_roughness.get_raw_texture().clone(), self.t_metallic_roughness.get_raw_sampler().clone()
+            )
+            .expect("failed to add sampled physical")
+            .add_sampled_image(
+                self.t_occlusion.get_raw_texture().clone(), self.t_occlusion.get_raw_sampler().clone()
+            )
+            .expect("failed to add sampled physical")
+            .add_sampled_image(
+                self.t_emissive.get_raw_texture().clone(), self.t_emissive.get_raw_sampler().clone()
             )
             .expect("failed to add sampled physical")
             .build().expect("failed to build set_02")

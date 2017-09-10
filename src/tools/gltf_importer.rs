@@ -43,6 +43,7 @@ pub fn load_gltf_material(
     String::from("Teddy")
 }
 
+
 ///Loads gltf primitves in an Vec<mesh::Mesh> and adds them to the managers as well as their textures
 pub fn load_gltf_mesh(
     name: &String,

@@ -27,8 +27,9 @@ layout(set = 0, binding = 0) uniform Data {
 //TEXTURES
 layout(set = 1, binding = 0) uniform sampler2D t_Albedo;
 layout(set = 1, binding = 1) uniform sampler2D t_Normal;
-layout(set = 1, binding = 2) uniform sampler2D t_Physical;
-layout(set = 1, binding = 3) uniform sampler2D t_Emissive;
+layout(set = 1, binding = 2) uniform sampler2D t_Metall_Rough;
+layout(set = 1, binding = 3) uniform sampler2D t_Occlusion;
+layout(set = 1, binding = 4) uniform sampler2D t_Emissive;
 //TEXTURE_USAGE
 //Texture usage infos (!= 1 is "not used" for now)
 layout(set = 2, binding = 0) uniform TextureUsageInfo {
@@ -304,7 +305,7 @@ void main()
   if (u_tex_usage_info.b_metal != 1) {
     metallic = u_tex_fac.metal_factor;
   }else{
-    metallic = texture(t_Physical, tex_coordinates).g * u_tex_fac.metal_factor;
+    metallic = texture(t_Metall_Rough, tex_coordinates).g * u_tex_fac.metal_factor;
   }
 
   //Set roughness color
@@ -312,7 +313,7 @@ void main()
   if (u_tex_usage_info.b_roughness != 1) {
     roughness = u_tex_fac.roughness_factor;
   }else{
-    roughness = texture(t_Physical, tex_coordinates).b * u_tex_fac.roughness_factor;
+    roughness = texture(t_Metall_Rough, tex_coordinates).b * u_tex_fac.roughness_factor;
   }
 
   //Set ao color
@@ -320,7 +321,7 @@ void main()
   if (u_tex_usage_info.b_occlusion != 1) {
     ao = u_tex_fac.occlusion_factor;
   }else{
-    ao = texture(t_Physical, tex_coordinates).r * u_tex_fac.occlusion_factor;
+    ao = texture(t_Metall_Rough, tex_coordinates).r * u_tex_fac.occlusion_factor;
   }
 
   //TODO implemetn emmessive

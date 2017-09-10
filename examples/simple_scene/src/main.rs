@@ -83,6 +83,7 @@ fn main() {
             let new_material = core::resources::material::MaterialBuilder::new(
                 Some(albedo_in_manager),
                 Some(nrm_in_manager),
+                Some(physical_in_manager.clone()),
                 Some(physical_in_manager),
                 None,
                 asset_manager.get_texture_manager().get_none()
@@ -112,6 +113,7 @@ fn main() {
         let new_material = core::resources::material::MaterialBuilder::new(
             Some(albedo_in_manager),
             Some(nrm_in_manager),
+            None,
             None,
             None,
             asset_manager.get_texture_manager().get_none()

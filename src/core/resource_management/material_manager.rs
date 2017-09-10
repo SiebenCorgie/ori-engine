@@ -64,6 +64,7 @@ impl MaterialManager {
                     Some(albedo_texture),
                     Some(normal_texture),
                     Some(physical_texture),
+                    None, //currently no occlusion texture
                     None,
                     none_texture
                 )

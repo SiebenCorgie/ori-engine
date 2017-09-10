@@ -67,8 +67,8 @@ impl Importer for AssimpImporter {
                         let mut pos: [f32; 3] = [0.0; 3];
                         let mut tex: [f32; 2] = [0.0; 2];
                         let mut norm: [f32; 3] = [0.0; 3];
-                        let mut tang: [f32; 3] = [0.0; 3];
-                        let mut col: [f32; 3] = [0.0; 3];
+                        let mut tang: [f32; 4] = [0.0; 4];
+                        let mut col: [f32; 4] = [0.0; 4];
 
                         //TODO make save
                         //POSITION
@@ -120,16 +120,20 @@ impl Importer for AssimpImporter {
                         }
                         //TANGENTS
                         match mesh.get_tangent(index){
-                            Some(tangent) => tang = tangent.into(),
+                            Some(tangent) =>{
+                                //convert to a vec4
+                                let tang_3: [f32; 3] = tangent.into();
+                                tang = [tang_3[0], tang_3[1], tang_3[2], -1.0];
+                            }
                             None => {
                                 println!("Failed to find tangent on index: {} of mesh: {}", index.clone(), tmp_name);
                                 //fallback
-                                tang = Vector3::new(1.0, 1.0, 1.0).into();
+                                tang = [1.0; 4];
                             },
                         }
 
                         //match mesh.
-                        col = [0.0; 3];
+                        col = [0.0; 4];
                         /* THERE IS CURRENTLY NO VERTEX COLOR SUPPORT
                         if mesh.has_vertex_colors(index as usize){
                             ////println!("has color");

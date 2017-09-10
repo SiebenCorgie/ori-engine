@@ -31,25 +31,40 @@ pub fn load_gltf_texture(){
 
 }
 
+///Imports a gltf material, returns the name of the loaded materials
+pub fn load_gltf_material(
+    mat: &gltf::Material,
+    buffers: &gltf_importer::Buffers,
+    base: &Path,
+    material_manager: &Arc<Mutex<material_manager::MaterialManager>>,
+    texture_manager: &Arc<Mutex<texture_manager::TextureManager>>,
+) -> String{
+
+    String::from("Teddy")
+}
+
 ///Loads gltf primitves in an Vec<mesh::Mesh> and adds them to the managers as well as their textures
 pub fn load_gltf_mesh(
     name: &String,
     scene_name: &str,
     mesh: &gltf::Mesh,
     buffers: &gltf_importer::Buffers,
+    base: &Path,
     mesh_manager: &Arc<Mutex<mesh_manager::MeshManager>>,
     material_manager: &Arc<Mutex<material_manager::MaterialManager>>,
     texture_manager: &Arc<Mutex<texture_manager::TextureManager>>,
     device: &Arc<vulkano::device::Device>,
     queue: &Arc<vulkano::device::Queue>
 ) -> Vec<Arc<Mutex<mesh::Mesh>>>{
-    let return_vec = Vec::new();
 
+    //this vec will be used to add new mesh nodes to the parent gltf node
+    let mut return_vec = Vec::new();
+    //the indices are used for nice naming
     let mut primitive_index = 0;
-
+    //now cycle through all primitives, load the mesh and maybe the material
     for primitive in mesh.primitives(){
         use gltf_utils::PrimitiveIterators; //from the three crate
-        let indices: Vec<u32> = Vec::new();
+        let mut indices: Vec<u32> = Vec::new();
         //check for indices
         if let Some(mut iter) = primitive.indices_u32(buffers) {
             while let (Some(a), Some(b), Some(c)) = (iter.next(), iter.next(), iter.next()) {
@@ -82,10 +97,16 @@ pub fn load_gltf_mesh(
         } else {
             Vec::new()
         };
+        //verte color
+        let vertex_colors: Vec<[f32; 4]> = if let Some(iter) = primitive.colors_rgba_f32(0, 1.0, buffers) {
+            iter.map(|x| x.into()).collect()
+        } else {
+            Vec::new()
+        };
 
         //TODO create mesh, as Arc, store it in the mesh manager, look for materials, if
         let mesh_name = name.clone() + "_mesh_" + &primitive_index.to_string();
-        let add_mesh = mesh::Mesh::new(&mesh_name, device.clone(), queue.clone());
+        let mut add_mesh = mesh::Mesh::new(&mesh_name, device.clone(), queue.clone());
         //create a dummy and fill it
         let mut vertices = Vec::new();
         for i in 0..positions.len(){
@@ -93,8 +114,8 @@ pub fn load_gltf_mesh(
                 positions[i],
                 tex_coords[i],
                 normals[i],
-                [tangents[i][0], tangents[i][1], tangents[i][2]],
-                [0.0; 3], //TODO implment vertex colors
+                tangents[i],
+                vertex_colors[i],
             );
             vertices.push(vertex);
         }
@@ -108,31 +129,33 @@ pub fn load_gltf_mesh(
                 //is the default material, we can leave the mesh material like it is
             },
             Some(material_index) =>{
-                //It has a material, check if its alread in the material manager by name
-                let material_manager_lck = material_manager
-                .lock()
-                .expect("could not look material manager");
+
                 //create a String for the material name, then check for it, if it isn't in there
                 //create a material from this name
                 let material_name = String::from(scene_name) + &material_index.to_string();
 
-                let has_material = (*material_manager_lck)
-                .is_available(&material_name);
+                let has_material ={
+                    //It has a material, check if its alread in the material manager by name
+                    let material_manager_lck = material_manager
+                    .lock()
+                    .expect("could not look material manager");
+                    (*material_manager_lck).is_available(&material_name)
+                };
                 //if the material is already there we can change the mesh mateiral to this name
                 //iof not we have to create it first and change then
                 if has_material{
                     add_mesh.set_material(&material_name);
                 }else{
                     //Damn has no such material will create one
-                    //TODO load material
+                    add_mesh.set_material(&load_gltf_material(&mesh_material, &buffers, &base, &material_manager, &texture_manager));
                 }
             }
         }
         //We finished the mesh, time to put it in an Arc<Mutex<mesh::Mesh>>
         let arc_mesh = Arc::new(Mutex::new(add_mesh));
         //Now copy it to the manager and push the other one to the return vector
-        let mesh_manager_lck = mesh_manager.lock().expect("failed to lock mesh manager in gltf loader");
-        (*mesh_manager_lck).add_arc_mesh(arc_mesh);
+        let mut mesh_manager_lck = mesh_manager.lock().expect("failed to lock mesh manager in gltf loader");
+        (*mesh_manager_lck).add_arc_mesh(arc_mesh.clone());
         //pushing to the return vector, continueing with the other meshes
         return_vec.push(arc_mesh);
         //adding one to the index for naming the new mesh
@@ -150,6 +173,7 @@ pub fn load_gltf_node(
     parent_name: String,
     scene_name: &str,
     buffers: &gltf_importer::Buffers,
+    base: &Path,
     mesh_manager: &Arc<Mutex<mesh_manager::MeshManager>>,
     material_manager: &Arc<Mutex<material_manager::MaterialManager>>,
     texture_manager: &Arc<Mutex<texture_manager::TextureManager>>,
@@ -196,6 +220,7 @@ pub fn load_gltf_node(
                 scene_name,
                 &mesh,
                 &buffers,
+                base,
                 &mesh_manager,
                 &material_manager,
                 &texture_manager,
@@ -252,10 +277,11 @@ pub fn import_gltf(
             load_gltf_node(
                 &node,
                 &mut scene_node,
-                scene_name, //The node name is now the scene name because a gltf file can have many
+                scene_name.clone(), //The node name is now the scene name because a gltf file can have many
                             //scene which are in the node::GenericNode view also nodes
                 name,       //This is the name of this gltf file used to reference global gltf file specific data like textures and materials
                 &buffers,
+                base,
                 mesh_manager,
                 material_manager,
                 texture_manager,
@@ -263,5 +289,7 @@ pub fn import_gltf(
                 &queue
             );
         }
+        //now add the new scene node to the root empty
+        scene_tree.add_node(scene_node);
     }
 }

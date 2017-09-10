@@ -3,8 +3,8 @@
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 tex_coord;
 layout(location = 2) in vec3 normal;
-layout(location = 3) in vec3 tangent;
-layout(location = 4) in vec3 color;
+layout(location = 3) in vec4 tangent;
+layout(location = 4) in vec4 color;
 
 layout(location = 0) out vec3 v_normal;
 layout(location = 1) out vec3 FragmentPosition;
@@ -31,7 +31,7 @@ void main() {
   tex_coordinates = tex_coord;
 
   //Create TBN
-  vec3 T = normalize(vec3(u_main.model * vec4(tangent, 0.0)));
+  vec3 T = normalize(vec3(u_main.model * tangent));
   vec3 N = normalize(vec3(u_main.model * vec4(normal, 0.0)));
   // re-orthogonalize T with respect to N
   //T = normalize(T - dot(T, N) * N);

@@ -437,10 +437,14 @@ impl MaterialBuilder{
 /// - albedo: the color representation (without light)
 /// - normal: the normal representation of the surface
 /// - physical: is a system texture which is split by channels:
-///   - Red: Ambient Occlusion
-///   - Green: Metallic
-///   - Blue: Roughness
-///   This is mostly taken from gltf 2.0
+/// The metallic-roughness / physical texture.
+///
+/// This texture has two components:
+/// 
+/// * The first component (R) contains the metallic-ness of the material.
+/// * The second component (G) contains the roughness of the material.
+/// * If the third component (B) and/or the fourth component (A) are present
+///   then they are ignored.
 
 ///Describes a standart material
 pub struct Material {

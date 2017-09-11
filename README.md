@@ -1,10 +1,13 @@
 # ori-engine
 A small engine written in rust + Vulkan.
 
+<<<<<<< HEAD
 ## Repository moved
 The repository moved to [jakar engine](https://github.com/SiebenCorgie/jakar-engine) because the name "ori" was already taken by "Ori-And-The-blind-Forest" a game which might be a naming problem in the future.
 Jakar is a nice town in Bhutans mid-north. Have a look!
 
+=======
+>>>>>>> 2ff09db457bee3e9e18f573c7f96f67798376401
 ## Target
 
 

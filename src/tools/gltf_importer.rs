@@ -1,7 +1,4 @@
-use core::resources::texture;
-use core::resources::mesh;
-use core::resources::light;
-use core::resources::camera;
+use core::resources::{texture, material, mesh, light, camera};
 use core::resources::camera::Camera;
 use core::simple_scene_system::node;
 use core::resource_management::{material_manager, mesh_manager, scene_manager, texture_manager};
@@ -125,7 +122,7 @@ pub fn load_gltf_texture(
                 use gltf::texture::WrappingMode;
                 match sampler.wrap_t(){
                     WrappingMode::ClampToEdge => vulkano::sampler::SamplerAddressMode::ClampToEdge,
-                new_texture    WrappingMode::MirroredRepeat => vulkano::sampler::SamplerAddressMode::MirroredRepeat,
+                    WrappingMode::MirroredRepeat => vulkano::sampler::SamplerAddressMode::MirroredRepeat,
                     WrappingMode::Repeat => vulkano::sampler::SamplerAddressMode::Repeat,
                 }
             };
@@ -161,6 +158,102 @@ pub fn load_gltf_material(
 ) -> String{
     //first load the pbr info
     let pbr = mat.pbr_metallic_roughness();
+    //now load all textures if there is none it returns none which will be respected at build time of the material
+    let albedo = {
+        match pbr.base_color_texture(){
+            Some(t) => {
+                Some(
+                    load_gltf_texture(
+                    &t.texture(), material_name.clone() + "_albedo", buffers, base, material_manager, texture_manager
+                    )
+                )
+            },
+            None => None,
+        }
+    };
+    //normal
+    let normal = {
+        match mat.normal_texture(){
+            Some(t) => {
+                Some(
+                    load_gltf_texture(
+                    &t.texture(), material_name.clone() + "_normal", buffers, base, material_manager, texture_manager
+                    )
+                )
+            },
+            None => None,
+        }
+    };
+    //metallic_roughness
+    let metallic_roughness = {
+        match pbr.metallic_roughness_texture(){
+            Some(t) => {
+                Some(
+                    load_gltf_texture(
+                    &t.texture(), material_name.clone() + "_met_rough", buffers, base, material_manager, texture_manager
+                    )
+                )
+            },
+            None => None,
+        }
+    };
+    //occlusion
+    let occlusion = {
+        match mat.occlusion_texture(){
+            Some(t) => {
+                Some(
+                    load_gltf_texture(
+                    &t.texture(), material_name.clone() + "_occlu", buffers, base, material_manager, texture_manager
+                    )
+                )
+            },
+            None => None,
+        }
+    };
+    //emissive
+    let emissive = {
+        match mat.emissive_texture(){
+            Some(t) => {
+                Some(
+                    load_gltf_texture(
+                    &t.texture(), material_name.clone() + "_emissive", buffers, base, material_manager, texture_manager
+                    )
+                )
+            },
+            None => None,
+        }
+    };
+
+    //We also need the texture factors
+    let texture_factors = {
+        material::MaterialFactors::new()
+        .with_factor_albedo(pbr.base_color_factor())
+        .with_factor_normal(mat.normal_texture().map_or(1.0, |t| t.scale()))
+        .with_factor_metal(pbr.metallic_factor())
+        .with_factor_roughness(pbr.roughness_factor())
+        .with_factor_occlusion(mat.occlusion_texture().map_or(1.0, |t| t.strength()))
+        .with_factor_emissive(mat.emissive_factor())
+    };
+
+
+    let fallback_texture = {
+        let man_lck = texture_manager.lock().expect("failed to lock material manager");
+        (*man_lck).get_none()
+    };
+
+    //Create a material builder from the info
+    let mut material_builder = material::MaterialBuilder::new(
+        albedo,
+        normal,
+        metallic_roughness,
+        occlusion,
+        emissive,
+        fallback_texture,
+    )
+    //now configure the factors
+    .with_factors(texture_factors);
+
+
     //TODO now, for every textuer do:
     // - load texture and its sampler info
     // - setup factors

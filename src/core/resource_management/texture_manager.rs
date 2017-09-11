@@ -103,12 +103,12 @@ impl TextureManager{
 
     ///Returns the nothing 1x1 pixel texture
     ///TODO this could be faster by using index 0
-    pub fn get_none(&mut self) -> Arc<texture::Texture>{
+    pub fn get_none(&self) -> Arc<texture::Texture>{
         self.get_texture("none")
     }
 
     ///Returns a texture if this name, if not found, returns th fallback texture
-    pub fn get_texture(&mut self, name: &str) -> Arc<texture::Texture>{
+    pub fn get_texture(&self, name: &str) -> Arc<texture::Texture>{
 
         match self.textures.get(&String::from(name)){
             Some(texture) => return texture.clone(),

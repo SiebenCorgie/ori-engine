@@ -45,8 +45,8 @@ layout(set = 2, binding = 0) uniform TextureUsageInfo {
 //Linear Texture factors from the material
 layout(set = 2, binding = 1) uniform TextureFactors {
   vec4 albedo_factor;
-  vec4 normal_factor;
-  vec4 emissive_factor;
+  vec3 emissive_factor;
+  float normal_factor;
   float metal_factor;
   float roughness_factor;
   float occlusion_factor;
@@ -328,12 +328,12 @@ void main()
 
   vec3 N = vec3(0.0);
   if (u_tex_usage_info.b_normal != 1){
-    N = u_tex_fac.normal_factor.xyz;
+    N = vec3(u_tex_fac.normal_factor);
   }else {
     N = texture(t_Normal, tex_coordinates).rgb;
   }
 
-  N = normalize(TBN * ((2.0 * N - 1.0) * vec3(u_tex_fac.normal_factor.xy, 1.0)));
+  N = normalize(TBN * ((2.0 * N - 1.0) * u_tex_fac.normal_factor));
 
   //N = normalize(N * 2.0 - 1.0);
   //N = normalize(TBN * N);

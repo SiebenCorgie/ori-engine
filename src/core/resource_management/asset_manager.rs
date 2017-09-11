@@ -390,7 +390,7 @@ impl AssetManager {
     }
 
     ///Returns a texture builder for the specified image at `path`
-    pub fn create_texture(&mut self, path: &str) -> texture::TextureBuilder{
+    pub fn create_texture(&self, path: &str) -> texture::TextureBuilder{
 
         //lock the renderer
         let render_inst = self.renderer.clone();

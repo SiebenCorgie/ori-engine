@@ -64,7 +64,7 @@ fn main() {
         //Albedo
         let mut tex_builder_01 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/lowRes/rustediron2_basecolor.png");
         tex_builder_01 = tex_builder_01.with_flipped_v();
-        asset_manager.add_texture_to_manager(tex_builder_01, "metal_albedo").expect("failed to add new_texture");
+        //asset_manager.add_texture_to_manager(tex_builder_01, "metal_albedo").expect("failed to add new_texture");
         //Normal
         let mut tex_builder_02 = asset_manager.create_texture("/share/3DFiles/TextureLibary/Metal/RustSteal/lowRes/rustediron2_normal.png");
         tex_builder_02 = tex_builder_02.with_flipped_v();

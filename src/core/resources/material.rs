@@ -129,8 +129,8 @@ impl TextureUsageFlags{
 #[derive(Clone)]
 pub struct MaterialFactors{
     albedo_factor: [f32; 4],
-    normal_factor: [f32; 4],
-    emissive_factor: [f32; 4],
+    normal_factor: f32,
+    emissive_factor: [f32; 3],
     metal_factor: f32,
     roughness_factor: f32,
     occlusion_factor: f32,
@@ -143,8 +143,8 @@ impl MaterialFactors{
         MaterialFactors{
             albedo_factor: [1.0; 4],
             //this needs to be set to just blue for not manipulating the rest
-            normal_factor: [1.0, 1.0, 1.0, 1.0],
-            emissive_factor: [1.0; 4],
+            normal_factor: 1.0,
+            emissive_factor: [1.0; 3],
             metal_factor: 1.0,
             roughness_factor: 1.0,
             occlusion_factor: 1.0,
@@ -159,7 +159,7 @@ impl MaterialFactors{
     }
 
     ///Creates the Factor struct with a given normal factor
-    pub fn with_factor_normal(mut self, factor: [f32; 4]) -> Self{
+    pub fn with_factor_normal(mut self, factor: f32) -> Self{
         self.normal_factor = factor;
         self
     }
@@ -183,7 +183,7 @@ impl MaterialFactors{
     }
 
     ///Creates the Factor struct with a given emissive factor
-    pub fn with_factor_emmissive(mut self, factor: [f32; 4]) -> Self{
+    pub fn with_factor_emissive(mut self, factor: [f32; 3]) -> Self{
         self.emissive_factor = factor;
         self
     }
